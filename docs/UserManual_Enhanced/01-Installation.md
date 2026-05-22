@@ -20,7 +20,7 @@ Before installing `pfdha`, ensure you have the following prerequisites met:
 1.  **Clone the Repository**:
     First, clone the `pfdha` repository from GitHub to your local machine:
     ```bash
-    git clone https://github.com/vup1120/pfdha.git
+    git clone https://github.com/vup1120/oq-pfdha.git
     cd pfdha
     ```
 
