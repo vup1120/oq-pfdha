@@ -1,0 +1,57 @@
+<?xml version='1.0' encoding='utf-8'?>
+<nrml xmlns="http://openquake.org/xmlns/nrml/0.4" xmlns:gml="http://www.opengis.net/gml">
+  <sourceModel name="Active_fault">
+    <characteristicFaultSource id="17" name="Chelungpu_fault" tectonicRegion="Active Shallow Crust">
+      <incrementalMFD minMag="7.6" binWidth="0.1">
+      <occurRates>0.001852</occurRates>
+      </incrementalMFD>
+      <rake>90.0</rake>
+    <surface><simpleFaultGeometry>
+        <gml:LineString>
+          <gml:posList>
+			120.703619 23.914280
+			120.707723 23.927629
+			120.707551 23.932408
+			120.704542 23.935556
+			120.703611 23.942951
+			120.702282 23.943807
+			120.700364 23.947840
+			120.697323 23.948840
+			120.691812 23.954504
+			120.690493 23.954942
+			120.686645 23.959815
+			120.686547 23.963267
+			120.688945 23.967214
+			120.692281 23.971831
+			120.690405 23.978587
+			120.689985 23.980499
+			120.689441 23.996130
+			120.690186 23.998644
+			120.691307 24.000962
+			120.695333 24.005419
+			120.698494 24.010130
+			120.698745 24.014199
+			120.697915 24.022676
+			120.699617 24.029310
+			120.696427 24.034585
+			120.691560 24.040693
+			120.691403 24.044984
+			120.693437 24.049682
+			120.699853 24.053584
+			120.699979 24.062301
+			120.702653 24.068356
+			120.703612 24.069952
+			120.712473 24.071346
+			120.713886 24.071860
+			120.715006 24.071744
+			120.721469 24.076786
+			120.722578 24.079977
+			</gml:posList>
+        </gml:LineString>
+        <dip>15.0</dip>
+        <upperSeismoDepth>0</upperSeismoDepth>
+        <lowerSeismoDepth>12.0</lowerSeismoDepth>
+      </simpleFaultGeometry>
+      </surface></characteristicFaultSource>
+  </sourceModel>
+</nrml>

@@ -1,0 +1,27 @@
+name = "Fig13_Case2_Normal_HW_r2km"
+
+[erf]
+rupture_mesh_spacing = 1.0
+width_of_mfd_bin = 0.1
+
+[calculation]
+fdha_logic_tree_file = "config_fig13_case2_fdha_logic_tree.xml"
+source_model_logic_tree_file = "config_fig13_case2_source_model_logic_tree.xml"
+
+[rank1p5_ruptures]
+[[rank1p5_ruptures.trace]]
+name = "R1p5_200m"
+
+[rank1p5_ruptures.trace.geometry]
+type = "Line"
+coords = [ [ 16.09246068, 39.65797081,], [ 16.2324776, 39.65797081,],]
+
+[site_location]
+corner_points = [ [ 16.15926958, 39.66133192,], [ 16.16603463, 39.65116863,], [ 16.16567223, 39.65101802,], [ 16.15890012, 39.66117817,],]
+vs30 = 600
+
+[parameters]
+case = "case2"
+
+[calculation.displacement_measure_levels]
+FD = [ 0.0001, 0.001, 0.005, 0.01, 0.015, 0.03, 0.05, 0.075, 0.1, 0.15, 0.3, 0.5, 0.75, 1.0, 3.0, 5.0, 7.5, 10.0,]

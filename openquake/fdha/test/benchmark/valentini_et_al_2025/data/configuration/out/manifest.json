@@ -1,0 +1,36 @@
+{
+  "advisory_warnings": [],
+  "branches": [
+    {
+      "combined_branch_weight": 1.0,
+      "curve_file": "hazard_curves/branch_0000.csv",
+      "fdha_branch_id": "B2_PRIMARY_SURF_DISPL|B1_PRIMARY_SURF_RUP|B4_SECONDARY_SURF_DISPL|B3_SECONDARY_SURF_RUP",
+      "fdha_branch_weight": 1.0,
+      "fdha_models": {
+        "primary_surf_displ": "Chiou2025PrimaryFD",
+        "primary_surf_rup": "WC1993PrimarySR",
+        "secondary_surf_displ": "Youngs2003SecondaryFD",
+        "secondary_surf_rup": "Youngs2003SecondarySR"
+      },
+      "fdha_source_id": "1",
+      "fdha_style": "strike-slip",
+      "global_index": 0,
+      "source_model_branch_id": "b_sm_kumamoto_case2_Chiou2025",
+      "source_model_file": "/home/ychen/GIT/pfdha/openquake/fdha/test/benchmark/valentini_et_al_2025/data/source/source_model_kumamoto_uto.xml",
+      "source_model_uncertainties": [],
+      "source_model_weight": 1.0
+    }
+  ],
+  "mode": "hazard_curve",
+  "n_realizations": 1,
+  "source_model_branches": [
+    {
+      "branch_id": "b_sm_kumamoto_case2_Chiou2025",
+      "n_fdha_branches": 1,
+      "source_model_file": "/home/ychen/GIT/pfdha/openquake/fdha/test/benchmark/valentini_et_al_2025/data/source/source_model_kumamoto_uto.xml",
+      "weight": 1.0
+    }
+  ],
+  "source_model_logic_tree_file": "kumamoto_case2_Chiou2025_source_model_logic_tree.xml",
+  "total_combined_weight": 1.0
+}

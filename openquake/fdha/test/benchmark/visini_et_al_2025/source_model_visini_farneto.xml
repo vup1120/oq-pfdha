@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<nrml
+xmlns="http://openquake.org/xmlns/nrml/0.5"
+xmlns:gml="http://www.opengis.net/gml"
+>
+    <sourceModel
+    name="Example Source Model Containing Characteristic Fault Source"
+    >
+        <sourceGroup
+        name="group 1"
+        tectonicRegion="Active Shallow Crust"
+        >
+            <characteristicFaultSource
+            id="1"
+            name="West_crati"
+            tectonicRegion="Active Shallow Crust"
+            >
+                <incrementalMFD
+                binWidth="1.0000000E-01"
+                minMag="6.700000E+00"
+                >
+                    <occurRates>
+                        6.9083e-05 9.1203e-05 0.00010774 0.0001139 0.00010774 9.1203e-05 6.9083e-05
+                    </occurRates>
+                </incrementalMFD>
+                <rake>
+                    -9.0000000E+01
+                </rake>
+                <surface>
+                    <simpleFaultGeometry>
+                        <gml:LineString>
+                             <gml:posList> 16.171488 39.236966 16.168492 39.258164 16.166256 39.281391 16.170404 39.306996 16.169925 39.369333 16.166935 39.398338 16.173133 39.431294 16.171618 39.444618 16.170374 39.474111 16.169939 39.500058 16.168959 39.506469 16.166319 39.517614 16.164671 39.536161 16.15859 39.549867 16.153325 39.561423 </gml:posList>
+                        </gml:LineString>
+                        <dip>
+                            3.6000000E+01
+                        </dip>
+                        <upperSeismoDepth>
+                            0.0000000E+00
+                        </upperSeismoDepth>
+                        <lowerSeismoDepth>
+                            1.9000000E+01
+                        </lowerSeismoDepth>
+                    </simpleFaultGeometry>
+                </surface>
+            </characteristicFaultSource>
+
+        </sourceGroup>
+    </sourceModel>
+</nrml>

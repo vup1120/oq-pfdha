@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<nrml
+xmlns="http://openquake.org/xmlns/nrml/0.5"
+xmlns:gml="http://www.opengis.net/gml"
+>
+    <sourceModel
+    name="Norcia Source Model Containing Characteristic Fault Source"
+    >
+        <sourceGroup
+        name="group 1"
+        tectonicRegion="Active Shallow Crust"
+        >
+            <characteristicFaultSource
+            id="1"
+            name="MVFS"
+            tectonicRegion="Active Shallow Crust"
+            >
+                <incrementalMFD
+                binWidth="1.0000000E-01"
+                minMag="6.400000E+00"
+                >
+                <occurRates> 4.29E-05 5.66E-05 6.69E-05	7.07E-05 6.69E-05 5.66E-05 4.29E-05</occurRates>
+                </incrementalMFD>
+                <rake>
+                    -9.0000000E+01
+                </rake>
+                <surface>
+                    <simpleFaultGeometry>
+                        <gml:LineString>
+                            <gml:posList>
+                                13.1015 43.0131 
+                                13.1332 42.9931 
+                                13.1523 42.9766 
+                                13.1685 42.9544 
+                                13.1627 42.9394 
+                                13.1750 42.9201 
+                                13.1970 42.9097 
+                                13.2264 42.8846 
+                                13.2476 42.8449 
+                                13.2482 42.8211 
+                                13.2616 42.8094
+                                13.2725 42.7865
+                                13.2813 42.7550
+                            </gml:posList>
+                        </gml:LineString>
+                        <dip>
+                            47
+                        </dip>
+                        <upperSeismoDepth>
+                            0.0000000E+00
+                        </upperSeismoDepth>
+                        <lowerSeismoDepth>
+                            1.1000000E+01
+                        </lowerSeismoDepth>
+                    </simpleFaultGeometry>
+                </surface>
+            </characteristicFaultSource>
+        </sourceGroup>
+    </sourceModel>
+</nrml>
+

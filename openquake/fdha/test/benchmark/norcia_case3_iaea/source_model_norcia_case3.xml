@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<nrml
+    xmlns="http://openquake.org/xmlns/nrml/0.5"
+    xmlns:gml="http://www.opengis.net/gml">
+  <sourceModel name="Norcia Case 3 IAEA Source Model">
+    <sourceGroup name="Norcia Case 3 faults" tectonicRegion="Active Shallow Crust">
+      <characteristicFaultSource
+          id="MVFS"
+          name="MVFS"
+          tectonicRegion="Active Shallow Crust">
+        <incrementalMFD binWidth="1.0000000E-01" minMag="6.400000E+00">
+          <occurRates>
+            4.2864000000E-05 5.6589000000E-05 6.6852000000E-05 7.0671000000E-05 6.6852000000E-05 5.6589000000E-05 4.2864000000E-05
+          </occurRates>
+        </incrementalMFD>
+        <rake>-9.0000000E+01</rake>
+        <surface>
+          <simpleFaultGeometry>
+            <gml:LineString>
+              <gml:posList>
+                13.1015 43.0131
+                13.1332 42.9931
+                13.1523 42.9766
+                13.1685 42.9544
+                13.1627 42.9394
+                13.1750 42.9201
+                13.1970 42.9097
+                13.2264 42.8846
+                13.2476 42.8449
+                13.2482 42.8211
+                13.2616 42.8094
+                13.2725 42.7865
+                13.2813 42.7550
+              </gml:posList>
+            </gml:LineString>
+            <dip>47</dip>
+            <upperSeismoDepth>0.0000000E+00</upperSeismoDepth>
+            <lowerSeismoDepth>1.1000000E+01</lowerSeismoDepth>
+          </simpleFaultGeometry>
+        </surface>
+      </characteristicFaultSource>
+
+      <characteristicFaultSource
+          id="NFS"
+          name="NFS"
+          tectonicRegion="Active Shallow Crust">
+        <incrementalMFD binWidth="1.0000000E-01" minMag="5.500000E+00">
+          <occurRates>
+            1.1582000000E-03 9.1998000000E-04 7.3077000000E-04 5.8047000000E-04 4.6108000000E-04 3.6625000000E-04 2.9092000000E-04 2.3109000000E-04 1.8356000000E-04 1.4581000000E-04 1.1582000000E-04 9.1998000000E-05 7.3077000000E-05 5.8047000000E-05
+          </occurRates>
+        </incrementalMFD>
+        <rake>-9.0000000E+01</rake>
+        <surface>
+          <simpleFaultGeometry>
+            <gml:LineString>
+              <gml:posList>
+                13.0302 42.8982
+                13.0626 42.8701
+                13.0943 42.8566
+                13.1204 42.8253
+                13.1206 42.8003
+                13.1733 42.7064
+                13.1602 42.6739
+              </gml:posList>
+            </gml:LineString>
+            <dip>50</dip>
+            <upperSeismoDepth>0.0000000E+00</upperSeismoDepth>
+            <lowerSeismoDepth>1.2000000E+01</lowerSeismoDepth>
+          </simpleFaultGeometry>
+        </surface>
+      </characteristicFaultSource>
+    </sourceGroup>
+  </sourceModel>
+</nrml>

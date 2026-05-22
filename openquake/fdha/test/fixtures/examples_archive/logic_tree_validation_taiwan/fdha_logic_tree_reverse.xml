@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Taiwan FDHA logic tree - REVERSE faulting (rake ~+90).
+  Applied to: Chelungpu-fault representative (source id=17).
+
+  Structure mirrors the user's image (Reverse column), equal weights WITHIN
+  each branch set:
+
+    BL1 PSR  : 7 primary-SR models (equal 1/7 each)
+      WC1993, Youngs2003, MossRoss2011, Takao2013, Moss2013, Pizza2023,
+      MammarellaEtAl2024
+
+    BL2 PFD  : 6 primary-FD branches (equal 1/6 each)
+      Youngs2003 [AD], Youngs2003 [MD],
+      Takao2013  [AD], Takao2013  [MD],
+      Moss2024   [AD], Moss2024   [MD]
+
+    BL3+BL4  : 3 secondary (SR,FD) pairs (equal 1/3 each)
+      Youngs2003 SR + Youngs2003 FD
+      Takao2014  SR + Youngs2003 FD
+      Visini2025 SR + Visini2025 FD
+
+  Total end-branches for this style = 7 x 6 x 3 = 126.
+-->
+<nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
+  <logicTree logicTreeID="pfdha_tw_reverse">
+
+    <!-- ===================== BL1: PRIMARY-SR (reverse) ===================== -->
+    <logicTreeBranchingLevel branchingLevelID="bl1_rv_psr">
+      <logicTreeBranchSet branchSetID="bs1_rv_psr"
+                          uncertaintyType="fdhaPrimarySRModel"
+                          applyToStyle="reverse">
+        <logicTreeBranch branchID="RV_PSR_WC1993">
+          <uncertaintyModel>WC1993PrimarySR</uncertaintyModel>
+          <uncertaintyWeight>0.1428571428</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="RV_PSR_YOUNGS2003">
+          <uncertaintyModel>
+            [Youngs2003PrimarySR]
+            style = "all"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.1428571428</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="RV_PSR_MOSSROSS2011">
+          <uncertaintyModel>MossRoss2011PrimarySR</uncertaintyModel>
+          <uncertaintyWeight>0.1428571428</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="RV_PSR_TAKAO2013">
+          <uncertaintyModel>Takao2013PrimarySR</uncertaintyModel>
+          <uncertaintyWeight>0.1428571428</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="RV_PSR_MOSS2013">
+          <!-- Moss2013 requires vs30 explicitly; site_params.vs30 is not
+               auto-propagated to primary-SR models, so pass it here. -->
+          <uncertaintyModel>
+            [Moss2013PrimarySR]
+            style = "reverse"
+            vs30 = 521.0
+          </uncertaintyModel>
+          <uncertaintyWeight>0.1428571428</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="RV_PSR_PIZZA2023">
+          <uncertaintyModel>
+            [Pizza2023PrimarySR]
+            style = "reverse"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.1428571428</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="RV_PSR_MAMMARELLA2024">
+          <uncertaintyModel>
+            [MammarellaEtAl2024PrimarySR]
+            style = "reverse"
+            MSR = 1
+            HDD_str = "AGG_R"
+            dip_sigma = 10.0
+            t_d = 2.0
+            Zs_sigma = 2.0
+            t_z = 2.0
+          </uncertaintyModel>
+          <uncertaintyWeight>0.1428571432</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+    <!-- ====== BL2: PRIMARY-FD (reverse) — 6 branches, AD and MD variants ===== -->
+    <logicTreeBranchingLevel branchingLevelID="bl2_rv_pfd">
+      <logicTreeBranchSet branchSetID="bs2_rv_pfd"
+                          uncertaintyType="fdhaPrimaryFDModel"
+                          applyToBranches="RV_PSR_WC1993 RV_PSR_YOUNGS2003 RV_PSR_MOSSROSS2011 RV_PSR_TAKAO2013 RV_PSR_MOSS2013 RV_PSR_PIZZA2023 RV_PSR_MAMMARELLA2024"
+                          applyToStyle="reverse">
+        <logicTreeBranch branchID="RV_PFD_YOUNGS2003_AD">
+          <uncertaintyModel>
+            [Youngs2003PrimaryFD]
+            style = "all"
+            norm_disp_type = "AD"
+            scaling_model = "WC1994"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.1666666667</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="RV_PFD_YOUNGS2003_MD">
+          <uncertaintyModel>
+            [Youngs2003PrimaryFD]
+            style = "all"
+            norm_disp_type = "MD"
+            scaling_model = "WC1994"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.1666666667</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="RV_PFD_TAKAO2013_AD">
+          <uncertaintyModel>
+            [Takao2013PrimaryFD]
+            norm_disp_type = "AD"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.1666666667</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="RV_PFD_TAKAO2013_MD">
+          <uncertaintyModel>
+            [Takao2013PrimaryFD]
+            norm_disp_type = "MD"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.1666666667</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="RV_PFD_MOSS2024_AD">
+          <uncertaintyModel>
+            [Moss2024PrimaryFD]
+            version = "AD"
+            source = "EQS"
+            completeness = "complete"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.1666666667</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="RV_PFD_MOSS2024_MD">
+          <uncertaintyModel>
+            [Moss2024PrimaryFD]
+            version = "MD"
+            source = "EQS"
+            completeness = "complete"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.1666666665</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+    <!-- ============ BL3: SECONDARY-SR (reverse) — 3 branches ============ -->
+    <logicTreeBranchingLevel branchingLevelID="bl3_rv_ssr">
+      <logicTreeBranchSet branchSetID="bs3_rv_ssr"
+                          uncertaintyType="fdhaSecondarySRModel"
+                          applyToBranches="RV_PSR_WC1993 RV_PSR_YOUNGS2003 RV_PSR_MOSSROSS2011 RV_PSR_TAKAO2013 RV_PSR_MOSS2013 RV_PSR_PIZZA2023 RV_PSR_MAMMARELLA2024"
+                          applyToStyle="reverse">
+        <logicTreeBranch branchID="RV_SSR_YOUNGS2003">
+          <uncertaintyModel>
+            [Youngs2003SecondarySR]
+            version = 3
+            style = "all"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.3333333333</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="RV_SSR_TAKAO2014">
+          <uncertaintyModel>
+            [Takao2014SecondarySR]
+            cell_size = 25
+          </uncertaintyModel>
+          <uncertaintyWeight>0.3333333333</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="RV_SSR_VISINI2025">
+          <uncertaintyModel>
+            [Visini2025SecondarySR]
+            style = "reverse"
+            pixel_size = 100
+          </uncertaintyModel>
+          <uncertaintyWeight>0.3333333334</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+    <!-- BL4a: SECONDARY-FD (reverse) — Youngs2003 FD paired with Y or T-SSR -->
+    <logicTreeBranchingLevel branchingLevelID="bl4_rv_sfd_youngs">
+      <logicTreeBranchSet branchSetID="bs4_rv_sfd_youngs"
+                          uncertaintyType="fdhaSecondaryFDModel"
+                          applyToBranches="RV_SSR_YOUNGS2003 RV_SSR_TAKAO2014"
+                          applyToStyle="reverse">
+        <logicTreeBranch branchID="RV_SFD_YOUNGS2003">
+          <uncertaintyModel>
+            [Youngs2003SecondaryFD]
+            percentile = 95
+            style = "all"
+          </uncertaintyModel>
+          <uncertaintyWeight>1.0</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+    <!-- BL4b: SECONDARY-FD (reverse) — Visini2025 FD paired with Visini SSR -->
+    <logicTreeBranchingLevel branchingLevelID="bl4_rv_sfd_visini">
+      <logicTreeBranchSet branchSetID="bs4_rv_sfd_visini"
+                          uncertaintyType="fdhaSecondaryFDModel"
+                          applyToBranches="RV_SSR_VISINI2025"
+                          applyToStyle="reverse">
+        <logicTreeBranch branchID="RV_SFD_VISINI2025">
+          <uncertaintyModel>Visini2025SecondaryFD</uncertaintyModel>
+          <uncertaintyWeight>1.0</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+  </logicTree>
+</nrml>

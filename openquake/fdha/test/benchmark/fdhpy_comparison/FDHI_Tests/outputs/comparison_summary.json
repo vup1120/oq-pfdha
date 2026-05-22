@@ -1,0 +1,173 @@
+{
+  "generated": "2025-11-27T12:15:49.590740",
+  "summary": [
+    {
+      "model_name": "Chiou2025",
+      "variant": "model7",
+      "max_abs_diff_max": 1.1102230246251565e-16,
+      "max_abs_diff_mean": 5.4788349782934155e-17,
+      "max_rel_diff_max": 5.001577972853221e-13,
+      "max_rel_diff_mean": 1.6064536609675998e-13,
+      "tests_passed": 6,
+      "total_tests": 6,
+      "pass_rate": 1.0,
+      "status": "\u2705 PASS"
+    },
+    {
+      "model_name": "Chiou2025",
+      "variant": "model8.2",
+      "max_abs_diff_max": 1.1102230246251565e-16,
+      "max_abs_diff_mean": 7.661695352230898e-17,
+      "max_rel_diff_max": 3.43783719043549e-13,
+      "max_rel_diff_mean": 7.928946431600356e-14,
+      "tests_passed": 6,
+      "total_tests": 6,
+      "pass_rate": 1.0,
+      "status": "\u2705 PASS"
+    },
+    {
+      "model_name": "Kuehn2024",
+      "variant": "normal",
+      "max_abs_diff_max": 3.3306690738754696e-16,
+      "max_abs_diff_mean": 1.9737298215558337e-16,
+      "max_rel_diff_max": 1.1100473793292973e-14,
+      "max_rel_diff_mean": 4.674807697671048e-15,
+      "tests_passed": 9,
+      "total_tests": 9,
+      "pass_rate": 1.0,
+      "status": "\u2705 PASS"
+    },
+    {
+      "model_name": "Kuehn2024",
+      "variant": "reverse",
+      "max_abs_diff_max": 1.1102230246251565e-16,
+      "max_abs_diff_mean": 8.635067969306773e-17,
+      "max_rel_diff_max": 1.2706354910161559e-14,
+      "max_rel_diff_mean": 2.9420686121832214e-15,
+      "tests_passed": 9,
+      "total_tests": 9,
+      "pass_rate": 1.0,
+      "status": "\u2705 PASS"
+    },
+    {
+      "model_name": "Kuehn2024",
+      "variant": "strike-slip",
+      "max_abs_diff_max": 3.3306690738754696e-16,
+      "max_abs_diff_mean": 2.2821251061739327e-16,
+      "max_rel_diff_max": 1.3240347024735303e-14,
+      "max_rel_diff_mean": 4.750320081334987e-15,
+      "tests_passed": 9,
+      "total_tests": 9,
+      "pass_rate": 1.0,
+      "status": "\u2705 PASS"
+    },
+    {
+      "model_name": "Lavrentiadis2023",
+      "variant": "aggregate_no_zero",
+      "max_abs_diff_max": 5.551115123125783e-17,
+      "max_abs_diff_mean": 4.5187137211034745e-17,
+      "max_rel_diff_max": 2.49332734722812e-09,
+      "max_rel_diff_mean": 5.459883005816559e-10,
+      "tests_passed": 9,
+      "total_tests": 9,
+      "pass_rate": 1.0,
+      "status": "\u2705 PASS"
+    },
+    {
+      "model_name": "Lavrentiadis2023",
+      "variant": "aggregate_with_zero",
+      "max_abs_diff_max": 5.551115123125783e-17,
+      "max_abs_diff_mean": 4.44161489994895e-17,
+      "max_rel_diff_max": 2.4933274093947147e-09,
+      "max_rel_diff_mean": 5.4598830298348e-10,
+      "tests_passed": 9,
+      "total_tests": 9,
+      "pass_rate": 1.0,
+      "status": "\u2705 PASS"
+    },
+    {
+      "model_name": "Moss2024",
+      "variant": "d/ad_EQS",
+      "max_abs_diff_max": 5.551115123125783e-16,
+      "max_abs_diff_mean": 3.515706244646329e-16,
+      "max_rel_diff_max": 1.9475612217842555e-11,
+      "max_rel_diff_mean": 3.492037587595537e-12,
+      "tests_passed": 6,
+      "total_tests": 6,
+      "pass_rate": 1.0,
+      "status": "\u2705 PASS"
+    },
+    {
+      "model_name": "Moss2024",
+      "variant": "d/ad_GIRS",
+      "max_abs_diff_max": 5.551115123125783e-16,
+      "max_abs_diff_mean": 2.4054832200211723e-16,
+      "max_rel_diff_max": 5.234889477642794e-11,
+      "max_rel_diff_mean": 1.0988360295647944e-11,
+      "tests_passed": 6,
+      "total_tests": 6,
+      "pass_rate": 1.0,
+      "status": "\u2705 PASS"
+    },
+    {
+      "model_name": "Moss2024",
+      "variant": "d/md_EQS",
+      "max_abs_diff_max": 4.440892098500626e-16,
+      "max_abs_diff_mean": 1.6653345369377348e-16,
+      "max_rel_diff_max": 2.50741694370294e-10,
+      "max_rel_diff_mean": 4.370794565169528e-11,
+      "tests_passed": 6,
+      "total_tests": 6,
+      "pass_rate": 1.0,
+      "status": "\u2705 PASS"
+    },
+    {
+      "model_name": "Moss2024",
+      "variant": "d/md_GIRS",
+      "max_abs_diff_max": 5.551115123125783e-16,
+      "max_abs_diff_mean": 3.1456319031046104e-16,
+      "max_rel_diff_max": 3.3451294120332314e-10,
+      "max_rel_diff_mean": 8.441577468378973e-11,
+      "tests_passed": 6,
+      "total_tests": 6,
+      "pass_rate": 1.0,
+      "status": "\u2705 PASS"
+    },
+    {
+      "model_name": "Petersen2011",
+      "variant": "elliptical",
+      "max_abs_diff_max": 0.0,
+      "max_abs_diff_mean": 0.0,
+      "max_rel_diff_max": 0.0,
+      "max_rel_diff_mean": 0.0,
+      "tests_passed": 9,
+      "total_tests": 9,
+      "pass_rate": 1.0,
+      "status": "\u2705 PASS"
+    },
+    {
+      "model_name": "Petersen2011",
+      "variant": "quadratic",
+      "max_abs_diff_max": 0.0,
+      "max_abs_diff_mean": 0.0,
+      "max_rel_diff_max": 0.0,
+      "max_rel_diff_mean": 0.0,
+      "tests_passed": 9,
+      "total_tests": 9,
+      "pass_rate": 1.0,
+      "status": "\u2705 PASS"
+    },
+    {
+      "model_name": "Youngs2003",
+      "variant": "D/AD",
+      "max_abs_diff_max": 1.42601053187974e-09,
+      "max_abs_diff_mean": 1.4260104053172064e-09,
+      "max_rel_diff_max": 1.3205379704338592e-05,
+      "max_rel_diff_mean": 2.6695890155737334e-06,
+      "tests_passed": 12,
+      "total_tests": 12,
+      "pass_rate": 1.0,
+      "status": "\u2705 PASS"
+    }
+  ]
+}

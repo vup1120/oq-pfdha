@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<nrml
+xmlns="http://openquake.org/xmlns/nrml/0.5"
+xmlns:gml="http://www.opengis.net/gml"
+>
+    <sourceModel
+    name="Example Source Model Containing Characteristic Fault Source"
+    >
+        <sourceGroup
+        name="group 1"
+        tectonicRegion="Active Shallow Crust"
+        >
+            <characteristicFaultSource
+            id="1"
+            name="Uto Segment"
+            tectonicRegion="Active Shallow Crust"
+            >
+                <incrementalMFD
+                binWidth="1.0000000E-01"
+                minMag="6.500000E+00"
+                >
+                    <occurRates>
+                        18.9E-05
+                    </occurRates>
+                </incrementalMFD>
+                <rake>
+                    0.0000000E+01
+                </rake>
+                <surface>
+                    <simpleFaultGeometry>
+                        <gml:LineString>
+                             <gml:posList>
+                                130.8153 32.7675 
+                                130.7656 32.7474
+                                130.6035 32.6817 
+                            </gml:posList>
+                        </gml:LineString>
+                        <dip>
+                            6.0000000E+01
+                        </dip>
+                        <upperSeismoDepth>
+                            0.0000000E+00
+                        </upperSeismoDepth>
+                        <lowerSeismoDepth>
+                            1.4000000E+01
+                        </lowerSeismoDepth>
+                    </simpleFaultGeometry>
+                </surface>
+            </characteristicFaultSource>
+        </sourceGroup>
+    </sourceModel>
+</nrml>

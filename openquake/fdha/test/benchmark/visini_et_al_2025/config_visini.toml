@@ -1,0 +1,37 @@
+name = "Visini_secondary_example"
+
+[erf]
+rupture_mesh_spacing = 1.0
+width_of_mfd_bin = 0.1
+
+[calculation]
+fdha_logic_tree_file = "config_visini_fdha_logic_tree.xml"
+source_model_logic_tree_file = "config_visini_source_model_logic_tree.xml"
+
+[rank1p5_ruptures]
+[[rank1p5_ruptures.trace]]
+name = "Sibari_splay_A"
+source_id = 6
+
+[rank1p5_ruptures.trace.geometry]
+type = "Line"
+coords = [ [ 16.338416, 39.640532,], [ 16.351064, 39.653699,], [ 16.36043, 39.66123,],]
+[[rank1p5_ruptures.trace]]
+name = "Sibari_splay_B"
+source_id = 6
+
+[rank1p5_ruptures.trace.geometry]
+type = "Line"
+coords = [ [ 16.376154, 39.668973,], [ 16.40335, 39.682098,], [ 16.420735, 39.689956,], [ 16.446197, 39.698278,], [ 16.469518, 39.709028,],]
+
+[site_location]
+corner_points = [ [ 16.15926958, 39.65679362,], [ 16.16603463, 39.64663033,], [ 16.16567223, 39.64647972,], [ 16.15890012, 39.65663987,],]
+vs30 = 600
+
+[parameters]
+case = "case3"
+near_far_threshold_km = 0.2
+r_threshold_km = 0.1
+
+[calculation.displacement_measure_levels]
+FD = [ 0.0001, 0.001, 0.005, 0.01, 0.015, 0.03, 0.05, 0.075, 0.1, 0.15, 0.3, 0.5, 0.75, 1.0, 3.0, 5.0, 7.5, 10.0,]
