@@ -1,0 +1,48 @@
+# under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# OpenQuake is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
+
+"""
+Module :mod:`openquake.hazardlib.fdha.well` implements
+model of Wells and Coppersmith (1994) into :class:`WC1994Primary`
+"""
+
+import numpy as np
+from openquake.fdha.primary_surf_rup.base import BasePrimarySurfRup, BaseSecondarySurfDispl
+
+class WC1993PrimarySR(BasePrimarySurfRup):
+    """Principal surface-rupture probability model of Wells and Coppersmith (1993).
+
+    Logistic model of the probability of principal surface rupture as a
+    function of magnitude, applicable to all faulting styles.
+
+    References
+    ----------
+    Wells, D.L., and Coppersmith, K.J. (1993). Likelihood of surface rupture
+    as a function of magnitude.
+    """
+
+    def get_prob(
+        self,
+        mag: float
+    ) -> float:
+        """
+        Model of Wells and Coppersmith (1993) for the probability of surface
+        rupture for rupture with all mechanism.
+
+        :param mag: float or array-like, earthquake magnitude(s)
+        :return: probability or array of probabilities
+        """
+        m = np.asarray(mag, dtype=float)
+        fx = -12.51 + 2.053 * m
+        prob = np.exp(fx) / (1.0 + np.exp(fx))
+        # To handle both single‐value and vectorized calls.
+        return prob.item() if prob.shape == () else prob

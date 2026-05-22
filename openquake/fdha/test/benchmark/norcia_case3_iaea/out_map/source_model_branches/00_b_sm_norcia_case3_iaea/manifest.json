@@ -1,0 +1,68 @@
+{
+  "advisory_warnings": [],
+  "branches": [
+    {
+      "curve_file": "branches/branch_0000.h5",
+      "fingerprint": "0f865c00d9c2f3f2",
+      "index": 0,
+      "models": {
+        "primary_surf_displ": "Youngs2003PrimaryFD",
+        "primary_surf_rup": "Youngs2003PrimarySR",
+        "secondary_surf_displ": "Youngs2003SecondaryFD",
+        "secondary_surf_rup": "Youngs2003SecondarySR"
+      },
+      "source_id": "MVFS,NFS",
+      "style": "normal",
+      "weight": 1.0
+    },
+    {
+      "curve_file": "branches/branch_0001.h5",
+      "fingerprint": "d0788bd8ed4845dc",
+      "index": 1,
+      "models": {
+        "primary_surf_displ": "Youngs2003PrimaryFD",
+        "primary_surf_rup": "Youngs2003PrimarySR",
+        "secondary_surf_displ": "Visini2025SecondaryFD",
+        "secondary_surf_rup": "Visini2025SecondarySR"
+      },
+      "source_id": "MVFS,NFS",
+      "style": "normal",
+      "weight": 1.0
+    }
+  ],
+  "fractile_quantiles": [
+    0.05,
+    0.16,
+    0.5,
+    0.84,
+    0.95
+  ],
+  "grid": {
+    "max_distance_km": 50.0,
+    "n_active_grid": 3782,
+    "n_sites_total": 3910,
+    "n_trace": 128,
+    "region": "13.05 42.65, 13.35 42.65, 13.35 42.95, 13.05 42.95",
+    "spacing": 0.005
+  },
+  "layout": {
+    "aggregate_dir": "aggregate/",
+    "branches_dir": "branches/",
+    "displacement_map_fractile_csvs": [
+      "aggregate/displacement_map_p05.csv",
+      "aggregate/displacement_map_p16.csv",
+      "aggregate/displacement_map_p50.csv",
+      "aggregate/displacement_map_p84.csv",
+      "aggregate/displacement_map_p95.csv"
+    ],
+    "displacement_map_mean_csv": "aggregate/displacement_map_mean.csv",
+    "rates_fractiles_h5": "aggregate/rates_fractiles.h5",
+    "rates_mean_h5": "aggregate/rates_mean.h5"
+  },
+  "mode": "hazard_map",
+  "per_source_ids": [
+    "MVFS,NFS"
+  ],
+  "per_source_mean_sum_strategy": "total_mean = sum_over_sources(per_source_LT_weighted_mean); each source's weights are normalised within its own group.",
+  "return_period": 100000.0
+}

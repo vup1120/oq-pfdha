@@ -1,0 +1,26 @@
+name = "kumamoto_sensitivity_case2_curve_site2"
+
+[erf]
+rupture_mesh_spacing = 1.0
+width_of_mfd_bin = 0.1
+
+[calculation]
+fdha_logic_tree_file = "kumamoto_case2_Chiou2025_curve_site2_fdha_logic_tree.xml"
+source_model_logic_tree_file = "kumamoto_case2_Chiou2025_curve_site2_source_model_logic_tree.xml"
+
+[geometry]
+region = "130.70 32.70, 130.83 32.70, 130.83 32.82, 130.70 32.82"
+region_grid_spacing = 0.01
+max_distance_km = 6.0
+
+[site_location]
+latitude = 32.7441
+longitude = 130.7575
+vs30 = 600
+
+[parameters]
+r_threshold_km = 0.5
+return_period = 100000.0
+
+[calculation.displacement_measure_levels]
+FD = [ 0.0001, 0.001, 0.005, 0.01, 0.015, 0.03, 0.05, 0.075, 0.1, 0.15, 0.3, 0.5, 0.75, 1.0, 3.0, 5.0, 7.5, 10.0,]

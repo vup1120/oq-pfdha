@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nrml xmlns:gml="http://www.opengis.net/gml"
+      xmlns="http://openquake.org/xmlns/nrml/0.4">
+  <logicTree logicTreeID="lt_sm_kumamoto_case2_Chiou2025_curve">
+    <logicTreeBranchSet uncertaintyType="sourceModel" branchSetID="bs_sm_kumamoto_case2_Chiou2025_curve">
+      <logicTreeBranch branchID="b_sm_kumamoto_case2_Chiou2025_curve">
+        <uncertaintyModel>../source/source_model_kumamoto_uto.xml</uncertaintyModel>
+        <uncertaintyWeight>1.0</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
+  </logicTree>
+</nrml>

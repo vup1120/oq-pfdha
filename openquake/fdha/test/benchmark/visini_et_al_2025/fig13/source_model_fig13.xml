@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<nrml xmlns="http://openquake.org/xmlns/nrml/0.5" xmlns:gml="http://www.opengis.net/gml">
+  <sourceModel name="Fig13 Source Model">
+    <sourceGroup name="group 1" tectonicRegion="Active Shallow Crust">
+      <characteristicFaultSource id="6" name="PF_Fig13" tectonicRegion="Active Shallow Crust">
+        <incrementalMFD binWidth="1.0000000E-01" minMag="7.000000E+00">
+          <occurRates>
+            1.0
+          </occurRates>
+        </incrementalMFD>
+        <rake>
+          -9.0000000E+01
+        </rake>
+        <surface>
+          <simpleFaultGeometry>
+            <gml:LineString>
+              <!-- ~40 km long, roughly E-W; latitude chosen so site at ~2 km to the north (adjust if needed) -->
+              <gml:posList>
+                16.460 39.633
+                16.385 39.633
+                16.320 39.633
+                16.255 39.633
+                16.190 39.633
+                16.125 39.633
+                16.060 39.633
+                15.995 39.633
+              </gml:posList>
+            </gml:LineString>
+            <dip>3.6000000E+01</dip>
+            <upperSeismoDepth>0.0000000E+00</upperSeismoDepth>
+            <lowerSeismoDepth>1.9000000E+01</lowerSeismoDepth>
+          </simpleFaultGeometry>
+        </surface>
+      </characteristicFaultSource>
+    </sourceGroup>
+  </sourceModel>
+</nrml>

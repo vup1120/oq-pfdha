@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Logic Tree Validation (reverse) demo - blend_50_50.
+
+    One Primary-SR branch (Pizza2023PrimarySR, weight=1.0) and TWO Primary-FD
+    branches (Youngs2003PrimaryFD vs Moss2024PrimaryFD) with equal 0.5
+    weights.
+
+    FDLT-101 (mixed displacement definitions within one FDM branch set)
+    status: Youngs2003PrimaryFD is annotated in
+    openquake/fdha/logic_tree/model_metadata.yaml with
+    displacement_definition = D_p_V (cited from Sarmiento et al. 2025,
+    Table 1 YEA03). Moss2024PrimaryFD is absent from the metadata file,
+    which the validator treats as UNKNOWN and SKIPS - no warning fires.
+    If a primary-source citation for Moss2024PrimaryFD is added later with
+    a displacement_definition different from D_p_V, FDLT-101 will warn.
+-->
+<nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
+  <logicTree logicTreeID="pfdha_validation_rv_blend_50_50">
+
+    <logicTreeBranchingLevel branchingLevelID="bl1_rv_psr">
+      <logicTreeBranchSet branchSetID="bs1_rv_psr"
+                          uncertaintyType="fdhaPrimarySRModel"
+                          applyToStyle="reverse">
+        <logicTreeBranch branchID="RV_PSR_PIZZA2023">
+          <uncertaintyModel>
+            [Pizza2023PrimarySR]
+            style = "all"
+          </uncertaintyModel>
+          <uncertaintyWeight>1.0</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+    <logicTreeBranchingLevel branchingLevelID="bl2_rv_pfd">
+      <logicTreeBranchSet branchSetID="bs2_rv_pfd"
+                          uncertaintyType="fdhaPrimaryFDModel"
+                          applyToBranches="RV_PSR_PIZZA2023"
+                          applyToStyle="reverse">
+        <logicTreeBranch branchID="RV_PFD_YOUNGS2003">
+          <uncertaintyModel>
+            [Youngs2003PrimaryFD]
+            style = "all"
+            norm_disp_type = "AD"
+            scaling_model = "WC1994"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.5</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="RV_PFD_MOSS2024">
+          <uncertaintyModel>
+            [Moss2024PrimaryFD]
+            style = "reverse"
+            version = "AD"
+            source = "EQS"
+            completeness = "all"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.5</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+  </logicTree>
+</nrml>

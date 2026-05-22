@@ -1,0 +1,92 @@
+# --------------------------------------------------------
+# Visini et al. (2025) Model Configuration
+# TOML for Calabria scenario including Rank 1.5 splays
+# --------------------------------------------------------
+
+# OpenQuake Engine compatible sections
+[erf]
+rupture_mesh_spacing = 1.0
+width_of_mfd_bin = 0.1
+
+[calculation]
+source_model_file = "source_model_Calabria_final_Sibari_all.xml"
+
+# --------------------------------------------------------
+# 2. Define all Rank 1.5 rupture traces
+# --------------------------------------------------------
+[rank1p5_ruptures]
+
+[[rank1p5_ruptures.trace]]
+name      = "Sibari_splay_A"
+source_id = 6
+geometry = { type = "Line", coords = [
+    [16.338416, 39.640532],
+    [16.351064, 39.653699],
+    [16.360430, 39.661230],
+] }
+
+[[rank1p5_ruptures.trace]]
+name      = "Sibari_splay_B"
+source_id = 6
+geometry = { type = "Line", coords = [
+    [16.376154, 39.668973],
+    [16.403350, 39.682098],
+    [16.420735, 39.689956],
+    [16.446197, 39.698278],
+    [16.469518, 39.709028],
+] }
+
+# --------------------------------------------------------
+# 3. Scenario metadata
+# --------------------------------------------------------
+name = "Calabria_Visini2025_Scenario"
+
+
+[site_location]
+corner_points = [
+    [16.15926958, 39.65679362],
+    [16.16603463, 39.64663033],
+    [16.16567223, 39.64647972],
+    [16.15890012, 39.65663987]
+]
+vs30      = 600
+
+[parameters]
+target_displacement = [0.0001, 0.001, 0.005, 0.01, 0.015, 0.03, 0.05, 0.075, 0.1, 0.15, 0.3, 0.5, 0.75, 1.0, 3.0, 5.0, 7.5, 10.0]
+case = "case1"
+# --------------------------------------------------------
+# 4. Primary fault rupture & displacement models
+# --------------------------------------------------------
+[models.primary_surf_rup]
+type = "Moss2013PrimarySR"
+
+[models.primary_surf_rup.parameters]
+style = "normal"
+vs30  = 600
+
+[models.primary_surf_displ]
+type = "Moss2024PrimaryFD"
+
+[models.primary_surf_displ.parameters]
+version      = "MD"
+source       = "EQS"
+completeness = "all"
+
+# --------------------------------------------------------
+# 5. Secondary (Rank 2) rupture & displacement models
+# --------------------------------------------------------
+[models.secondary_surf_rup]
+type = "Visini2025SecondarySR"
+
+[models.secondary_surf_rup.parameters]
+style = "normal"
+pixel_size = 50
+rupture_traces = ["Sibari_splay_A", "Sibari_splay_B"]
+
+[models.secondary_surf_displ]
+type = "Visini2025SecondaryFD"
+
+[models.secondary_surf_displ.parameters]
+style = "normal"
+rupture_traces = ["Sibari_splay_A", "Sibari_splay_B"]
+

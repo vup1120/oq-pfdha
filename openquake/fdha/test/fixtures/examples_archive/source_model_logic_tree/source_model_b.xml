@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Example source model B: same fault as source_model_a.xml but with
+    aValue = 4.5 (higher seismicity branch).  This is the typical
+    "epistemic uncertainty in seismicity rate" scenario that the SMLT
+    feature is designed to express.
+-->
+<nrml xmlns="http://openquake.org/xmlns/nrml/0.5"
+      xmlns:gml="http://www.opengis.net/gml">
+  <sourceModel name="Example - source model B (high aValue)">
+    <sourceGroup name="g" tectonicRegion="Active Shallow Crust">
+      <simpleFaultSource id="3" name="Strike-slip fault"
+                         tectonicRegion="Active Shallow Crust">
+        <simpleFaultGeometry>
+          <gml:LineString>
+            <gml:posList>
+              16.1870362931 39.6974567774
+              16.1505303713 39.6274955882
+              16.1455213236 39.6196231258
+              16.1408996159 39.5840858442
+            </gml:posList>
+          </gml:LineString>
+          <dip>90.0</dip>
+          <upperSeismoDepth>0.0</upperSeismoDepth>
+          <lowerSeismoDepth>15.0</lowerSeismoDepth>
+        </simpleFaultGeometry>
+        <magScaleRel>WC1994</magScaleRel>
+        <ruptAspectRatio>2.0</ruptAspectRatio>
+        <truncGutenbergRichterMFD aValue="4.5" bValue="0.9"
+                                  maxMag="7.5" minMag="6.5"/>
+        <rake>0.0</rake>
+      </simpleFaultSource>
+    </sourceGroup>
+  </sourceModel>
+</nrml>

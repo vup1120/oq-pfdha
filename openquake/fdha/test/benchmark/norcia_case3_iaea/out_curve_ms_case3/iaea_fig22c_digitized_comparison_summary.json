@@ -1,0 +1,164 @@
+[
+  {
+    "model": "Y03",
+    "curve": "total",
+    "target_rate": 1e-06,
+    "reference_D_cm": 12.35542553258347,
+    "computed_D_cm": 13.961780238610087,
+    "computed_minus_reference_cm": 1.6063547060266181,
+    "computed_over_reference_D": 1.1300120907847628
+  },
+  {
+    "model": "Y03",
+    "curve": "total",
+    "target_rate": 1e-07,
+    "reference_D_cm": 58.42195514601066,
+    "computed_D_cm": 61.124496894689514,
+    "computed_minus_reference_cm": 2.702541748678854,
+    "computed_over_reference_D": 1.0462590089962678
+  },
+  {
+    "model": "Y03",
+    "curve": "total",
+    "target_rate": 1e-08,
+    "reference_D_cm": 151.8835172014246,
+    "computed_D_cm": 160.98906042784031,
+    "computed_minus_reference_cm": 9.105543226415705,
+    "computed_over_reference_D": 1.0599508320204367
+  },
+  {
+    "model": "Y03",
+    "curve": "MVFS",
+    "target_rate": 1e-06,
+    "reference_D_cm": 1.4086209117361446,
+    "computed_D_cm": 3.203807765287121,
+    "computed_minus_reference_cm": 1.7951868535509765,
+    "computed_over_reference_D": 2.274428654717602
+  },
+  {
+    "model": "Y03",
+    "curve": "MVFS",
+    "target_rate": 1e-07,
+    "reference_D_cm": 54.769345287692396,
+    "computed_D_cm": 52.700571829251516,
+    "computed_minus_reference_cm": -2.06877345844088,
+    "computed_over_reference_D": 0.9622275298787301
+  },
+  {
+    "model": "Y03",
+    "curve": "MVFS",
+    "target_rate": 1e-08,
+    "reference_D_cm": 145.0458853562562,
+    "computed_D_cm": 155.77675052931968,
+    "computed_minus_reference_cm": 10.730865173063478,
+    "computed_over_reference_D": 1.0739825548770772
+  },
+  {
+    "model": "Y03",
+    "curve": "NFS",
+    "target_rate": 1e-06,
+    "reference_D_cm": 7.603747172644368,
+    "computed_D_cm": 8.59563384658729,
+    "computed_minus_reference_cm": 0.991886673942922,
+    "computed_over_reference_D": 1.1304470876558579
+  },
+  {
+    "model": "Y03",
+    "curve": "NFS",
+    "target_rate": 1e-07,
+    "reference_D_cm": 30.97183720268832,
+    "computed_D_cm": 33.333786025752474,
+    "computed_minus_reference_cm": 2.3619488230641537,
+    "computed_over_reference_D": 1.0762611790707444
+  },
+  {
+    "model": "Y03",
+    "curve": "NFS",
+    "target_rate": 1e-08,
+    "reference_D_cm": 79.95213023482066,
+    "computed_D_cm": 81.7067276462038,
+    "computed_minus_reference_cm": 1.7545974113831448,
+    "computed_over_reference_D": 1.02194559927584
+  },
+  {
+    "model": "V24",
+    "curve": "total",
+    "target_rate": 1e-06,
+    "reference_D_cm": NaN,
+    "computed_D_cm": NaN,
+    "computed_minus_reference_cm": NaN,
+    "computed_over_reference_D": NaN
+  },
+  {
+    "model": "V24",
+    "curve": "total",
+    "target_rate": 1e-07,
+    "reference_D_cm": 10.27586007294069,
+    "computed_D_cm": 8.81522933085404,
+    "computed_minus_reference_cm": -1.46063074208665,
+    "computed_over_reference_D": 0.8578580545357062
+  },
+  {
+    "model": "V24",
+    "curve": "total",
+    "target_rate": 1e-08,
+    "reference_D_cm": 35.243982768669,
+    "computed_D_cm": 30.234429910447687,
+    "computed_minus_reference_cm": -5.009552858221312,
+    "computed_over_reference_D": 0.8578607619035986
+  },
+  {
+    "model": "V24",
+    "curve": "MVFS",
+    "target_rate": 1e-06,
+    "reference_D_cm": NaN,
+    "computed_D_cm": NaN,
+    "computed_minus_reference_cm": NaN,
+    "computed_over_reference_D": NaN
+  },
+  {
+    "model": "V24",
+    "curve": "MVFS",
+    "target_rate": 1e-07,
+    "reference_D_cm": NaN,
+    "computed_D_cm": NaN,
+    "computed_minus_reference_cm": NaN,
+    "computed_over_reference_D": NaN
+  },
+  {
+    "model": "V24",
+    "curve": "MVFS",
+    "target_rate": 1e-08,
+    "reference_D_cm": 8.3743890640339,
+    "computed_D_cm": 3.8268649000299626,
+    "computed_minus_reference_cm": -4.5475241640039386,
+    "computed_over_reference_D": 0.45697242757271433
+  },
+  {
+    "model": "V24",
+    "curve": "NFS",
+    "target_rate": 1e-06,
+    "reference_D_cm": NaN,
+    "computed_D_cm": NaN,
+    "computed_minus_reference_cm": NaN,
+    "computed_over_reference_D": NaN
+  },
+  {
+    "model": "V24",
+    "curve": "NFS",
+    "target_rate": 1e-07,
+    "reference_D_cm": NaN,
+    "computed_D_cm": 8.524365018375699,
+    "computed_minus_reference_cm": NaN,
+    "computed_over_reference_D": NaN
+  },
+  {
+    "model": "V24",
+    "curve": "NFS",
+    "target_rate": 1e-08,
+    "reference_D_cm": NaN,
+    "computed_D_cm": 29.423937243831876,
+    "computed_minus_reference_cm": NaN,
+    "computed_over_reference_D": NaN
+  }
+]

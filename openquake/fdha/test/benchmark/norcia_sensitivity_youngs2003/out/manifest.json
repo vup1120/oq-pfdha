@@ -1,0 +1,36 @@
+{
+  "advisory_warnings": [],
+  "branches": [
+    {
+      "combined_branch_weight": 1.0,
+      "curve_file": "hazard_curves/branch_0000.csv",
+      "fdha_branch_id": "B2_PRIMARY_SURF_DISPL|B1_PRIMARY_SURF_RUP|B4_SECONDARY_SURF_DISPL|B3_SECONDARY_SURF_RUP",
+      "fdha_branch_weight": 1.0,
+      "fdha_models": {
+        "primary_surf_displ": "Youngs2003PrimaryFD",
+        "primary_surf_rup": "Youngs2003PrimarySR",
+        "secondary_surf_displ": "Youngs2003SecondaryFD",
+        "secondary_surf_rup": "Youngs2003SecondarySR"
+      },
+      "fdha_source_id": "1",
+      "fdha_style": "normal",
+      "global_index": 0,
+      "source_model_branch_id": "b_sm_config_youngs2003_AD_85",
+      "source_model_file": "/home/ychen/GIT/pfdha/openquake/fdha/test/benchmark/norcia_sensitivity_youngs2003/source_model_norcia.xml",
+      "source_model_uncertainties": [],
+      "source_model_weight": 1.0
+    }
+  ],
+  "mode": "hazard_curve",
+  "n_realizations": 1,
+  "source_model_branches": [
+    {
+      "branch_id": "b_sm_config_youngs2003_AD_85",
+      "n_fdha_branches": 1,
+      "source_model_file": "/home/ychen/GIT/pfdha/openquake/fdha/test/benchmark/norcia_sensitivity_youngs2003/source_model_norcia.xml",
+      "weight": 1.0
+    }
+  ],
+  "source_model_logic_tree_file": "config_youngs2003_AD_85_source_model_logic_tree.xml",
+  "total_combined_weight": 1.0
+}

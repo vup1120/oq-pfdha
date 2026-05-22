@@ -1,0 +1,320 @@
+# Corrected content for kuehn2024.py (Attempt 4)
+
+# -*- coding: utf-8 -*-
+# vim: tabstop=4 shiftwidth=4 softtabstop=4
+#
+# Copyright (C) 2012-2024 GEM Foundation
+#
+# OpenQuake is free software: you can redistribute it and/or modify it
+# under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# OpenQuake is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
+
+"""
+Module :mod:`openquake.hazardlib.fdha.kuehn2024` implements
+model of Kuehn et al. (2024) into :class:`Kuehn2024PrimaryFD`
+"""
+
+
+import numpy as np
+import pandas as pd
+from scipy import stats
+from openquake.fdha.primary_surf_displ.base import BasePrimarySurfDispl
+from openquake.fdha.primary_surf_displ.kuehn2024.load_data import DATA as DATA_COEFFICIENTS
+
+
+
+# Model constants
+MAG_BREAK = 7.0
+DELTA = 0.1
+
+class Kuehn2024PrimaryFD(BasePrimarySurfDispl):
+    """Principal fault-displacement model of Kuehn et al. (2024).
+
+    Bayesian hierarchical model of principal fault displacement as a function
+    of magnitude, normalized along-strike position, and faulting style, with
+    optional epistemic-uncertainty sampling over the posterior coefficients.
+
+    References
+    ----------
+    Kuehn, N.M., et al. (2024). A fault displacement model for probabilistic
+    fault displacement hazard analysis.
+    """
+
+    def get_prob(self, d, X_L_ratio, mag, style, folded=True,
+                 epistemic_uncertainty=True, coefficient_type=None):
+        """
+        Calculate the probability of exceeding displacement thresholds [m] for Kuehn et al. (2024).
+        """
+        style = style.lower()
+        valid_styles = ['strike-slip', 'reverse', 'normal']
+        if style not in valid_styles:
+            raise ValueError(f"Invalid style '{style}'. Accepted values are: {', '.join(valid_styles)}")
+
+        # Normalize inputs (allow vectorized X_L_ratio and d)
+        mag_arr = np.atleast_1d(mag)
+        if mag_arr.size != 1:
+            raise ValueError("Only single values allowed for mag")
+        current_mag = float(mag_arr[0])
+        x_arr = np.atleast_1d(X_L_ratio).astype(float)
+        d_arr = np.atleast_1d(d).astype(float)
+
+        # Map coefficient_type if provided
+        if coefficient_type is not None:
+            ct = str(coefficient_type).lower()
+            epistemic_uncertainty = (ct == 'full')
+
+        if epistemic_uncertainty:
+            all_coeffs_df = DATA_COEFFICIENTS[style]['full']
+            if not isinstance(all_coeffs_df, pd.DataFrame):
+                raise TypeError(f"Expected pandas DataFrame for full coefficients for style '{style}'.")
+
+            all_prob_folded = []
+            all_prob_site = []
+
+            for _, coeffs_row_series in all_coeffs_df.iterrows():
+                # Parameters for position u1 (at x_arr)
+                _, lam, mean_site, std_site, _, _ = self._calc_params(
+                    coeffs_row_series, current_mag, x_arr, style)
+                # Parameters for complementary position u2 (at 1 - x_arr)
+                # For folding: calculate at both x and 1-x, then average
+                x_comp = 1.0 - x_arr
+                _, _, mean_comp, std_comp, _, _ = self._calc_params(
+                    coeffs_row_series, current_mag, x_comp, style)
+
+                # Transform displacements (broadcast to (n_displ, n_sites))
+                if lam == 0:
+                    trans_displ = np.log(d_arr)[:, None]
+                else:
+                    trans_displ = ((d_arr[:, None] ** lam) - 1.0) / lam
+
+                # Gaussian exceedance, broadcast loc/scale over sites
+                prob_site_single = 1.0 - stats.norm.cdf(
+                    trans_displ, loc=np.asarray(mean_site)[None, :], scale=np.asarray(std_site)[None, :]
+                )
+                prob_comp_single = 1.0 - stats.norm.cdf(
+                    trans_displ, loc=np.asarray(mean_comp)[None, :], scale=np.asarray(std_comp)[None, :]
+                )
+                prob_folded_single = 0.5 * (prob_site_single + prob_comp_single)
+
+                all_prob_folded.append(prob_folded_single)
+                all_prob_site.append(prob_site_single)
+
+            # Stack along model axis -> (n_models, n_displ, n_sites)
+            all_prob_folded_arr = np.stack(all_prob_folded, axis=0)
+            all_prob_site_arr = np.stack(all_prob_site, axis=0)
+
+            out = all_prob_folded_arr if folded else all_prob_site_arr
+            # If single site, drop the site axis to match historical tests: (n_models, n_displ)
+            if x_arr.size == 1 and out.ndim == 3 and out.shape[-1] == 1:
+                return out[:, :, 0]
+            return out
+
+        else: # Not epistemic_uncertainty
+            mean_coeffs_data = DATA_COEFFICIENTS[style]['mean']
+            
+            if isinstance(mean_coeffs_data, pd.DataFrame):
+                if not mean_coeffs_data.empty:
+                    if 'median' in mean_coeffs_data.index:
+                        single_coeffs_series = mean_coeffs_data.loc['median']
+                    else:
+                        single_coeffs_series = mean_coeffs_data.iloc[0]
+                else:
+                    raise ValueError(
+                        f"Mean coefficients DataFrame for style '{style}' is empty."
+                    )
+            elif isinstance(mean_coeffs_data, pd.Series):
+                single_coeffs_series = mean_coeffs_data
+            else: 
+                raise TypeError(
+                    f"Mean coefficients for style '{style}' must be a pandas Series or a DataFrame. "
+                    f"Got {type(mean_coeffs_data)}."
+                )
+
+            if not isinstance(single_coeffs_series, pd.Series):
+                 raise TypeError(
+                     f"Failed to derive a pandas Series for mean coefficients for style '{style}'. "
+                     f"Got type: {type(single_coeffs_series)}."
+                 )
+
+            # Parameters at all sites
+            _, lam, mean_site, std_site, _, _ = self._calc_params(
+                single_coeffs_series, current_mag, x_arr, style
+            )
+            # Calculate complementary position: simply 1 - x
+            # (no symmetric folding - the folded probability averages x and 1-x)
+            x_comp = 1.0 - x_arr
+            _, _, mean_comp, std_comp, _, _ = self._calc_params(
+                single_coeffs_series, current_mag, x_comp, style
+            )
+
+            # Transform displacements -> (n_displ, n_sites)
+            if lam == 0:
+                trans_displ = np.log(d_arr)[:, None]
+            else:
+                trans_displ = ((d_arr[:, None] ** lam) - 1.0) / lam
+
+            prob_site = 1.0 - stats.norm.cdf(
+                trans_displ, loc=np.asarray(mean_site)[None, :], scale=np.asarray(std_site)[None, :]
+            )
+            prob_comp = 1.0 - stats.norm.cdf(
+                trans_displ, loc=np.asarray(mean_comp)[None, :], scale=np.asarray(std_comp)[None, :]
+            )
+            prob_folded = 0.5 * (prob_site + prob_comp)
+
+            # Select output based on folded parameter
+            out = prob_folded if folded else prob_site
+
+            # If single site, return (n_displ,) for backward-compatibility tests
+            if x_arr.size == 1 and out.shape[1] == 1:
+                return out[:, 0]
+            return out.T
+
+
+    def _calc_params(self, coeffs, mag, X_L_ratio, style):
+        style = style.lower()
+        func_map = {
+            'strike-slip': self._calc_strike_slip,
+            'reverse': self._calc_reverse,
+            'normal': self._calc_normal}
+
+        return func_map[style](coeffs, mag, X_L_ratio)
+
+    def _calc_strike_slip(self, coeffs, mag, X_L_ratio):
+        mu = self._calc_mean(coeffs, mag, X_L_ratio)
+        std_mode = self._calc_std_mode_bilinear(coeffs, mag)
+        std_within = self._calc_std_within(coeffs, X_L_ratio)
+        
+        std_total = np.sqrt(std_mode**2 + std_within**2)
+        
+        lam = coeffs['lambda']
+        model_id = coeffs.get('model_id', 1) 
+        return model_id, lam, mu, std_total, std_within, std_mode
+
+    def _calc_normal(self, coeffs, mag, X_L_ratio):
+        mu = self._calc_mean(coeffs, mag, X_L_ratio)
+        std_mode = self._calc_std_mode_sigmoid(coeffs, mag)
+
+        # Within-event sigma is constant across sites for normal style; vectorize to sites
+        sigma_val = float(coeffs['sigma'])
+        std_within = np.full(mu.shape, sigma_val, dtype=float)
+
+        std_total = np.sqrt(std_mode**2 + std_within**2)
+
+        lam = coeffs['lambda']
+        model_id = coeffs.get('model_id', 1)
+        return model_id, lam, mu, std_total, std_within, std_mode
+
+
+    def _calc_reverse(self, coeffs, mag, X_L_ratio):
+        mu = self._calc_mean(coeffs, mag, X_L_ratio)
+        std_within = self._calc_std_within(coeffs, X_L_ratio)
+        
+        std_mode = float(coeffs['s_m,r']) 
+        
+        std_total = np.sqrt(std_mode**2 + std_within**2) 
+
+        lam = coeffs['lambda'] 
+        model_id = coeffs.get('model_id', 1)
+        return model_id, lam, mu, std_total, std_within, std_mode
+
+    # Helper functions now support vectorized X_L_ratio (arrays)
+    def _calc_mean(self, coeffs, mag, X_L_ratio):
+        mode = self._calc_mode(coeffs, mag)  # scalar
+        alpha = float(coeffs['alpha'])
+        beta = float(coeffs['beta'])
+        gamma = float(coeffs['gamma'])
+
+        x = np.atleast_1d(X_L_ratio).astype(float)
+
+        denom = alpha + beta
+        if denom != 0.0:
+            term_powers_ab = ((alpha / denom) ** alpha) * ((beta / denom) ** beta)
+        else:
+            term_powers_ab = 0.0
+
+        a = mode - gamma * term_powers_ab
+        term1 = np.power(x, alpha)
+        term2 = np.power(1.0 - x, beta)
+        mu_val = a + gamma * term1 * term2
+        return mu_val
+
+    def _calc_mode(self, coeffs, mag):
+        val = (coeffs['c1'] + coeffs['c2'] * (mag - MAG_BREAK) +
+               (coeffs['c3'] - coeffs['c2']) * DELTA * np.log(1 + np.exp((mag - MAG_BREAK) / DELTA)))
+        return float(np.asarray(val))
+
+    def _calc_std_mode_bilinear(self, coeffs, mag):
+        val = (coeffs['s_m,s1'] + coeffs['s_m,s2'] * (mag - coeffs['s_m,s3']) -
+               coeffs['s_m,s2'] * DELTA * np.log(1 + np.exp((mag - coeffs['s_m,s3']) / DELTA)))
+        return float(np.asarray(val))
+
+    def _calc_std_mode_sigmoid(self, coeffs, mag):
+        val = coeffs['s_m,n1'] - coeffs['s_m,n2'] / (1 + np.exp(-coeffs['s_m,n3'] * (mag - MAG_BREAK)))
+        return float(np.asarray(val))
+
+    def _calc_std_within(self, coeffs, X_L_ratio):
+        s1 = coeffs.get('s_s1', coeffs.get('s_r1'))
+        s2 = coeffs.get('s_s2', coeffs.get('s_r2'))
+
+        if s1 is None or s2 is None:
+            # This function is specific to strike-slip and reverse.
+            # Normal faulting uses 'sigma' directly in _calc_normal.
+            raise KeyError(
+                "Required coefficients for std_within (s_s1/s_r1 or s_s2/s_r2) not found for strike-slip/reverse style."
+            )
+
+        alpha = float(coeffs['alpha'])
+        beta = float(coeffs['beta'])
+        denom_ab = alpha + beta
+        term_shape_center = (alpha / denom_ab) if denom_ab != 0.0 else 0.0
+
+        x = np.atleast_1d(X_L_ratio).astype(float)
+        val = s1 + s2 * (x - term_shape_center) ** 2
+        return val
+
+    # _calc_analytic_mean and _calc_transformed_displ are for specific quantile calculations,
+
+    def _calc_analytic_mean(self, bc_param, mean, stdv):
+        # Ensure inputs are scalar
+        bc_param_s = float(np.asarray(bc_param).item())
+        mean_s = float(np.asarray(mean).item())
+        stdv_s = float(np.asarray(stdv).item())
+
+        if bc_param_s == 0:
+            return np.exp(mean_s + 0.5 * stdv_s**2) 
+        
+        term_val = bc_param_s * mean_s + 1
+        
+        if term_val <= 0:
+            return np.nan 
+
+        return (np.power(term_val, 1 / bc_param_s) *
+                (1 + (stdv_s ** 2 * (1 - bc_param_s)) / 
+                (2 * (term_val) ** 2)))
+
+
+    def _calc_transformed_displ(self, bc_param, mean, stdv, quantile):
+        # Ensure inputs are scalar
+        bc_param_s = float(np.asarray(bc_param).item())
+        mean_s = float(np.asarray(mean).item())
+        stdv_s = float(np.asarray(stdv).item())
+        # quantile is already scalar
+
+        if quantile == -1: 
+            displ_meters = self._calc_analytic_mean(bc_param_s, mean_s, stdv_s)
+            if np.isnan(displ_meters):
+                 return np.nan
+
+            if bc_param_s == 0:
+                return np.log(np.maximum(displ_meters, 1e-12))
+            return (np.power(np.maximum(displ_meters, 1e-12), bc_param_s) - 1) / bc_param_s
+        return stats.norm.ppf(quantile, loc=mean_s, scale=stdv_s)

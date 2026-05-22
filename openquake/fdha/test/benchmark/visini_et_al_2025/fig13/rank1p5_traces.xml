@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nrml xmlns="http://openquake.org/xmlns/nrml/0.5"
+      xmlns:gml="http://www.opengis.net/gml">
+  <rank1p5Ruptures>
+    <!-- Case 1: Local traces -->
+    <trace name="R1p5_local_A" sourceId="1">
+      <gml:LineString>
+        <gml:posList>16.155 39.665 16.17 39.648</gml:posList>
+      </gml:LineString>
+    </trace>
+    <trace name="R1p5_local_B" sourceId="2">
+      <gml:LineString>
+        <gml:posList>16.15 39.654 16.175 39.654</gml:posList>
+      </gml:LineString>
+    </trace>
+
+    <!-- Case 2: ~200 m trace (b872964) -->
+    <trace name="R1p5_200m" sourceId="3">
+      <gml:LineString>
+        <gml:posList>16.09246068 39.65797081 16.2324776 39.65797081</gml:posList>
+      </gml:LineString>
+    </trace>
+
+    <!-- Case 3: Far trace (paper TOML lat minus 0.04° for digitised case3 CSV) -->
+    <trace name="R1p5_far1" sourceId="6">
+      <gml:LineString>
+        <gml:posList>16.09246068 39.62785223 16.2324776 39.62785223</gml:posList>
+      </gml:LineString>
+    </trace>
+  </rank1p5Ruptures>
+</nrml>
