@@ -22,7 +22,7 @@ The general workflow involves combining a seismic source model with a configurat
 
 ```mermaid
 graph TD
-    A[Input: Source Model XML] --> C{fdha CLI};
+    A[Input: Logic Tree XML] --> C{fdha CLI};
     B[Input: Configuration INI] --> C;
     C --> D[Unified Hazard Calculation];
     D --> E[Output: Results JSON];
