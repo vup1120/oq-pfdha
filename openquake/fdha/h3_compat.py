@@ -6,6 +6,10 @@ OpenQuake code that expects h3 v3.x API.
 """
 
 import sys
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def patch_h3_for_openquake():
     """
@@ -34,15 +38,15 @@ def patch_h3_for_openquake():
             sys.modules['h3.api'] = MockApi()
             sys.modules['h3.api.numpy_int'] = MockNumpyInt()
             
-            print("H3 v4.x compatibility layer activated for OpenQuake")
+            logger.debug("H3 v4.x compatibility layer activated for OpenQuake")
             return True
         else:
             # h3 v3.x is already installed, no patching needed
-            print("H3 v3.x detected, no compatibility layer needed")
+            logger.debug("H3 v3.x detected, no compatibility layer needed")
             return False
-            
+
     except ImportError:
-        print("Warning: h3 library not installed")
+        logger.warning("h3 library not installed")
         return False
 
 # Apply the patch when this module is imported
