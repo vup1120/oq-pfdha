@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Taiwan FDHA logic tree - NORMAL faulting (rake ~-90).
+  Applied to: Shanchiao-fault representative (source id=01).
+
+  Structure mirrors the user's image (Normal column), equal weights WITHIN
+  each branch set:
+
+    BL1 PSR  : 4 primary-SR models (equal 0.25 each)
+      WC1993, Youngs2003, Pizza2023, MammarellaEtAl2024
+
+    BL2 PFD  : 2 primary-FD branches (equal 0.5 each)
+      Youngs2003 [AD], Youngs2003 [MD]
+
+    BL3+BL4  : 2 secondary (SR,FD) pairs (equal 0.5 each)
+      Youngs2003 SR + Youngs2003 FD
+      Visini2025 SR + Visini2025 FD
+
+  Total end-branches for this style = 4 x 2 x 2 = 16.
+-->
+<nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
+  <logicTree logicTreeID="pfdha_tw_normal">
+
+    <!-- ===================== BL1: PRIMARY-SR (normal) ===================== -->
+    <logicTreeBranchingLevel branchingLevelID="bl1_nm_psr">
+      <logicTreeBranchSet branchSetID="bs1_nm_psr"
+                          uncertaintyType="fdhaPrimarySRModel"
+                          applyToStyle="normal">
+        <logicTreeBranch branchID="NM_PSR_WC1993">
+          <uncertaintyModel>WC1993PrimarySR</uncertaintyModel>
+          <uncertaintyWeight>0.25</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="NM_PSR_YOUNGS2003">
+          <uncertaintyModel>
+            [Youngs2003PrimarySR]
+            style = "normal"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.25</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="NM_PSR_PIZZA2023">
+          <uncertaintyModel>
+            [Pizza2023PrimarySR]
+            style = "normal"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.25</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="NM_PSR_MAMMARELLA2024">
+          <uncertaintyModel>
+            [MammarellaEtAl2024PrimarySR]
+            style = "normal"
+            MSR = 1
+            HDD_str = "AGG_R"
+            dip_sigma = 10.0
+            t_d = 2.0
+            Zs_sigma = 2.0
+            t_z = 2.0
+          </uncertaintyModel>
+          <uncertaintyWeight>0.25</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+    <!-- ====== BL2: PRIMARY-FD (normal) — Youngs2003 AD/MD variants ======== -->
+    <logicTreeBranchingLevel branchingLevelID="bl2_nm_pfd">
+      <logicTreeBranchSet branchSetID="bs2_nm_pfd"
+                          uncertaintyType="fdhaPrimaryFDModel"
+                          applyToBranches="NM_PSR_WC1993 NM_PSR_YOUNGS2003 NM_PSR_PIZZA2023 NM_PSR_MAMMARELLA2024"
+                          applyToStyle="normal">
+        <logicTreeBranch branchID="NM_PFD_YOUNGS2003_AD">
+          <uncertaintyModel>
+            [Youngs2003PrimaryFD]
+            style = "normal"
+            norm_disp_type = "AD"
+            scaling_model = "WC1994"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.5</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="NM_PFD_YOUNGS2003_MD">
+          <uncertaintyModel>
+            [Youngs2003PrimaryFD]
+            style = "normal"
+            norm_disp_type = "MD"
+            scaling_model = "WC1994"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.5</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+    <!-- ============ BL3: SECONDARY-SR (normal) — 2 branches ============== -->
+    <logicTreeBranchingLevel branchingLevelID="bl3_nm_ssr">
+      <logicTreeBranchSet branchSetID="bs3_nm_ssr"
+                          uncertaintyType="fdhaSecondarySRModel"
+                          applyToBranches="NM_PSR_WC1993 NM_PSR_YOUNGS2003 NM_PSR_PIZZA2023 NM_PSR_MAMMARELLA2024"
+                          applyToStyle="normal">
+        <logicTreeBranch branchID="NM_SSR_YOUNGS2003">
+          <uncertaintyModel>
+            [Youngs2003SecondarySR]
+            version = 3
+            style = "all"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.5</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="NM_SSR_VISINI2025">
+          <uncertaintyModel>
+            [Visini2025SecondarySR]
+            style = "normal"
+            pixel_size = 100
+          </uncertaintyModel>
+          <uncertaintyWeight>0.5</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+    <!-- BL4a: SECONDARY-FD (normal) — Youngs2003 FD paired with Youngs SSR -->
+    <logicTreeBranchingLevel branchingLevelID="bl4_nm_sfd_youngs">
+      <logicTreeBranchSet branchSetID="bs4_nm_sfd_youngs"
+                          uncertaintyType="fdhaSecondaryFDModel"
+                          applyToBranches="NM_SSR_YOUNGS2003"
+                          applyToStyle="normal">
+        <logicTreeBranch branchID="NM_SFD_YOUNGS2003">
+          <uncertaintyModel>
+            [Youngs2003SecondaryFD]
+            percentile = 95
+            style = "all"
+          </uncertaintyModel>
+          <uncertaintyWeight>1.0</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+    <!-- BL4b: SECONDARY-FD (normal) — Visini2025 FD paired with Visini SSR -->
+    <logicTreeBranchingLevel branchingLevelID="bl4_nm_sfd_visini">
+      <logicTreeBranchSet branchSetID="bs4_nm_sfd_visini"
+                          uncertaintyType="fdhaSecondaryFDModel"
+                          applyToBranches="NM_SSR_VISINI2025"
+                          applyToStyle="normal">
+        <logicTreeBranch branchID="NM_SFD_VISINI2025">
+          <uncertaintyModel>Visini2025SecondaryFD</uncertaintyModel>
+          <uncertaintyWeight>1.0</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+  </logicTree>
+</nrml>
