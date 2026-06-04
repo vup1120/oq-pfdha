@@ -40,23 +40,38 @@ def write_aggregate_csv(
     fractiles: dict[float, Any],
     site_lons: list[float],
     site_lats: list[float],
+    qs: Sequence[float] | None = None,
+    include_mean: bool = True,
 ) -> None:
+    """Write the aggregate hazard CSV (weighted mean and/or fractiles).
+
+    ``qs`` selects the fractile columns (default :data:`FRACTILE_QS`); pass an
+    empty sequence for no fractiles. ``include_mean`` toggles the ``mean``
+    column. Fractile columns are labelled OpenQuake-style via
+    :func:`quantile_label` (e.g. ``quantile-0.05``).
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     n_sites = len(site_lons)
-    qs = [0.05, 0.16, 0.5, 0.84, 0.95]
+    qs = list(FRACTILE_QS) if qs is None else list(qs)
+    frac_labels = [quantile_label(q) for q in qs]
+    mean_cols = ["mean"] if include_mean else []
     with path.open("w", newline="") as f:
         w = csv.writer(f)
         if n_sites == 1:
-            w.writerow(["D0", "mean", "p05", "p16", "p50", "p84", "p95"])
+            w.writerow(["D0"] + mean_cols + frac_labels)
             for j, dd in enumerate(d0):
-                row = [dd, float(mean_rates[0][j])]
+                row: list[Any] = [dd]
+                if include_mean:
+                    row.append(float(mean_rates[0][j]))
                 row.extend(float(fractiles[q][0][j]) for q in qs)
                 w.writerow(row)
         else:
-            w.writerow(["site_id", "lon", "lat", "D0", "mean", "p05", "p16", "p50", "p84", "p95"])
+            w.writerow(["site_id", "lon", "lat", "D0"] + mean_cols + frac_labels)
             for i in range(n_sites):
                 for j, dd in enumerate(d0):
-                    row = [i, float(site_lons[i]), float(site_lats[i]), dd, float(mean_rates[i][j])]
+                    row = [i, float(site_lons[i]), float(site_lats[i]), dd]
+                    if include_mean:
+                        row.append(float(mean_rates[i][j]))
                     row.extend(float(fractiles[q][i][j]) for q in qs)
                     w.writerow(row)
 
@@ -81,12 +96,14 @@ def write_hazard_displacement_map_csv(
     displ_fractiles: dict[float, Sequence[float]] | None = None,
     target_return_period: float | None = None,
     site_is_trace: Sequence[bool] | None = None,
+    qs: Sequence[float] | None = None,
 ) -> None:
     """Write a per-site hazard-map CSV (one row per site).
 
-    Columns: ``site_id, lon, lat, is_trace, displ_mean`` and optionally
-    ``displ_p05, displ_p16, displ_p50, displ_p84, displ_p95`` when fractile
-    maps are supplied. ``target_return_period`` is recorded as a
+    Columns: ``site_id, lon, lat, is_trace, displ_mean`` and optionally one
+    column per requested fractile (``displ_quantile-0.05``, ...) when
+    ``displ_fractiles`` is supplied. ``qs`` selects which fractiles to emit
+    (default :data:`FRACTILE_QS`). ``target_return_period`` is recorded as a
     ``# return_period = T`` header comment.
     """
     site_lons_a = [float(v) for v in site_lons]
@@ -99,12 +116,12 @@ def write_hazard_displacement_map_csv(
         site_is_trace_a = [False] * n
     else:
         site_is_trace_a = [bool(v) for v in site_is_trace]
-    qs = [0.05, 0.16, 0.5, 0.84, 0.95]
+    qs = list(FRACTILE_QS) if qs is None else list(qs)
     frac_cols: list[tuple[str, list[float]]] = []
     if displ_fractiles:
         for q in qs:
             if q in displ_fractiles:
-                frac_cols.append((f"displ_p{int(round(q*100)):02d}",
+                frac_cols.append((f"displ_{quantile_label(q)}",
                                   [float(v) for v in displ_fractiles[q]]))
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="") as f:
@@ -168,9 +185,20 @@ def write_branch_rate_cube_npz(
 # v4 IO: one HDF5 per branch + aggregate HDF5 + per-fractile map CSVs
 # -----------------------------------------------------------------------
 
-# Fixed fractile order (contract with tests & downstream readers)
+def quantile_label(q: float) -> str:
+    """Return an OpenQuake-style fractile label, e.g. ``0.05`` -> ``quantile-0.05``.
+
+    ``%g`` formatting drops trailing zeros (``0.5`` -> ``quantile-0.5``) and
+    is unambiguous for arbitrary quantiles (``0.025`` -> ``quantile-0.025``),
+    matching the ``quantile-<q>`` naming used by the OpenQuake Engine.
+    """
+    return "quantile-%g" % float(q)
+
+
+# Default fractile set when ``[output].quantiles`` is not specified in the job.
+# (The effective set is configurable; see openquake.fdha.calc.config_loader.)
 FRACTILE_QS: tuple[float, ...] = (0.05, 0.16, 0.5, 0.84, 0.95)
-FRACTILE_LABELS: tuple[str, ...] = ("p05", "p16", "p50", "p84", "p95")
+FRACTILE_LABELS: tuple[str, ...] = tuple(quantile_label(q) for q in FRACTILE_QS)
 
 
 def write_branch_rates_h5(
@@ -261,13 +289,14 @@ def write_rates_fractiles_h5(
     d0: Sequence[float],
     site_lons: Sequence[float],
     site_lats: Sequence[float],
+    qs: Sequence[float] | None = None,
 ) -> None:
     """Write per-site fractile annual-rate grids as HDF5.
 
-    ``rates_fractiles`` shape ``(5, n_sites, n_d0)`` with quantile order
-    fixed by :data:`FRACTILE_QS` = (0.05, 0.16, 0.50, 0.84, 0.95). The
-    order is also recorded as an attribute ``quantiles`` and as a string
-    dataset ``quantile_labels`` for self-description.
+    ``rates_fractiles`` has shape ``(n_quantiles, n_sites, n_d0)`` with the
+    quantile order given by ``qs`` (default :data:`FRACTILE_QS`). The order is
+    also recorded as an attribute ``quantiles`` and as a string dataset
+    ``quantile_labels`` (OpenQuake-style ``quantile-<q>``) for self-description.
     """
     try:
         import h5py  # type: ignore
@@ -276,8 +305,10 @@ def write_rates_fractiles_h5(
             "v4 map-mode IO requires h5py; install h5py to proceed."
         ) from exc
 
+    qs = list(FRACTILE_QS) if qs is None else list(qs)
+    labels = [quantile_label(q) for q in qs]
     arr = np.asarray(rates_fractiles, dtype=float)
-    expected = (len(FRACTILE_QS), len(site_lons), len(d0))
+    expected = (len(qs), len(site_lons), len(d0))
     if arr.shape != expected:
         raise ValueError(
             f"rates_fractiles shape {arr.shape} != "
@@ -286,15 +317,15 @@ def write_rates_fractiles_h5(
     path.parent.mkdir(parents=True, exist_ok=True)
     with h5py.File(path, "w") as f:
         f.create_dataset("rates_fractiles", data=arr, compression="gzip")
-        f.create_dataset("quantiles", data=np.asarray(FRACTILE_QS, dtype=float))
+        f.create_dataset("quantiles", data=np.asarray(qs, dtype=float))
         f.create_dataset(
             "quantile_labels",
-            data=np.asarray(FRACTILE_LABELS, dtype="S"),
+            data=np.asarray(labels, dtype="S"),
         )
         f.create_dataset("d0", data=np.asarray(d0, dtype=float))
         f.create_dataset("site_lons", data=np.asarray(site_lons, dtype=float))
         f.create_dataset("site_lats", data=np.asarray(site_lats, dtype=float))
-        f.attrs["quantiles"] = np.asarray(FRACTILE_QS, dtype=float)
+        f.attrs["quantiles"] = np.asarray(qs, dtype=float)
 
 
 def write_displacement_map_csv(
