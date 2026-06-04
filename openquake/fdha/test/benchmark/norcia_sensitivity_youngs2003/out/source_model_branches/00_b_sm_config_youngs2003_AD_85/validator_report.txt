@@ -1,2 +1,0 @@
-spec=norcia_sensitivity_youngs2003
-
