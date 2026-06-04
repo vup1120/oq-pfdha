@@ -16,7 +16,7 @@ graph TD
     E --> F[3. Unified Hazard Calculation per Branch];
     F --> G[4. Aggregate Weighted Hazard Rates and Fractiles];
     G --> H[5. Generate Final Product];
-    H --> I[Output: JSON Results & PNG Plot];
+    H --> I[Output directory: manifest.json, aggregate + per-branch rates<br/>optional JSON summary / PNG plot];
 
     subgraph "Unified Hazard Calculation (calculate_fdha_hazard)"
         direction LR
