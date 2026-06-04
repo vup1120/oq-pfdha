@@ -18,18 +18,23 @@ The methodologies and implementation are designed to be transparent, extensible,
 
 ## High-Level Workflow
 
-The general workflow involves combining a seismic source model with a configuration file to run a hazard calculation via the `fdha` command-line interface (CLI).
+The general workflow combines three inputs — an INI configuration file, a
+source-model logic-tree (NRML XML, which references the seismic source model),
+and an FDHA-model logic-tree (NRML XML) — to run a hazard calculation via the
+`fdha` command-line interface (CLI).
 
 ```mermaid
 graph TD
-    A[Input: Logic Tree XML] --> C{fdha CLI};
-    B[Input: Configuration INI] --> C;
-    C --> D[Unified Hazard Calculation];
-    D --> E[Output: Results JSON];
-    D --> F[Output: Plot PNG];
+    A[Input: Source-model logic-tree XML<br/>references NRML source model] --> C{fdha CLI};
+    B[Input: FDHA-model logic-tree XML] --> C;
+    G[Input: Configuration INI] --> C;
+    C --> D[Unified Hazard Calculation<br/>hazard curve or map];
+    D --> E[Output directory<br/>manifest.json, aggregate + per-branch rates];
+    D --> F[Optional: Results JSON / Plot PNG];
 
     style A fill:#f9f,stroke:#333,stroke-width:2px
     style B fill:#f9f,stroke:#333,stroke-width:2px
+    style G fill:#f9f,stroke:#333,stroke-width:2px
     style E fill:#ccf,stroke:#333,stroke-width:2px
     style F fill:#ccf,stroke:#333,stroke-width:2px
 ```
