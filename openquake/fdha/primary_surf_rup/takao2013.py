@@ -17,8 +17,8 @@
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.hazardlib.fdha.takao2013` implements
-model of Moss and Ross (2011) into :class:`Takao2013`
+Module :mod:`openquake.fdha.primary_surf_rup.takao2013` implements
+the model of Takao et al. (2013) in :class:`Takao2013PrimarySR`
 
 Supported Fault Styles: Reverse & Strike‑Slip
 """

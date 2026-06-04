@@ -17,7 +17,7 @@
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.hazardlib.fdha.Moss2013` 
+Module :mod:`openquake.fdha.primary_surf_rup.moss2013` 
 """
 
 import numpy as np
@@ -32,8 +32,10 @@ class Moss2013PrimarySR(BasePrimarySurfRup):
 
     References
     ----------
-    Moss, R.E.S., et al. (2013). Probabilistic fault displacement hazard
-    analysis for reverse faults.
+    Moss, R. E. S., Stanton, K. V., & Buelna, M. I. (2013). The impact of
+    material stiffness on the likelihood of fault rupture propagating to the
+    ground surface. Seismological Research Letters, 84(3), 485-488.
+    https://doi.org/10.1785/0220110109
     """
 
     def get_prob(self, mag: float, style, vs30: float) -> float:

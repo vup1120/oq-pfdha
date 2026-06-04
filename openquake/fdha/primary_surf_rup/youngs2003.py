@@ -17,7 +17,7 @@
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.hazardlib.fdha.youngs2003` implements
+Module :mod:`openquake.fdha.primary_surf_rup.youngs2003` implements
 model of Youngs et al. (2003) into :class:`Youngs2003Primary`
 """
 

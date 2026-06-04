@@ -17,8 +17,8 @@
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.hazardlib.fdha.lavrentiadis2023` implements
-model of Lavrentiadis et al. (2023) into :class:`lavrentiadis2023`
+Module :mod:`openquake.fdha.primary_surf_displ.lavrentiadis2023` implements
+the model of Lavrentiadis and Abrahamson (2023) in :class:`Lavrentiadis2023PrimaryFD`
 """
 
 import numpy as np

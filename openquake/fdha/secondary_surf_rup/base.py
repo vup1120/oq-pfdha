@@ -17,7 +17,7 @@
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.hazardlib.fdha.base` defines abstract base
+Module :mod:`openquake.fdha.secondary_surf_rup.base` defines abstract base
 classes for :class:`PrimarySurfRup <BasePrimarySurfRup>`   
 """
 
