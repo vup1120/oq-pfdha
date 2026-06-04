@@ -21,8 +21,33 @@ The public INI file uses these sections:
 - **`[erf]`**: Rupture conversion parameters. Optional keys have defaults.
 - **`[calculation]`**: Logic-tree file paths, displacement levels, and calculation options. Required.
 - **`[site_params]`**: Optional site parameters such as Vs30.
+- **`[output]`**: Optional OpenQuake-style output statistics (mean, quantiles).
 
 The calculation type is detected from `[geometry]`: a `region` key means hazard map; otherwise the run is treated as hazard curve.
+
+---
+
+## `[output]`
+
+Following the OpenQuake Engine `job.ini` convention, the optional `[output]`
+section selects which logic-tree statistics are produced.
+
+| Parameter | Type | Default | Required? | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `mean` | boolean | `true` | No | Emit the weighted-mean hazard curve (weights are the logic-tree branch weights). For hazard **maps** the mean is always produced because the displacement map is derived from it. |
+| `quantiles` | space-separated floats | `0.05 0.16 0.5 0.84 0.95` | No | Weighted-quantile (fractile) levels to compute across logic-tree realizations, each strictly in `(0, 1)`. An empty value (`quantiles =`) produces no fractiles. |
+
+```ini
+[output]
+mean = true
+quantiles = 0.16 0.5 0.84
+```
+
+Fractile outputs are labelled OpenQuake-style as `quantile-<q>` — for example
+`quantile-0.16` — in CSV column headers, HDF5 `quantile_labels`, and
+`displacement_map_quantile-0.16.csv` file names. The quantiles are computed as
+weighted empirical quantiles over the realizations, matching the OpenQuake
+Engine's statistics.
 
 ---
 

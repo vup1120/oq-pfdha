@@ -80,13 +80,15 @@ For multiple sites, branch CSV columns are:
 site_id,lon,lat,D0,annual_rate
 ```
 
-The aggregate CSV columns are:
+The aggregate CSV columns are (with the default quantiles):
 
 ```text
-D0,mean,p05,p16,p50,p84,p95
+D0,mean,quantile-0.05,quantile-0.16,quantile-0.5,quantile-0.84,quantile-0.95
 ```
 
-For multiple sites, the aggregate CSV includes `site_id`, `lon`, and `lat` before `D0`.
+The `mean` column is present when `[output].mean` is true (the default), and one
+`quantile-<q>` column is written per configured `[output].quantiles` value. For
+multiple sites, the aggregate CSV includes `site_id`, `lon`, and `lat` before `D0`.
 
 All rates are annual exceedance rates. `D0` values are displacement thresholds in meters.
 
@@ -98,9 +100,9 @@ Hazard-map runs write one HDF5 file per end branch plus aggregate HDF5 and CSV p
 
 - `branches/branch_XXXX.h5`: branch annual-rate grid.
 - `aggregate/rates_mean.h5`: weighted mean annual-rate grid.
-- `aggregate/rates_fractiles.h5`: fractile annual-rate grids for 0.05, 0.16, 0.50, 0.84, and 0.95.
+- `aggregate/rates_fractiles.h5`: fractile annual-rate grids for the configured quantiles (default 0.05, 0.16, 0.50, 0.84, 0.95; see `[output].quantiles`).
 - `aggregate/displacement_map_mean.csv`: mean displacement map at the configured return period.
-- `aggregate/displacement_map_p05.csv`, `p16`, `p50`, `p84`, `p95`: fractile displacement maps at the configured return period.
+- `aggregate/displacement_map_quantile-0.05.csv`, `quantile-0.16`, `quantile-0.5`, `quantile-0.84`, `quantile-0.95`: fractile displacement maps at the configured return period (one file per configured quantile, named OpenQuake-style `quantile-<q>`).
 
 Displacement-map CSV columns are:
 
@@ -108,7 +110,7 @@ Displacement-map CSV columns are:
 site_id,lon,lat,is_trace,displ_mean
 ```
 
-Fractile map files use the matching displacement column label, such as `displ_p84`.
+Fractile map files use the matching displacement column label, such as `displ_quantile-0.84`.
 
 The first line records the return period as a comment:
 
