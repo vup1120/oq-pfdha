@@ -17,7 +17,7 @@
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.hazardlib.fdha.pizza2023`
+Module :mod:`openquake.fdha.primary_surf_rup.pizza2023`
 """
 
 import numpy as np

@@ -17,7 +17,7 @@
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.hazardlib.fdha.Moss2011` implements
+Module :mod:`openquake.fdha.primary_surf_rup.moss_ross2011` implements
 model of Moss and Ross (2011) into :class:`MossRoss2011Primary`
 """
 

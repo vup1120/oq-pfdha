@@ -17,7 +17,7 @@
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.hazardlib.fdha.takao2013` implements
+Module :mod:`openquake.fdha.primary_surf_displ.takao2013` implements
 model of Takao et al. (2013) into :class:`Takao2013`
 """
 

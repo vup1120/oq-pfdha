@@ -19,7 +19,7 @@
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.hazardlib.fdha.kuehn2024` implements
+Module :mod:`openquake.fdha.primary_surf_displ.kuehn2024.kuehn2024` implements
 model of Kuehn et al. (2024) into :class:`Kuehn2024PrimaryFD`
 """
 
@@ -45,8 +45,9 @@ class Kuehn2024PrimaryFD(BasePrimarySurfDispl):
 
     References
     ----------
-    Kuehn, N.M., et al. (2024). A fault displacement model for probabilistic
-    fault displacement hazard analysis.
+    Kuehn, N. M., Kottke, A. R., Sarmiento, A. C., Madugo, C. M., &
+    Bozorgnia, Y. (2024). A fault displacement model based on the FDHI
+    database.
     """
 
     def get_prob(self, d, X_L_ratio, mag, style, folded=True,

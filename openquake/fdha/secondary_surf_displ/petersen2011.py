@@ -17,7 +17,7 @@
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.hazardlib.fdha.petersen2011` extends
+Module :mod:`openquake.fdha.secondary_surf_displ.petersen2011` extends
 model of Petersen et al. (2011) for secondary (distributed) fault displacements
 into :class:`Petersen2011SecondaryFD`
 """

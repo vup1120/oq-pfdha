@@ -11,8 +11,8 @@
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.hazardlib.fdha.well` implements
-model of Wells and Coppersmith (1994) into :class:`WC1994Primary`
+Module :mod:`openquake.fdha.primary_surf_rup.wells_coppersmith1993` implements
+the model of Wells and Coppersmith (1993) in :class:`WC1993PrimarySR`
 """
 
 import numpy as np

@@ -17,7 +17,7 @@
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.hazardlib.fdha.secondary_surf_rup.youngs2003`
+Module :mod:`openquake.fdha.secondary_surf_rup.youngs2003`
 """
 
 import numpy as np
