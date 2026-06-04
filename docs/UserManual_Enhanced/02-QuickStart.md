@@ -10,7 +10,7 @@ The goal is to compute a fault displacement hazard curve for a single site using
     Please ensure you have successfully completed all the steps in the [Installation](01-Installation.md) guide before proceeding.
 
 1.  **Navigate to the Repository Root**:
-    Make sure you are in the root directory of the `pfdha` project where you cloned it. If you used a virtual environment, ensure it is activated.
+    Make sure you are in the root directory of the `oq-pfdha` project where you cloned it. If you used a virtual environment, ensure it is activated.
 
 2.  **Create an Output Directory**:
     It's good practice to have a dedicated directory for your results.

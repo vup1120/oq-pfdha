@@ -10,7 +10,7 @@ The methodologies and implementation are designed to be transparent, extensible,
 
 ## Core Features
 
--   **Hazard Curve Calculation**: Compute a hazard curve representing the annual frequency of exceedance for various levels of fault displacement. When multiple model realizations are used, this curve can be configured to represent the mean, median, or a specific quantile of the hazard.
+-   **Hazard Curve Calculation**: Compute a hazard curve representing the annual frequency of exceedance for various levels of fault displacement. When multiple model realizations (logic-tree branches) are combined, the calculation produces the weighted mean curve together with a fixed set of fractile curves (5th, 16th, 50th, 84th, and 95th percentiles).
 -   **Hazard Map Calculation**: Generate hazard maps that show the spatial distribution of fault displacement hazard across a defined region for a given probability level or return period.
 -   **Extensible Model Library**: A modular library of published scientific models for both primary and secondary surface rupture and displacement.
 -   **Flexible Configuration**: All aspects of a calculation are controlled through a simple and clear configuration file (INI format).
