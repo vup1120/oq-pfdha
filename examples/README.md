@@ -5,6 +5,12 @@ needed to get started.
 
 ## Hazard curve
 
+**What it does:** computes the annual frequency of exceeding a range of
+fault-displacement levels at a single site, using a one-branch logic tree
+built on the Youngs et al. (2003) primary/secondary rupture and displacement
+models. This is the simplest end-to-end PFDHA calculation and a good first run
+to verify your installation.
+
 Run a single-site hazard curve:
 
 ```bash
@@ -22,6 +28,11 @@ Input files:
 - `source_model.xml`
 
 ## Hazard map
+
+**What it does:** computes fault-displacement hazard over a small region for a
+fixed return period, producing a spatial map of displacement at the target
+hazard level. It uses the same Youngs et al. (2003) model chain as the hazard
+curve and introduces the `region` and `return_period` configuration options.
 
 Run a small hazard map:
 
