@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "openquake.fdha: Python tools for probabilistic fault displacement hazard analysis"
+abstract: >-
+  Python tools for performing Probabilistic Fault Displacement Hazard
+  Analysis (PFDHA) built on the OpenQuake Engine, providing a command-line
+  interface to compute fault-displacement hazard curves and maps with an
+  extensible library of published primary and secondary surface-rupture and
+  displacement models.
+type: software
+authors:
+  - family-names: Chen
+    given-names: Yen-Shin
+    email: ychen@ogs.it
+    affiliation: "Istituto Nazionale di Oceanografia e di Geofisica Sperimentale (OGS)"
+version: 1.0.0
+license: AGPL-3.0-or-later
+repository-code: "https://github.com/vup1120/oq-pfdha"
+keywords:
+  - seismic hazard
+  - fault displacement
+  - PFDHA
+  - OpenQuake
