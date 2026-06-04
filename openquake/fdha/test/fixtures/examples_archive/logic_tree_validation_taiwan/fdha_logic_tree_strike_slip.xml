@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Taiwan FDHA logic tree - STRIKE-SLIP faulting (rake ~0).
+  Applied to: Meishan-fault representative (source id=20).
+
+  Structure mirrors the user's image (Strike-slip column), equal weights
+  WITHIN each branch set:
+
+    BL1 PSR  : 5 primary-SR models (equal 0.2 each)
+      WC1993, Youngs2003, Takao2013, Pizza2023, MammarellaEtAl2024
+
+    BL2 PFD  : 5 primary-FD branches (equal 0.2 each)
+      Youngs2003 [AD], Youngs2003 [MD],
+      Petersen2011 (bilinear — representative of "Petersen2011 AD" in image),
+      Takao2013   [AD], Takao2013  [MD]
+
+    BL3+BL4  : Cartesian secondary — 3 SSR x 2 SFD = 6 pairs
+      SSR = {Youngs2003, Petersen2011, Takao2014} (equal 1/3)
+      SFD = {Youngs2003, Petersen2011}            (equal 0.5)
+      Pairs: Y+Y, Y+P, P+Y, P+P, T+Y, T+P
+
+  Total end-branches for this style = 5 x 5 x 6 = 150.
+
+  NOTE (Petersen2011 PFD): the image labels this branch "Petersen2011 AD".
+  Petersen et al. (2011) uses a single displacement parameterisation with
+  three shape variants (bilinear / elliptical / quadratic); "AD" is not a
+  variant toggle in the code base. We use the bilinear flavour as the
+  representative; change to _elliptical or _quadratic here if desired.
+-->
+<nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
+  <logicTree logicTreeID="pfdha_tw_strike_slip">
+
+    <!-- ===================== BL1: PRIMARY-SR (strike-slip) ==================== -->
+    <logicTreeBranchingLevel branchingLevelID="bl1_ss_psr">
+      <logicTreeBranchSet branchSetID="bs1_ss_psr"
+                          uncertaintyType="fdhaPrimarySRModel"
+                          applyToStyle="strike-slip">
+        <logicTreeBranch branchID="SS_PSR_WC1993">
+          <uncertaintyModel>WC1993PrimarySR</uncertaintyModel>
+          <uncertaintyWeight>0.2</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="SS_PSR_YOUNGS2003">
+          <uncertaintyModel>
+            [Youngs2003PrimarySR]
+            style = "all"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.2</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="SS_PSR_TAKAO2013">
+          <uncertaintyModel>Takao2013PrimarySR</uncertaintyModel>
+          <uncertaintyWeight>0.2</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="SS_PSR_PIZZA2023">
+          <uncertaintyModel>
+            [Pizza2023PrimarySR]
+            style = "strike-slip"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.2</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="SS_PSR_MAMMARELLA2024">
+          <uncertaintyModel>
+            [MammarellaEtAl2024PrimarySR]
+            style = "strike-slip"
+            MSR = 1
+            HDD_str = "AGG_R"
+            dip_sigma = 10.0
+            t_d = 2.0
+            Zs_sigma = 2.0
+            t_z = 2.0
+          </uncertaintyModel>
+          <uncertaintyWeight>0.2</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+    <!-- ====== BL2: PRIMARY-FD (strike-slip) — 5 branches ==================== -->
+    <logicTreeBranchingLevel branchingLevelID="bl2_ss_pfd">
+      <logicTreeBranchSet branchSetID="bs2_ss_pfd"
+                          uncertaintyType="fdhaPrimaryFDModel"
+                          applyToBranches="SS_PSR_WC1993 SS_PSR_YOUNGS2003 SS_PSR_TAKAO2013 SS_PSR_PIZZA2023 SS_PSR_MAMMARELLA2024"
+                          applyToStyle="strike-slip">
+        <logicTreeBranch branchID="SS_PFD_YOUNGS2003_AD">
+          <uncertaintyModel>
+            [Youngs2003PrimaryFD]
+            style = "all"
+            norm_disp_type = "AD"
+            scaling_model = "WC1994"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.2</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="SS_PFD_YOUNGS2003_MD">
+          <uncertaintyModel>
+            [Youngs2003PrimaryFD]
+            style = "all"
+            norm_disp_type = "MD"
+            scaling_model = "WC1994"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.2</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="SS_PFD_PETERSEN2011">
+          <uncertaintyModel>Petersen2011PrimaryFD_bilinear</uncertaintyModel>
+          <uncertaintyWeight>0.2</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="SS_PFD_TAKAO2013_AD">
+          <uncertaintyModel>
+            [Takao2013PrimaryFD]
+            norm_disp_type = "AD"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.2</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="SS_PFD_TAKAO2013_MD">
+          <uncertaintyModel>
+            [Takao2013PrimaryFD]
+            norm_disp_type = "MD"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.2</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+    <!-- ============ BL3: SECONDARY-SR (strike-slip) — 3 branches ============ -->
+    <logicTreeBranchingLevel branchingLevelID="bl3_ss_ssr">
+      <logicTreeBranchSet branchSetID="bs3_ss_ssr"
+                          uncertaintyType="fdhaSecondarySRModel"
+                          applyToBranches="SS_PSR_WC1993 SS_PSR_YOUNGS2003 SS_PSR_TAKAO2013 SS_PSR_PIZZA2023 SS_PSR_MAMMARELLA2024"
+                          applyToStyle="strike-slip">
+        <logicTreeBranch branchID="SS_SSR_YOUNGS2003">
+          <uncertaintyModel>
+            [Youngs2003SecondarySR]
+            version = 3
+            style = "all"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.3333333333</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="SS_SSR_PETERSEN2011">
+          <uncertaintyModel>Petersen2011SecondarySR_default</uncertaintyModel>
+          <uncertaintyWeight>0.3333333333</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="SS_SSR_TAKAO2014">
+          <uncertaintyModel>
+            [Takao2014SecondarySR]
+            cell_size = 25
+          </uncertaintyModel>
+          <uncertaintyWeight>0.3333333334</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+    <!-- BL4: SECONDARY-FD (strike-slip) — 2 branches, Cartesian with BL3 -->
+    <logicTreeBranchingLevel branchingLevelID="bl4_ss_sfd">
+      <logicTreeBranchSet branchSetID="bs4_ss_sfd"
+                          uncertaintyType="fdhaSecondaryFDModel"
+                          applyToBranches="SS_SSR_YOUNGS2003 SS_SSR_PETERSEN2011 SS_SSR_TAKAO2014"
+                          applyToStyle="strike-slip">
+        <logicTreeBranch branchID="SS_SFD_YOUNGS2003">
+          <uncertaintyModel>
+            [Youngs2003SecondaryFD]
+            percentile = 95
+            style = "all"
+          </uncertaintyModel>
+          <uncertaintyWeight>0.5</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="SS_SFD_PETERSEN2011">
+          <uncertaintyModel>Petersen2011SecondaryFD</uncertaintyModel>
+          <uncertaintyWeight>0.5</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+  </logicTree>
+</nrml>
