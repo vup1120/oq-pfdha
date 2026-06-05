@@ -59,7 +59,7 @@ grid sites + 12 trace sampling sites) and **9 D0 levels**.
 ## Running the validation
 
 ```bash
-cd /home/ychen/GIT/pfdha/examples/logic_tree_validation/map_mode
+cd examples/logic_tree_validation/map_mode
 
 # Runs the three scenarios if their outputs are missing; otherwise
 # just re-runs the numerical checks over the cached outputs.

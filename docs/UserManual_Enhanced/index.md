@@ -10,7 +10,7 @@ The methodologies and implementation are designed to be transparent, extensible,
 
 ## Core Features
 
--   **Hazard Curve Calculation**: Compute a hazard curve representing the annual frequency of exceedance for various levels of fault displacement. When multiple model realizations are used, this curve can be configured to represent the mean, median, or a specific quantile of the hazard.
+-   **Hazard Curve Calculation**: Compute a hazard curve representing the annual frequency of exceedance for various levels of fault displacement. When multiple model realizations (logic-tree branches) are combined, the calculation produces the weighted mean curve together with a fixed set of fractile curves (5th, 16th, 50th, 84th, and 95th percentiles).
 -   **Hazard Map Calculation**: Generate hazard maps that show the spatial distribution of fault displacement hazard across a defined region for a given probability level or return period.
 -   **Extensible Model Library**: A modular library of published scientific models for both primary and secondary surface rupture and displacement.
 -   **Flexible Configuration**: All aspects of a calculation are controlled through a simple and clear configuration file (INI format).
@@ -18,18 +18,23 @@ The methodologies and implementation are designed to be transparent, extensible,
 
 ## High-Level Workflow
 
-The general workflow involves combining a seismic source model with a configuration file to run a hazard calculation via the `fdha` command-line interface (CLI).
+The general workflow combines three inputs — an INI configuration file, a
+source-model logic-tree (NRML XML, which references the seismic source model),
+and an FDHA-model logic-tree (NRML XML) — to run a hazard calculation via the
+`fdha` command-line interface (CLI).
 
 ```mermaid
 graph TD
-    A[Input: Logic Tree XML] --> C{fdha CLI};
-    B[Input: Configuration INI] --> C;
-    C --> D[Unified Hazard Calculation];
-    D --> E[Output: Results JSON];
-    D --> F[Output: Plot PNG];
+    A[Input: Source-model logic-tree XML<br/>references NRML source model] --> C{fdha CLI};
+    B[Input: FDHA-model logic-tree XML] --> C;
+    G[Input: Configuration INI] --> C;
+    C --> D[Unified Hazard Calculation<br/>hazard curve or map];
+    D --> E[Output directory<br/>manifest.json, aggregate + per-branch rates];
+    D --> F[Optional: Results JSON / Plot PNG];
 
     style A fill:#f9f,stroke:#333,stroke-width:2px
     style B fill:#f9f,stroke:#333,stroke-width:2px
+    style G fill:#f9f,stroke:#333,stroke-width:2px
     style E fill:#ccf,stroke:#333,stroke-width:2px
     style F fill:#ccf,stroke:#333,stroke-width:2px
 ```

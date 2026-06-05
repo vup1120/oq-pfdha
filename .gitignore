@@ -1,0 +1,35 @@
+# Byte-compiled / optimized / cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Test & coverage caches
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+
+# Regenerable calculation outputs
+examples/out/
+examples/outputs/
+**/out/
+**/out_map/
+**/out_curve*/
+**/out_template*/
+
+# Generated binary result artifacts
+*.h5
+*.npz
+
+# Editor / OS noise
+.idea/
+.vscode/
+*.swp
+.DS_Store

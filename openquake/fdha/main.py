@@ -18,6 +18,10 @@ import logging
 from pathlib import Path
 from typing import Optional, Dict, Any, TYPE_CHECKING
 
+# Apply the h3 v3/v4 compatibility shim before any OpenQuake (hazardlib)
+# module that uses h3 is imported by the calculation path.
+from openquake.fdha import h3_compat  # noqa: E402,F401
+
 if TYPE_CHECKING:  # avoid importing heavy modules at CLI startup
     from openquake.fdha.logic_tree.driver import LogicTreeResult
 

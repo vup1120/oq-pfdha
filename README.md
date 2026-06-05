@@ -52,6 +52,10 @@ After running, you should find the following files:
 -   `examples/outputs/hazard_curve_minimal_results.json`: The calculated hazard curve data.
 -   `examples/outputs/hazard_curve_minimal.png`: A plot of the hazard curve.
 
+**Note**: Because the example is driven by a logic tree, the run also writes a
+per-branch output directory (containing `manifest.json`, per-branch hazard
+curves, and the aggregate result) alongside the JSON/plot files above.
+
 ## Documentation
 
 For the complete User Manual (installation, configuration, models, CLI, workflows), see:
@@ -61,7 +65,6 @@ For the complete User Manual (installation, configuration, models, CLI, workflow
 -   **[Command-Line Interface (CLI)](./docs/UserManual_Enhanced/04-CLI.md)**
 -   **[Configuration File Guide](./docs/UserManual_Enhanced/05-Configuration.md)**
 -   **[Scientific Models](./docs/UserManual_Enhanced/06-Models.md)**
--   **[Validation suite](./VALIDATION.md)**
 
 
 
