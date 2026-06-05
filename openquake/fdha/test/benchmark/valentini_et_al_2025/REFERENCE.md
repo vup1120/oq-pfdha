@@ -24,4 +24,4 @@ pytest openquake/fdha/test/benchmark/valentini_et_al_2025/test_chiou2025_case2.p
 
 ## Status on HEAD
 
-BLOCKED on 2026-05-12, commit `fd3cb88`: the test invokes the `fdha` CLI, which failed in this environment with `cannot cache function 'idx_start_stop': no locator available for file '/home/ychen/GIT/oq-engine/openquake/baselib/performance.py'`.
+BLOCKED on 2026-05-12, commit `fd3cb88`: the test invokes the `fdha` CLI, which failed in this environment with `cannot cache function 'idx_start_stop': no locator available for file '<oq-engine>/openquake/baselib/performance.py'`.

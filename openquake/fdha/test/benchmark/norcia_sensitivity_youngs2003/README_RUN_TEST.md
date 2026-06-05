@@ -7,7 +7,7 @@ This test verifies the implementation against reference values from the paper (Y
 ### Option 1: Using the test script
 
 ```bash
-cd /home/ychen/GIT/pfdha/openquake/fdha/test/benchmark/norcia_sensitivity_youngs2003
+cd openquake/fdha/test/benchmark/norcia_sensitivity_youngs2003
 python run_test.py
 ```
 

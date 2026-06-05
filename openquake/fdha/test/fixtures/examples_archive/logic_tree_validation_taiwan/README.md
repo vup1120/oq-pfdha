@@ -118,7 +118,7 @@ with a `# return_period = T` header comment).
 ## Running
 
 ```bash
-cd /home/ychen/GIT/pfdha/examples/logic_tree_validation_taiwan
+cd examples/logic_tree_validation_taiwan
 python run_taiwan_hazard_map.py
 ```
 

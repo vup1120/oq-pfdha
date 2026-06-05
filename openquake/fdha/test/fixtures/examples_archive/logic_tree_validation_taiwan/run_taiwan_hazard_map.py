@@ -12,7 +12,7 @@ the configured return period.
 
 Usage
 -----
-    cd /home/ychen/GIT/pfdha/examples/logic_tree_validation_taiwan
+    cd examples/logic_tree_validation_taiwan
     python run_taiwan_hazard_map.py
 """
 

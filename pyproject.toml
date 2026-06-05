@@ -41,8 +41,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/vup1120/pfdha"
-Repository = "https://github.com/vup1120/pfdha"
+Homepage = "https://github.com/vup1120/oq-pfdha"
+Repository = "https://github.com/vup1120/oq-pfdha"
 
 [project.scripts]
 fdha = "openquake.fdha.main:main"

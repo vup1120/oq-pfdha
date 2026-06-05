@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 #
-# Copyright (C) 2012-2024 GEM Foundation
+# Copyright (C) 2024-2026 Yen-Shin Chen, OGS
 #
-# OpenQuake is free software: you can redistribute it and/or modify it
+# This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU Affero General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# OpenQuake is distributed in the hope that it will be useful,
+# This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
 #
 # You should have received a copy of the GNU Affero General Public License
-# along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.hazardlib.fdha.Moss2013` 
+Module :mod:`openquake.fdha.primary_surf_rup.moss2013` 
 """
 
 import numpy as np
@@ -32,8 +32,10 @@ class Moss2013PrimarySR(BasePrimarySurfRup):
 
     References
     ----------
-    Moss, R.E.S., et al. (2013). Probabilistic fault displacement hazard
-    analysis for reverse faults.
+    Moss, R. E. S., Stanton, K. V., & Buelna, M. I. (2013). The impact of
+    material stiffness on the likelihood of fault rupture propagating to the
+    ground surface. Seismological Research Letters, 84(3), 485-488.
+    https://doi.org/10.1785/0220110109
     """
 
     def get_prob(self, mag: float, style, vs30: float) -> float:
