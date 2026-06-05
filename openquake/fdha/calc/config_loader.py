@@ -326,6 +326,9 @@ def _normalize_ini_config(config: Dict[str, Any], config_path: Path) -> None:
             config['geometry'] = {}
         if 'max_distance_km' not in config['geometry']:
             config['geometry']['max_distance_km'] = config['calculation']['max_distance_km']
+
+    # 3c. OpenQuake-style [output] section: mean + quantiles.
+    _normalize_output_section(config)
     
     # 4. Copy case from parameters or calculation section
     if 'parameters' in config and 'case' in config['parameters']:
@@ -587,6 +590,90 @@ def _parse_ini_value(value: str) -> Any:
     
     # Keep as string
     return value
+
+
+# Default fractile set produced when ``[output].quantiles`` is not specified.
+# Mirrors :data:`openquake.fdha.logic_tree.io.FRACTILE_QS`; kept here to avoid
+# an import cycle (config_loader must not import the logic-tree IO layer).
+DEFAULT_OUTPUT_QUANTILES: tuple[float, ...] = (0.05, 0.16, 0.5, 0.84, 0.95)
+
+
+def parse_quantiles(value: Any) -> List[float]:
+    """Parse an OpenQuake-style ``quantiles`` value into a sorted float list.
+
+    Accepts a whitespace-separated string (``"0.05 0.5 0.95"``), a JSON list
+    (``[0.05, 0.5]``), a single number, or an empty string. An empty value
+    yields ``[]`` (no quantiles requested). Each quantile must lie strictly in
+    the open interval ``(0, 1)``. Duplicates are removed and the result is
+    sorted ascending, matching OpenQuake's statistics ordering.
+    """
+    if value is None:
+        return []
+    if isinstance(value, str):
+        tokens = value.split()
+    elif isinstance(value, (list, tuple)):
+        tokens = list(value)
+    else:  # single int/float
+        tokens = [value]
+
+    qs: List[float] = []
+    for tok in tokens:
+        try:
+            q = float(tok)
+        except (TypeError, ValueError):
+            raise ConfigValidationError(
+                f"Invalid quantile value {tok!r} in [output].quantiles; "
+                f"expected numbers in (0, 1)."
+            )
+        if not (0.0 < q < 1.0):
+            raise ConfigValidationError(
+                f"Quantile {q} out of range; quantiles must be strictly "
+                f"between 0 and 1."
+            )
+        qs.append(q)
+    return sorted(set(qs))
+
+
+def _normalize_output_section(config: Dict[str, Any]) -> None:
+    """Normalise the optional ``[output]`` section to ``config['output']``.
+
+    Produces ``{'quantiles': <list[float] | None>, 'mean': <bool>}`` where
+    ``quantiles is None`` means "use :data:`DEFAULT_OUTPUT_QUANTILES`" (the key
+    was omitted), an empty list means "no quantiles requested", and ``mean``
+    defaults to ``True`` (OpenQuake's ``mean_hazard_curves`` default).
+    """
+    out = config.get('output')
+    if not isinstance(out, dict):
+        config['output'] = {'quantiles': None, 'mean': True}
+        return
+
+    # mean: default True; accept bool or truthy strings already coerced by
+    # _parse_ini_value (true/false/yes/no/on/off).
+    mean_val = out.get('mean', True)
+    if isinstance(mean_val, str):
+        mean_val = mean_val.strip().lower() in ('true', 'yes', 'on', '1')
+    out['mean'] = bool(mean_val)
+
+    # quantiles: None when the key is absent (-> defaults applied downstream).
+    if 'quantiles' not in out:
+        out['quantiles'] = None
+    else:
+        out['quantiles'] = parse_quantiles(out['quantiles'])
+
+
+def resolve_output_quantiles(config: Dict[str, Any]) -> List[float]:
+    """Return the effective quantile list for a (normalised) config dict."""
+    out = config.get('output') or {}
+    qs = out.get('quantiles')
+    if qs is None:
+        return list(DEFAULT_OUTPUT_QUANTILES)
+    return list(qs)
+
+
+def resolve_output_mean(config: Dict[str, Any]) -> bool:
+    """Return whether the weighted-mean curve should be emitted (default True)."""
+    out = config.get('output') or {}
+    return bool(out.get('mean', True))
 
 
 def load_fdha_config(config_file: Union[str, Path]) -> FDHAConfiguration:

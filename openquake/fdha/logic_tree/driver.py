@@ -6,18 +6,23 @@ import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Sequence
 
 import numpy as np
 
-from openquake.fdha.calc.config_loader import load_config, validate_public_logic_tree_ini_file
+from openquake.fdha.calc.config_loader import (
+    load_config,
+    resolve_output_mean,
+    resolve_output_quantiles,
+    validate_public_logic_tree_ini_file,
+)
 from openquake.fdha.calc.utils.parsing import parse_source_model_faults
 from openquake.fdha.logic_tree.aggregation import weighted_fractiles, weighted_mean
 from openquake.fdha.logic_tree.config_builder import build_config, dump_config_to_ini
 from openquake.fdha.logic_tree.enumerator import SourceInfo, enumerate_end_branches
 from openquake.fdha.logic_tree.io import (
-    FRACTILE_LABELS,
     FRACTILE_QS,
+    quantile_label,
     write_aggregate_csv,
     write_branch_rate_cube_npz,
     write_branch_rates_csv,
@@ -91,6 +96,12 @@ class FdhaLogicTree:
                 "Missing [calculation].source_model_logic_tree_file "
                 "(canonical SMLT wrapper)."
             )
+
+        # OpenQuake-style [output] options: configurable quantile set and
+        # whether to emit the weighted-mean curve. Defaults preserve prior
+        # behaviour (mean + the five canonical fractiles).
+        self._quantiles: list[float] = resolve_output_quantiles(self.base_config)
+        self._emit_mean: bool = resolve_output_mean(self.base_config)
 
         self.source_model_branches: list[SourceModelBranch] = (
             load_source_model_branches(self.base_config, self.config_dir)
@@ -177,13 +188,14 @@ class FdhaLogicTree:
         w = np.asarray(branch_weights, dtype=float)
         w = w / w.sum()
         mean = weighted_mean(rates_arr, w)
-        fr = weighted_fractiles(rates_arr, w)
+        fr = weighted_fractiles(rates_arr, w, qs=self._quantiles)
 
         write_aggregate_csv(
             outdir_path / "aggregate_hazard.csv",
             d0=d0, mean_rates=mean.tolist(),
             fractiles={q: fr[q].tolist() for q in fr},
             site_lons=site_lons, site_lats=site_lats,
+            qs=self._quantiles, include_mean=self._emit_mean,
         )
 
         manifest = _build_manifest(
@@ -368,6 +380,7 @@ class FdhaLogicTree:
         # contribution as expected.
         frac_rates = _aggregate_multi_source_fractiles(
             rates_cube, branch_weights, source_ids_per_branch,
+            qs=self._quantiles,
         )
 
         # Invert each site's mean rate curve at target_rate; likewise fractiles.
@@ -392,14 +405,16 @@ class FdhaLogicTree:
             site_lons=sl_lons.tolist(),
             site_lats=sl_lats.tolist(),
         )
-        fr_stack = np.stack([frac_rates[q] for q in FRACTILE_QS], axis=0)
-        write_rates_fractiles_h5(
-            agg_dir / "rates_fractiles.h5",
-            rates_fractiles=fr_stack,
-            d0=target_displ.tolist(),
-            site_lons=sl_lons.tolist(),
-            site_lats=sl_lats.tolist(),
-        )
+        if self._quantiles:
+            fr_stack = np.stack([frac_rates[q] for q in self._quantiles], axis=0)
+            write_rates_fractiles_h5(
+                agg_dir / "rates_fractiles.h5",
+                rates_fractiles=fr_stack,
+                d0=target_displ.tolist(),
+                site_lons=sl_lons.tolist(),
+                site_lats=sl_lats.tolist(),
+                qs=self._quantiles,
+            )
         write_displacement_map_csv(
             agg_dir / "displacement_map_mean.csv",
             site_lons=sl_lons.tolist(),
@@ -409,7 +424,8 @@ class FdhaLogicTree:
             label="displ_mean",
             site_is_trace=is_trace.tolist(),
         )
-        for q, lab in zip(FRACTILE_QS, FRACTILE_LABELS):
+        for q in self._quantiles:
+            lab = quantile_label(q)
             write_displacement_map_csv(
                 agg_dir / f"displacement_map_{lab}.csv",
                 site_lons=sl_lons.tolist(),
@@ -440,11 +456,11 @@ class FdhaLogicTree:
                     "rates_fractiles_h5": "aggregate/rates_fractiles.h5",
                     "displacement_map_mean_csv": "aggregate/displacement_map_mean.csv",
                     "displacement_map_fractile_csvs": [
-                        f"aggregate/displacement_map_{lab}.csv"
-                        for lab in FRACTILE_LABELS
+                        f"aggregate/displacement_map_{quantile_label(q)}.csv"
+                        for q in self._quantiles
                     ],
                 },
-                "fractile_quantiles": list(FRACTILE_QS),
+                "fractile_quantiles": list(self._quantiles),
                 "per_source_mean_sum_strategy": (
                     "total_mean = sum_over_sources(per_source_LT_weighted_mean); "
                     "each source's weights are normalised within its own group."
@@ -598,7 +614,7 @@ class FdhaLogicTree:
         w_norm = w / total_weight
 
         mean = weighted_mean(rates_arr, w_norm)
-        fr = weighted_fractiles(rates_arr, w_norm)
+        fr = weighted_fractiles(rates_arr, w_norm, qs=self._quantiles)
 
         if mode == "hazard_curve":
             write_aggregate_csv(
@@ -606,6 +622,7 @@ class FdhaLogicTree:
                 d0=d0_ref, mean_rates=mean.tolist(),
                 fractiles={q: fr[q].tolist() for q in fr},
                 site_lons=site_lons_ref, site_lats=site_lats_ref,
+                qs=self._quantiles, include_mean=self._emit_mean,
             )
 
         manifest = self._build_multi_source_manifest(
@@ -779,7 +796,7 @@ class FdhaLogicTree:
         mean_rates = np.tensordot(sm_weights_norm, per_sm_mean, axes=(0, 0))
 
         frac_rates: dict[float, np.ndarray] = {}
-        for q in FRACTILE_QS:
+        for q in self._quantiles:
             per_sm_q = np.stack(
                 [
                     np.asarray(r["result"].fractiles[q], dtype=float)
@@ -800,7 +817,7 @@ class FdhaLogicTree:
         displ_mean = get_map_from_curves(target_displ, mean_rates, target_rate)
         displ_frac = {
             q: get_map_from_curves(target_displ, frac_rates[q], target_rate)
-            for q in FRACTILE_QS
+            for q in self._quantiles
         }
 
         # Top-level aggregate outputs (mirror the single-SMLT layout).
@@ -813,14 +830,16 @@ class FdhaLogicTree:
             site_lons=sl_lons.tolist(),
             site_lats=sl_lats.tolist(),
         )
-        fr_stack = np.stack([frac_rates[q] for q in FRACTILE_QS], axis=0)
-        write_rates_fractiles_h5(
-            agg_dir / "rates_fractiles.h5",
-            rates_fractiles=fr_stack,
-            d0=target_displ.tolist(),
-            site_lons=sl_lons.tolist(),
-            site_lats=sl_lats.tolist(),
-        )
+        if self._quantiles:
+            fr_stack = np.stack([frac_rates[q] for q in self._quantiles], axis=0)
+            write_rates_fractiles_h5(
+                agg_dir / "rates_fractiles.h5",
+                rates_fractiles=fr_stack,
+                d0=target_displ.tolist(),
+                site_lons=sl_lons.tolist(),
+                site_lats=sl_lats.tolist(),
+                qs=self._quantiles,
+            )
         write_displacement_map_csv(
             agg_dir / "displacement_map_mean.csv",
             site_lons=sl_lons.tolist(),
@@ -830,7 +849,8 @@ class FdhaLogicTree:
             label="displ_mean",
             site_is_trace=is_trace.tolist(),
         )
-        for q, lab in zip(FRACTILE_QS, FRACTILE_LABELS):
+        for q in self._quantiles:
+            lab = quantile_label(q)
             write_displacement_map_csv(
                 agg_dir / f"displacement_map_{lab}.csv",
                 site_lons=sl_lons.tolist(),
@@ -870,11 +890,11 @@ class FdhaLogicTree:
                 "rates_fractiles_h5": "aggregate/rates_fractiles.h5",
                 "displacement_map_mean_csv": "aggregate/displacement_map_mean.csv",
                 "displacement_map_fractile_csvs": [
-                    f"aggregate/displacement_map_{lab}.csv"
-                    for lab in FRACTILE_LABELS
+                    f"aggregate/displacement_map_{quantile_label(q)}.csv"
+                    for q in self._quantiles
                 ],
             },
-            "fractile_quantiles": list(FRACTILE_QS),
+            "fractile_quantiles": list(self._quantiles),
             "smlt_aggregation_strategy": (
                 "total_mean = sum_over_smlt(sm_w * smlt_total_mean); "
                 "fractiles weight per-SMLT fractiles by sm_w (approximation)."
@@ -1366,8 +1386,11 @@ def _aggregate_multi_source_fractiles(
     rates_cube: np.ndarray,
     branch_weights: list[float],
     source_ids_per_branch: list[str],
+    qs: Sequence[float] | None = None,
 ) -> dict[float, np.ndarray]:
     """Per-source fractiles then sum across sources.
+
+    ``qs`` selects the quantile set (default :data:`FRACTILE_QS`).
 
     NOTE: This is an approximation of the true multi-source fractile
     distribution (a convolution across independent sources). For a single
@@ -1381,7 +1404,7 @@ def _aggregate_multi_source_fractiles(
     for i, sid in enumerate(source_ids_per_branch):
         groups[sid].append(i)
 
-    qs = [0.05, 0.16, 0.5, 0.84, 0.95]
+    qs = list(FRACTILE_QS) if qs is None else list(qs)
     totals: dict[float, np.ndarray] = {q: np.zeros(rates_cube.shape[1:], dtype=float) for q in qs}
     for sid, indices in groups.items():
         w = np.asarray([branch_weights[i] for i in indices], dtype=float)
@@ -1390,7 +1413,7 @@ def _aggregate_multi_source_fractiles(
             continue
         w = w / wsum
         group_rates = rates_cube[indices]
-        fr = weighted_fractiles(group_rates, w)
+        fr = weighted_fractiles(group_rates, w, qs=qs)
         for q in qs:
             totals[q] = totals[q] + np.asarray(fr[q])
     return totals
