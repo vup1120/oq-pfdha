@@ -135,7 +135,16 @@ class FDHAContext:
     
     @property
     def near_far(self) -> np.ndarray:
-        """Near-field ('near') or far-field ('far') based on r threshold."""
+        """
+        Near-field ('near') or far-field ('far') label for each site.
+
+        A site is 'near' when its distance to the trace ``r`` is
+        <= ``near_far_threshold_km`` (default 0.2 km), otherwise 'far'.
+        This regime label is consumed *inside* the secondary (Visini) SR
+        computation for the along-strike Monte Carlo (Rank 2). It is NOT the
+        principal/distributed split: that decision uses the separate, smaller
+        ``r_threshold_km`` (default 0.1 km) via ``get_principal_mask``.
+        """
         return np.where(self.r <= self._near_far_threshold_km, 'near', 'far')
     
     @property
@@ -251,7 +260,22 @@ class FDHAContextMaker:
         
         Args:
             sitecol: OpenQuake SiteCollection
-            fdha_params: Dict with 'r_threshold_km', 'near_far_threshold_km'
+            fdha_params: Dict of FDHA distance thresholds (km) with keys:
+                - 'r_threshold_km' (default 0.1): the principal/distributed
+                  split. Sites with r <= threshold are handled by the
+                  *primary* (on-trace) SR x FD models; sites beyond it by the
+                  *secondary* (distributed) models. This chooses which model
+                  family applies and is enforced during hazard-curve
+                  integration (see ``get_principal_mask`` /
+                  ``get_distributed_mask`` and ``hazard.py``).
+                - 'near_far_threshold_km' (default 0.2): the near/far regime
+                  split used *inside* the secondary (Visini) computation to
+                  label each site 'near' or 'far' for the along-strike Monte
+                  Carlo (SR Rank 2). It tunes behaviour within the secondary
+                  model rather than selecting the model family (see the
+                  ``near_far`` property).
+                The two thresholds are independent and have different defaults
+                (0.1 vs 0.2 km); do not conflate them.
             maximum_distance: Maximum source-site distance in km
         """
         self.sitecol = sitecol
