@@ -39,7 +39,7 @@ rupture_traces = ["R1p5_far1"]]]></uncertaintyModel>
           <uncertaintyModel><![CDATA[[Visini2025SecondaryFD]
 style = normal
 tpfm = 1.42
-n_sigma = 2.7
+n_sigma = 3
 rupture_traces = ["R1p5_far1"]]]></uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
