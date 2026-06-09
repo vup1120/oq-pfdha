@@ -38,7 +38,20 @@ class Takao2013PrimaryFD(BasePrimarySurfDispl):
     ----------
     Takao, M., et al. (2013). Application of probabilistic fault displacement
     hazard analysis in Japan.
+
+    The conditional AD/MD log10-normal distribution is integrated over a
+    truncation range of ``mean ± n_sigma·sigma`` (in log10 space). The
+    truncation level ``n_sigma`` defaults to 3 and may be overridden from the
+    logic tree via ``[Takao2013PrimaryFD] n_sigma = <value>``.
     """
+
+    _N_INTEGRATION = 1000
+
+    def __init__(self, n_sigma=3.0):
+        super().__init__()
+        self.n_sigma = float(n_sigma)
+        if self.n_sigma <= 0.0:
+            raise ValueError(f"n_sigma must be positive; got {self.n_sigma}")
 
     def get_prob(self, d, X_L_ratio, mag, norm_disp_type):
         """
@@ -85,13 +98,13 @@ class Takao2013PrimaryFD(BasePrimarySurfDispl):
             log_mean = -5.46 + 0.82 * mag
             sigma = 0.42
             
-        d_truncation = 3  # ±3 sigma
+        d_truncation = self.n_sigma  # ±n_sigma
         # Truncation bounds in log10 space
         lower = 10 ** (log_mean - d_truncation * sigma)
         upper = 10 ** (log_mean + d_truncation * sigma)
-        
+
         # Use logspace values for numerical integration
-        logspace_vals = np.logspace(np.log10(lower), np.log10(upper), 1000)
+        logspace_vals = np.logspace(np.log10(lower), np.log10(upper), self._N_INTEGRATION)
         
         # Initialize output array: (n_displacements, n_sites)
         n_displacements = len(d)
@@ -150,17 +163,16 @@ class Takao2013PrimaryFD(BasePrimarySurfDispl):
         # Based on Wells and Coppersmith (1994) for average displacement
         log_mean = -4.80 + 0.69 * mag
         sigma = 0.36
-        d_truncation = 3  # ±3 sigma
-
+        d_truncation = self.n_sigma  # ±n_sigma
 
         # Truncation bounds in log10 space
         lower = 10 ** (log_mean - d_truncation * sigma)
         upper = 10 ** (log_mean + d_truncation * sigma)
-        
+
         prob_avg_displacement = norm.pdf(np.log10(target_ad), loc=log_mean, scale=sigma)
 
         # Normalizing the distribution with the same truncation bounds
-        logspace_vals = np.logspace(np.log10(lower), np.log10(upper), 1000)
+        logspace_vals = np.logspace(np.log10(lower), np.log10(upper), self._N_INTEGRATION)
         prob = norm.pdf(np.log10(logspace_vals), loc=log_mean, scale=sigma)
         normalization_factor = sum(prob)
 
@@ -203,22 +215,20 @@ class Takao2013PrimaryFD(BasePrimarySurfDispl):
         # All
         log_mean = -5.46 + 0.82 * mag
         sigma = 0.42
-        d_truncation = 3  # ±3 sigma
+        d_truncation = self.n_sigma  # ±n_sigma
 
         # Strike-slip
         #log_mean = -7.03 + 1.03 * mag
         #sigma = 0.34
-        #d_truncation = 3  # ±3 sigma
 
-        
         # Truncation bounds in log10 space
         lower = 10 ** (log_mean - d_truncation * sigma)
         upper = 10 ** (log_mean + d_truncation * sigma)
-        
+
         prob_max_displacement = norm.pdf(np.log10(target_md), loc=log_mean, scale=sigma)
 
         # Normalizing the distribution with the same truncation bounds
-        logspace_vals = np.logspace(np.log10(lower), np.log10(upper), 100)
+        logspace_vals = np.logspace(np.log10(lower), np.log10(upper), self._N_INTEGRATION)
         prob = norm.pdf(np.log10(logspace_vals), loc=log_mean, scale=sigma)
         normalization_factor = sum(prob)
 

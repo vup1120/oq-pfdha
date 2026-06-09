@@ -29,10 +29,31 @@ class MossRoss2011PrimaryFD(BasePrimarySurfDispl):
     The implementation restores the historical model that was removed during
     the May 2025 vectorization cleanup, while returning the current standard
     shape: ``(n_displacements, n_sites)``.
+
+    The conditional AD/MD log10-normal distribution is integrated over a
+    truncation range of ``mean ± n_sigma·sigma`` (in log10 space), consistent
+    with the other primary FD models (Takao 2013, Youngs 2003). The truncation
+    level ``n_sigma`` defaults to 3 and may be overridden from the logic tree
+    via ``[MossRoss2011PrimaryFD] n_sigma = <value>``.
     """
 
     _ACCEPTED_DISP_TYPES = frozenset(["AD", "MD"])
-    _INTEGRATION_DISPLACEMENTS = np.logspace(np.log10(0.001), np.log10(10), 100)
+    _N_INTEGRATION = 1000
+
+    def __init__(self, n_sigma=3.0):
+        super().__init__()
+        self.n_sigma = float(n_sigma)
+        if self.n_sigma <= 0.0:
+            raise ValueError(f"n_sigma must be positive; got {self.n_sigma}")
+
+    def _truncation_grid(self, mean, sigma):
+        """
+        Log-spaced integration grid spanning ``mean ± n_sigma·sigma`` in
+        log10 space (the truncation range of the AD/MD distribution).
+        """
+        lower = 10 ** (mean - self.n_sigma * sigma)
+        upper = 10 ** (mean + self.n_sigma * sigma)
+        return np.logspace(np.log10(lower), np.log10(upper), self._N_INTEGRATION)
 
     def get_prob(self, d, X_L_ratio, mag, norm_disp_type):
         """
@@ -66,7 +87,17 @@ class MossRoss2011PrimaryFD(BasePrimarySurfDispl):
         r = x_l - np.floor(x_l)
         x_fold = 0.5 - np.abs(r - 0.5)
 
-        integration_displacements = self._INTEGRATION_DISPLACEMENTS
+        # Build the integration support over the AD/MD truncation range so that
+        # the convolution support and the normalization denominator (in
+        # ``_normalized_log10_weights``) span the same ``mean ± n_sigma·sigma``.
+        if norm_disp_type == "AD":
+            mean = -2.2192 + 0.3244 * mag
+            sigma = 0.17
+        else:
+            mean = -3.1971 + 0.5102 * mag
+            sigma = 0.31
+
+        integration_displacements = self._truncation_grid(mean, sigma)
         norm_ratio = d_arr[:, np.newaxis] / integration_displacements[np.newaxis, :]
 
         if norm_disp_type == "AD":
@@ -156,7 +187,7 @@ class MossRoss2011PrimaryFD(BasePrimarySurfDispl):
 
         prob = norm.pdf(np.log10(target_displacement), loc=mean, scale=sigma)
         grid_prob = norm.pdf(
-            np.log10(self._INTEGRATION_DISPLACEMENTS),
+            np.log10(self._truncation_grid(mean, sigma)),
             loc=mean,
             scale=sigma,
         )
