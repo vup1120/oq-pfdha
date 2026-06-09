@@ -40,7 +40,7 @@ segment_sampling = legacy]]></uncertaintyModel>
           <uncertaintyModel><![CDATA[[Visini2025SecondaryFD]
 style = normal
 tpfm = 1.42
-n_sigma = 2.7
+n_sigma = 3
 rupture_traces = ["R1p5_local_A", "R1p5_local_B"]]]></uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
