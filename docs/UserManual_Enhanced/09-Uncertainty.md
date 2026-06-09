@@ -99,14 +99,14 @@ Distributional choices diverge widely, but two structural families dominate:
 - **Distribution:** Gamma on `D/AD` via `gamma.sf` ([line 146](../../openquake/fdha/primary_surf_displ/youngs2003.py#L146)); Beta on `D/MD` via `beta.cdf` renormalised at D=1 ([lines 150–151](../../openquake/fdha/primary_surf_displ/youngs2003.py#L150-L151)); magnitude scaling log₁₀-normal. (The standalone `get_prob_D_AD`/`get_prob_D_MD` helpers use `gamma.sf`/`beta.sf` at lines 178/197.)
 - **σ:** Fixed in log₁₀ space from Wells & Coppersmith (1994): `σ_AD = 0.36`, `σ_MD = 0.42` ([lines 34–35](../../openquake/fdha/primary_surf_displ/youngs2003.py#L34-L35)). Gamma α, β are x/L-dependent exponentials ([lines 114–119](../../openquake/fdha/primary_surf_displ/youngs2003.py#L114-L119)).
 - **τ/φ:** Not separated.
-- **Truncation:** ±6σ ε-space integration with step 0.1 ([lines 45–46, 122](../../openquake/fdha/primary_surf_displ/youngs2003.py#L45-L46)).
+- **Truncation:** ±`n_sigma`σ ε-space integration with step 0.1; `n_sigma` is a constructor parameter (default 6) settable from the logic tree via `[Youngs2003PrimaryFD] n_sigma = <value>`.
 - **Zero-displacement:** Implicit through integration bounds.
 - **Epistemic branches:** `style="all"` vs `style="normal"`.
 
 ### `MossRoss2011PrimaryFD` — [moss_ross2011.py](../../openquake/fdha/primary_surf_displ/moss_ross2011.py)
 - **Distribution:** Gamma on `D/AD` ([lines 104–109](../../openquake/fdha/primary_surf_displ/moss_ross2011.py#L104-L109)); Beta on `D/MD` ([lines 134–136](../../openquake/fdha/primary_surf_displ/moss_ross2011.py#L134-L136)).
 - **σ:** `σ_AD = 0.17`, `σ_MD = 0.31` in log₁₀ ([lines 125, 143](../../openquake/fdha/primary_surf_displ/moss_ross2011.py#L125)). Gamma `a,b` polynomial in x/L; Beta `α,β` linear in x/L.
-- **Truncation:** none in the σ sense — the conditional is normalised over a fixed log-spaced displacement grid (0.001–10 m, 100 points) ([line 35](../../openquake/fdha/primary_surf_displ/moss_ross2011.py#L35)).
+- **Truncation:** ±`n_sigma`σ — the conditional AD/MD log₁₀-normal is normalised over a log-spaced grid spanning `mean ± n_sigma·σ` (per displacement type), matching Takao 2013. `n_sigma` is a constructor parameter (default 3) settable from the logic tree via `[MossRoss2011PrimaryFD] n_sigma = <value>`. (Previously normalised over an arbitrary fixed 0.001–10 m grid.)
 - **τ/φ:** Not separated. No style branches, though `get_prob_D_AD` exposes a gamma-vs-Weibull `variant` option.
 
 ### `Petersen2011PrimaryFD` (and `_bilinear`, `_quadratic`, `_elliptical`) — [petersen2011.py](../../openquake/fdha/primary_surf_displ/petersen2011.py)
@@ -123,7 +123,7 @@ Distributional choices diverge widely, but two structural families dominate:
 ### `Takao2013PrimaryFD` — [takao2013.py](../../openquake/fdha/primary_surf_displ/takao2013.py)
 - **Distribution:** Gamma on `D/AD` (`1 − gamma.cdf`, [line 139](../../openquake/fdha/primary_surf_displ/takao2013.py#L139)); Beta on `D/MD` (`1 − beta.cdf`, [line 191](../../openquake/fdha/primary_surf_displ/takao2013.py#L191)); log₁₀-normal magnitude scaling.
 - **σ:** Wells & Coppersmith — `σ_AD = 0.36`, `σ_MD = 0.42` in log₁₀ ([lines 81, 86](../../openquake/fdha/primary_surf_displ/takao2013.py#L81)). Gamma `α, β` (and Beta `α, β` for MD) switch on SRL < 10 km (fixed) vs ≥ 10 km (x/L-dependent) ([lines 132–137, 184–189](../../openquake/fdha/primary_surf_displ/takao2013.py#L132-L137)).
-- **Truncation:** ±3σ; logspace integration over 1000 points ([lines 88, 94](../../openquake/fdha/primary_surf_displ/takao2013.py#L88)).
+- **Truncation:** ±`n_sigma`σ; logspace integration over 1000 points. `n_sigma` is a constructor parameter (default 3) settable from the logic tree via `[Takao2013PrimaryFD] n_sigma = <value>`.
 - **τ/φ:** Not separated.
 
 ### `Moss2022PrimaryFD` — [moss2022.py](../../openquake/fdha/primary_surf_displ/moss2022.py) and `Moss2024PrimaryFD` — [moss2024.py](../../openquake/fdha/primary_surf_displ/moss2024.py)
@@ -241,7 +241,7 @@ choice.
 - **Distribution:** Lognormal in `ln(Y)` via `norm.cdf` ([lines 188, 191](../../openquake/fdha/secondary_surf_displ/visini2025.py#L188)).
 - **σ:** `σ = 1.0271` in `ln(Y)` ([line 78](../../openquake/fdha/secondary_surf_displ/visini2025.py#L78)).
 - **Mean:** `ln(Y_med) = a + b·ln(s) + c·ln(TPFm) + d·M + e·I_style + f·I_fw + g_offset` ([lines 232–240](../../openquake/fdha/secondary_surf_displ/visini2025.py#L232-L240)).
-- **Truncation:** Symmetric truncated normal at ±`truncation_eps · σ` (default 3σ, [lines 171–173](../../openquake/fdha/secondary_surf_displ/visini2025.py#L171-L173)); lower clamp at `1e-16` to avoid `log(0)` ([line 162](../../openquake/fdha/secondary_surf_displ/visini2025.py#L162)).
+- **Truncation:** Symmetric truncated normal at ±`n_sigma · σ` (constructor parameter, default 3, settable via `[Visini2025SecondaryFD] n_sigma = <value>`; the legacy name `truncation_eps` is still accepted); lower clamp at `1e-16` to avoid `log(0)`.
 - **Epistemic branches:** combinations A / B / C as additive offsets `g` ([lines 73–76](../../openquake/fdha/secondary_surf_displ/visini2025.py#L73-L76)); style; HW/FW.
 
 ---
@@ -261,12 +261,23 @@ models (rupture models are uniformly logistic with no aleatory σ on `P`).
 | **Explicit discrete zero-displacement probability inside the model** | Lavrentiadis 2023 only (P_gap, P_zero_slip) |
 | **Ensemble-of-coefficients epistemic propagation inside `get_prob`** | Kuehn 2024 (with `epistemic_uncertainty=True`) |
 | **Epistemic exposed as named branches (style / dataset / version / σ source / method)** | All other models |
-| **Truncation at ±3σ** | Takao 2013; Youngs 2003 (SSD); Visini 2025 (SSD, default) |
-| **Truncation at ±6σ ε-space integration** | Youngs 2003 (PSD); Moss 2022 / 2024 (PSD and Gamma-method SSD) |
-| **No truncation** | Petersen 2011 (PSD and SSD); Chiou 2025; Lavrentiadis 2023; Kuehn 2024; Moss & Ross 2011 (fixed integration grid) |
+| **Truncation at ±`n_sigma`σ (user-configurable; default 3)** | Moss & Ross 2011 (PSD); Takao 2013 (PSD); Youngs 2003 (SSD); Visini 2025 (SSD) |
+| **Truncation at ±`n_sigma`σ ε-space integration (user-configurable; default 6)** | Youngs 2003 (PSD) |
+| **Truncation at ±6σ ε-space integration (fixed)** | Moss 2022 / 2024 (PSD and Gamma-method SSD) |
+| **No truncation** | Petersen 2011 (PSD and SSD); Chiou 2025; Lavrentiadis 2023; Kuehn 2024 |
 
 ### Practical guidance for users
 
+- **Truncation level is user-configurable for the truncated models.** Moss & Ross
+  2011, Takao 2013, Youngs 2003 (PSD), and Visini 2025 (SSD) expose the truncation
+  half-width as an `n_sigma` constructor parameter (defaults: 3 for Moss & Ross /
+  Takao / Visini, 6 for Youngs PSD). Set it from a logic-tree branch, e.g.:
+  ```xml
+  <uncertaintyModel><![CDATA[[MossRoss2011PrimaryFD]
+  n_sigma = 4]]></uncertaintyModel>
+  ```
+  (For backward compatibility, Visini 2025 SSD also accepts the former name
+  `truncation_eps`.)
 - **σ is mostly fixed in log space.** Apart from Lavrentiadis 2023, Kuehn 2024,
   and Chiou 2025, the aleatory σ in this library is a scalar regression value
   (commonly the Wells & Coppersmith 1994 values 0.36 / 0.42 in log₁₀) without

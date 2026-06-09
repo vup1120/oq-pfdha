@@ -42,14 +42,22 @@ class Youngs2003PrimaryFD(BasePrimarySurfDispl):
     }
     
     # Integration parameters
-    _N_EPS = 6  # ±6 sigma truncation (changed from 3 to improve accuracy)
-    _DZ = 0.1   # Step size in epsilon space 
-    
+    _DZ = 0.1   # Step size in epsilon space
+
     _ACCEPTED_DISP_TYPES = frozenset(["AD", "MD"])
     _ACCEPTED_STYLES = frozenset(["all", "normal"])
-    
-    def __init__(self):
+
+    def __init__(self, n_sigma=6.0):
+        """
+        :param n_sigma:
+            Half-width of the ±σ ε-space integration truncation. Defaults to 6
+            (improves accuracy over the historical ±3σ). Overridable from the
+            logic tree via ``[Youngs2003PrimaryFD] n_sigma = <value>``.
+        """
         super().__init__()
+        self._N_EPS = float(n_sigma)  # ±n_sigma truncation in epsilon space
+        if self._N_EPS <= 0.0:
+            raise ValueError(f"n_sigma must be positive; got {self._N_EPS}")
     
     def _get_wc94_coeffs(self, style, norm_disp_type):
         """

@@ -35,7 +35,7 @@ These parameters are specified in the `[calculation]` section (INI format):
 | `style` | string | – | inferred from source rake when omitted | `normal`, `reverse` | No | Mirrors the rupture mechanism indicator (normal=1, reverse=0). | Keep consistent with rupture style. |
 | `scaling_model` | string | – | `WC1994` | `WC1994`, `THINGBAIJAM2017`, `LEONARD2010` | No | Selects the scaling relation used to compute TPFm when not provided explicitly. | Affects throw smoothing window and magnitude–slip link. |
 | `tpfm` | float or list[float] | meters | computed | >0 | No | Directly sets mean throw on the principal fault; when set, it overrides the scaler‑derived value. | If set, `scaling_model` is ignored for those sites. |
-| `truncation_eps` | float | standard deviations | `3.0` | >0 | No | Half-width of the truncated lognormal residual distribution. | Advanced use only. |
+| `n_sigma` | float | standard deviations | `3.0` | >0 | No | Half-width of the truncated lognormal residual distribution. The legacy name `truncation_eps` is still accepted as an alias. | Advanced use only. |
 
 ### Units and sign conventions
 - Distances `s` (FD), `r` (SR slice minimum distance), and `rx` are in meters in the Visini regressions.

@@ -56,12 +56,16 @@ class Visini2025SecondaryFD(BaseSecondarySurfDispl):
     - style:       'normal' or 'reverse'.
     - combination: 'A', 'B', or 'C'.
     - scaling_model: 'WC1994' | 'THINGBAIJAM2017' | 'LEONARD2010'
-    - truncation_eps: half-width of ln(Y) truncation in σ units (MATLAB scripts use 3).
+    - n_sigma: half-width of ln(Y) truncation in σ units (MATLAB scripts use 3).
     """
 
-    def __init__(self, truncation_eps: float = 3.0) -> None:
+    def __init__(self, n_sigma: float = 3.0, truncation_eps: float = None) -> None:
         super().__init__()
-        self.truncation_eps = float(truncation_eps)
+        # ``truncation_eps`` is the deprecated former name for ``n_sigma``; it is
+        # still accepted (e.g. from older logic-tree configs) and takes priority.
+        self.n_sigma = float(truncation_eps if truncation_eps is not None else n_sigma)
+        if self.n_sigma <= 0.0:
+            raise ValueError(f"n_sigma must be positive; got {self.n_sigma}")
         # Empirical regression coefficients (ln Y)
         self.coeffs = {
             "a": -8.0651,          # intercept
@@ -102,10 +106,11 @@ class Visini2025SecondaryFD(BaseSecondarySurfDispl):
         - `s` and `rx` are **meters**.
         - `tpfm` is **meters** if provided. If None, it will be computed.
 
-        Optional ``truncation_eps`` in ``kwargs`` overrides the instance default
-        (e.g. from logic-tree / INI parameters).
+        Optional ``n_sigma`` in ``kwargs`` overrides the instance default
+        (e.g. from logic-tree / INI parameters). The legacy name
+        ``truncation_eps`` is also accepted.
         """
-        truncation_eps_override = kwargs.pop("truncation_eps", None)
+        n_sigma_override = kwargs.pop("n_sigma", kwargs.pop("truncation_eps", None))
         # Sanitize inputs
         d = np.asarray(d, dtype=float)
         s = np.asarray(s, dtype=float)
@@ -164,12 +169,12 @@ class Visini2025SecondaryFD(BaseSecondarySurfDispl):
         ln_med = np.log(np.maximum(median_y, 1e-16))
         sigma = float(self.coeffs["sigma"])
         eps = float(
-            self.truncation_eps
-            if truncation_eps_override is None
-            else truncation_eps_override
+            self.n_sigma
+            if n_sigma_override is None
+            else n_sigma_override
         )
         if eps <= 0.0:
-            raise ValueError(f"truncation_eps must be positive; got {eps}")
+            raise ValueError(f"n_sigma must be positive; got {eps}")
         denom = norm.cdf(eps) - norm.cdf(-eps)
 
         # Broadcast to (n_sites, n_displ) when both are 1D vectors of different lengths
