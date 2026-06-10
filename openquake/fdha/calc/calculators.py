@@ -109,13 +109,17 @@ class BaseFaultRuptureCalculator:
         self.p_sr_red_cfg = self.config.get('parameters', {}).get('primary_sr_reduction', {'method': 'median', 'q': 50})
         self.s_sr_red_cfg = self.config.get('parameters', {}).get('secondary_sr_reduction', self.p_sr_red_cfg)
         
-        # R threshold
+        # Principal/distributed split: r <= threshold -> primary (on-trace)
+        # models, r > threshold -> secondary (distributed) models. Read from
+        # [calculation] first, then [parameters]. Default 0.1 km.
         self.r_threshold_km = float(
             self.config.get('calculation', {}).get('r_threshold_km') or
             self.config.get('parameters', {}).get('r_threshold_km', 0.1)
         )
-        
-        # Near/far threshold
+
+        # Near/far regime split used *inside* the secondary (Visini) SR Rank 2
+        # Monte Carlo; distinct from r_threshold_km and not a model selector.
+        # Default 0.2 km.
         self.near_far_threshold_km = float(
             self.config.get('parameters', {}).get('near_far_threshold_km', 0.2)
         )
@@ -152,7 +156,17 @@ class BaseFaultRuptureCalculator:
             )
     
     def get_fdha_params(self):
-        """Get FDHA parameters for context maker."""
+        """
+        Get the FDHA distance thresholds for the context maker.
+
+        Returns a dict of two independent thresholds (km):
+            - 'r_threshold_km': principal vs distributed split. Selects whether
+              a site is handled by the primary (on-trace) or secondary
+              (distributed) model family during hazard integration.
+            - 'near_far_threshold_km': near vs far regime used *within* the
+              secondary (Visini) SR Rank 2 along-strike Monte Carlo; it tunes
+              the secondary computation rather than selecting the model family.
+        """
         return {
             'r_threshold_km': self.r_threshold_km,
             'near_far_threshold_km': self.near_far_threshold_km,

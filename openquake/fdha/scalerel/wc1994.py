@@ -34,18 +34,12 @@ Conventions:
 - Inverse (M|X): M = a + b * log10(X). The returned sigma is the standard
   deviation of M.
 - For displacement (MD/AD), both forward and inverse forms are provided.
-
-Notes:
-- Reverse-fault displacement relations are not significant at the 95%
-  level in the original paper. By default, we fall back to the "all-slip"
-  relation when style == "reverse" for displacement predictions.
 """
 
 from __future__ import annotations
 
 from collections import namedtuple
 import math
-import warnings
 import numpy as np
 
 from .base import BaseMSRSigma, BaseASRSigma
@@ -140,30 +134,26 @@ class WellsCoppersmith1994(BaseMSRSigma, BaseASRSigma):
     # Forward: log10(MD) = a + b*M
     MD_fwd = {
         "strike-slip": Coeff(-7.03, 1.03, 0.34),
-        "reverse":     Coeff(-1.84, 0.29, 0.42),  # not significant at 95%
-        "normal":      Coeff(-5.90, 0.89, 0.38),
+        "reverse":     Coeff(-1.84, 0.29, 0.42),        "normal":      Coeff(-5.90, 0.89, 0.38),
         "all":         Coeff(-5.46, 0.82, 0.42),
     }
     # Inverse: M = a + b*log10(MD)
     MD_inv = {
         "strike-slip": Coeff(6.81, 0.78, 0.29),
-        "reverse":     Coeff(6.52, 0.44, 0.52),  # not significant at 95%
-        "normal":      Coeff(6.61, 0.71, 0.34),
+        "reverse":     Coeff(6.52, 0.44, 0.52),        "normal":      Coeff(6.61, 0.71, 0.34),
         "all":         Coeff(6.69, 0.74, 0.40),
     }
 
     # Forward: log10(AD) = a + b*M
     AD_fwd = {
         "strike-slip": Coeff(-6.32, 0.90, 0.28),
-        "reverse":     Coeff(-0.74, 0.08, 0.38),  # not significant at 95%
-        "normal":      Coeff(-4.45, 0.63, 0.33),
+        "reverse":     Coeff(-0.74, 0.08, 0.38),        "normal":      Coeff(-4.45, 0.63, 0.33),
         "all":         Coeff(-4.80, 0.69, 0.36),
     }
     # Inverse: M = a + b*log10(AD)
     AD_inv = {
         "strike-slip": Coeff(7.04, 0.89, 0.28),
-        "reverse":     Coeff(6.64, 0.13, 0.50),  # not significant at 95%
-        "normal":      Coeff(6.78, 0.65, 0.33),
+        "reverse":     Coeff(6.64, 0.13, 0.50),        "normal":      Coeff(6.78, 0.65, 0.33),
         "all":         Coeff(6.93, 0.82, 0.39),
     }
 
@@ -230,35 +220,19 @@ class WellsCoppersmith1994(BaseMSRSigma, BaseASRSigma):
     # Sigma returned is the SD of log10(D)
     # ------------------------------------------------------------------
     def get_average_displacement(self, mag: float, style: str | None = None, return_sigma: bool = False):
-        """Return average displacement (m) from magnitude for the given faulting ``style``.
-
-        For ``style == 'reverse'`` the WC1994 relation is not significant at the
-        95% level, so the style-independent ('all') coefficients are used.
-        """
+        """Return average displacement (m) from magnitude for the given faulting ``style``."""
         style = style or "all"
         coeff = self.AD_fwd.get(style, self.AD_fwd["all"])
         if style == "reverse":
-            warnings.warn(
-                "Wells & Coppersmith (1994): reverse AD vs M is not "
-                "significant at the 95% level; falling back to 'all'."
-            )
             coeff = self.AD_fwd["all"]
         log10_AD = coeff.a + coeff.b * float(mag)
         AD = np.power(10.0, log10_AD)
         return (AD, coeff.sigma) if return_sigma else AD
 
     def get_maximum_displacement(self, mag: float, style: str = "all", return_sigma: bool = False):
-        """Return maximum displacement (m) from magnitude for the given faulting ``style``.
-
-        For ``style == 'reverse'`` the WC1994 relation is not significant at the
-        95% level, so the style-independent ('all') coefficients are used.
-        """
+        """Return maximum displacement (m) from magnitude for the given faulting ``style``."""
         coeff = self.MD_fwd.get(style, self.MD_fwd["all"])
         if style == "reverse":
-            warnings.warn(
-                "Wells & Coppersmith (1994): reverse MD vs M is not "
-                "significant at the 95% level; falling back to 'all'."
-            )
             coeff = self.MD_fwd["all"]
         log10_MD = coeff.a + coeff.b * float(mag)
         MD = np.power(10.0, log10_MD)
