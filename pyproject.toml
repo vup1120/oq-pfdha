@@ -64,3 +64,37 @@ namespaces = true
 [tool.setuptools.package-data]
 "openquake.fdha.logic_tree" = ["*.yaml"]
 "openquake.fdha.primary_surf_displ" = ["data/*.csv"]
+
+[tool.pytest.ini_options]
+# Mirrors openquake/fdha/test/pytest.ini so that running ``pytest`` from the
+# repository root (rootdir = repo root, configfile = pyproject.toml) behaves the
+# same as running from the test directory. ``importlib`` import mode avoids the
+# "import file mismatch" collision between benchmark scripts that share the
+# basename ``run_test.py`` (no __init__.py / same-name modules).
+testpaths = [
+    "openquake/fdha/test/unit",
+    "openquake/fdha/test/integration",
+    "openquake/fdha/test/benchmark",
+]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "--tb=short --strict-markers -ra --import-mode=importlib"
+markers = [
+    "unit: marks tests as unit tests (fast, isolated)",
+    "integration: marks tests as integration tests (full workflow)",
+    "regression: marks tests that pin numerical output against a known baseline",
+    "benchmark: marks tests as benchmark tests (comparisons with published results and source code)",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "youngs2003: tests for Youngs et al. (2003) model",
+    "petersen2011: tests for Petersen et al. (2011) model",
+    "moss2024: tests for Moss et al. (2024) model",
+    "kuehn2024: tests for Kuehn et al. (2024) model",
+    "lavrentiadis2023: tests for Lavrentiadis & Abrahamson (2023) model",
+    "chiou2025: tests for Chiou et al. (2025) model",
+    "visini2025: tests for Visini et al. (2025) model",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
