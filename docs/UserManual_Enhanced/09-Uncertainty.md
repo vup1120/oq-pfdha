@@ -43,7 +43,7 @@ as alternative coefficient sets (style, regional dataset, site stiffness).
 - Deterministic constant probability supplied by the user (default 1.0).
 - No aleatory or epistemic structure.
 
-### `WC1993PrimarySR` — [wells_coppersmith1993.py:35](../../openquake/fdha/primary_surf_rup/wells_coppersmith1993.py#L35)
+### `WC1993PrimarySR` — [wells_coppersmith1993.py:51](../../openquake/fdha/primary_surf_rup/wells_coppersmith1993.py#L51)
 - Logistic, magnitude only: `a = −12.51`, `b = 2.053`.
 - Single deterministic model; no branches.
 
@@ -51,14 +51,14 @@ as alternative coefficient sets (style, regional dataset, site stiffness).
 - Logistic, magnitude only.
 - **Epistemic branches:** `style="all"` (`a=−12.51`, `b=2.053`) vs `style="normal"` (`a=−16.02`, `b=2.685`).
 
-### `MossRoss2011PrimarySR` — [moss_ross2011.py:39](../../openquake/fdha/primary_surf_rup/moss_ross2011.py#L39)
+### `MossRoss2011PrimarySR` — [moss_ross2011.py:50](../../openquake/fdha/primary_surf_rup/moss_ross2011.py#L50)
 - Logistic, magnitude only: `a = 7.3`, `b = 1.03`. Reverse-faulting calibration.
 
-### `Moss2013PrimarySR` — [moss2013.py:85-95](../../openquake/fdha/primary_surf_rup/moss2013.py#L85-L95)
+### `Moss2013PrimarySR` — [moss2013.py:86-107](../../openquake/fdha/primary_surf_rup/moss2013.py#L86-L107)
 - Logistic, magnitude only.
 - **Epistemic branches:** four coefficient sets covering style (reverse / strike-slip) × site stiffness (Vs30 > 600 m/s or ≤ 600 m/s).
 
-### `Takao2013PrimarySR` — [takao2013.py:44](../../openquake/fdha/primary_surf_rup/takao2013.py#L44)
+### `Takao2013PrimarySR` — [takao2013.py:54](../../openquake/fdha/primary_surf_rup/takao2013.py#L54)
 - Logistic, magnitude only: `a = −32.03`, `b = 4.9`.
 
 ### `Yang2021PrimarySR` — [yang2021.py:59](../../openquake/fdha/primary_surf_rup/yang2021.py#L59)
@@ -71,12 +71,12 @@ as alternative coefficient sets (style, regional dataset, site stiffness).
 ### `Mammarella2024PrimarySR` — [mammarella2024.py](../../openquake/fdha/primary_surf_rup/mammarella2024.py)
 - **Departs from the logistic pattern.** Computes `P(SR|M)` by a discrete grid
   integration over geometric and physical inputs:
-  - log₁₀ W (rupture width) drawn from a **truncated lognormal**, half-width `T_W·σ = 1.0σ` ([mammarella2024.py:116](../../openquake/fdha/primary_surf_rup/mammarella2024.py#L116));
+  - log₁₀ W (rupture width) drawn from a **truncated lognormal**, half-width `T_W·σ = 1.0σ` ([mammarella2024.py:118](../../openquake/fdha/primary_surf_rup/mammarella2024.py#L118));
   - dip from a **truncated normal**, half-width `t_d·σ`;
   - seismogenic thickness `Zs` from a **truncated normal**, half-width `t_z·σ`;
-  - hypocentre-depth ratio (HDR) and hypocentre-depth distribution (HDD) ratio from **uniform** templates.
+  - hypocentre-depth ratio (HDR) from **uniform** templates; hypocentre-depth distribution (HDD) ratio from discretized **normal** templates (`TAB2`).
 - **No aleatory σ on P.** All spread is geometric/epistemic. Magnitude–width
-  scaling has three MSR options (codes 0/1/2, [lines 85–95](../../openquake/fdha/primary_surf_rup/mammarella2024.py#L85-L95)) and six HDD templates per style — together a large epistemic branch set.
+  scaling has three MSR options (codes 0/1/2, [lines 85–95](../../openquake/fdha/primary_surf_rup/mammarella2024.py#L85-L95)) and 11 HDD templates ([`TAB2`, lines 99–104](../../openquake/fdha/primary_surf_rup/mammarella2024.py#L99-L104): 3 normal, 4 reverse, 4 strike-slip) — together a large epistemic branch set.
 
 ---
 
@@ -96,41 +96,42 @@ Distributional choices diverge widely, but two structural families dominate:
   σ.
 
 ### `Youngs2003PrimaryFD` — [youngs2003.py](../../openquake/fdha/primary_surf_displ/youngs2003.py)
-- **Distribution:** Gamma on `D/AD` via `gamma.sf` ([line 169](../../openquake/fdha/primary_surf_displ/youngs2003.py#L169)); Beta on `D/MD` via `beta.sf` ([line 188](../../openquake/fdha/primary_surf_displ/youngs2003.py#L188)); magnitude scaling log₁₀-normal.
-- **σ:** Fixed in log₁₀ space from Wells & Coppersmith (1994): `σ_AD = 0.36`, `σ_MD = 0.42` ([lines 25–26](../../openquake/fdha/primary_surf_displ/youngs2003.py#L25-L26)). Gamma α, β are x/L-dependent exponentials ([lines 105–109](../../openquake/fdha/primary_surf_displ/youngs2003.py#L105-L109)).
+- **Distribution:** Gamma on `D/AD` via `gamma.sf` ([line 146](../../openquake/fdha/primary_surf_displ/youngs2003.py#L146)); Beta on `D/MD` via `beta.cdf` renormalised at D=1 ([lines 150–151](../../openquake/fdha/primary_surf_displ/youngs2003.py#L150-L151)); magnitude scaling log₁₀-normal. (The standalone `get_prob_D_AD`/`get_prob_D_MD` helpers use `gamma.sf`/`beta.sf` at lines 178/197.)
+- **σ:** Fixed in log₁₀ space from Wells & Coppersmith (1994): `σ_AD = 0.36`, `σ_MD = 0.42` ([lines 34–35](../../openquake/fdha/primary_surf_displ/youngs2003.py#L34-L35)). Gamma α, β are x/L-dependent exponentials ([lines 114–119](../../openquake/fdha/primary_surf_displ/youngs2003.py#L114-L119)).
 - **τ/φ:** Not separated.
-- **Truncation:** ±6σ ε-space integration with step 0.1 ([lines 35–36, 112](../../openquake/fdha/primary_surf_displ/youngs2003.py#L35-L36)).
+- **Truncation:** ±`n_sigma`σ ε-space integration with step 0.1; `n_sigma` is a constructor parameter (default 6) settable from the logic tree via `[Youngs2003PrimaryFD] n_sigma = <value>`.
 - **Zero-displacement:** Implicit through integration bounds.
 - **Epistemic branches:** `style="all"` vs `style="normal"`.
 
 ### `MossRoss2011PrimaryFD` — [moss_ross2011.py](../../openquake/fdha/primary_surf_displ/moss_ross2011.py)
 - **Distribution:** Gamma on `D/AD` ([lines 104–109](../../openquake/fdha/primary_surf_displ/moss_ross2011.py#L104-L109)); Beta on `D/MD` ([lines 134–136](../../openquake/fdha/primary_surf_displ/moss_ross2011.py#L134-L136)).
 - **σ:** `σ_AD = 0.17`, `σ_MD = 0.31` in log₁₀ ([lines 125, 143](../../openquake/fdha/primary_surf_displ/moss_ross2011.py#L125)). Gamma `a,b` polynomial in x/L; Beta `α,β` linear in x/L.
-- **Truncation:** ±3σ ([lines 80–81](../../openquake/fdha/primary_surf_displ/moss_ross2011.py#L80-L81)).
-- **τ/φ:** Not separated. Single deterministic model (no branches).
+- **Truncation:** ±`n_sigma`σ — the conditional AD/MD log₁₀-normal is normalised over a log-spaced grid spanning `mean ± n_sigma·σ` (per displacement type), matching Takao 2013. `n_sigma` is a constructor parameter (default 3) settable from the logic tree via `[MossRoss2011PrimaryFD] n_sigma = <value>`. (Previously normalised over an arbitrary fixed 0.001–10 m grid.)
+- **τ/φ:** Not separated. No style branches, though `get_prob_D_AD` exposes a gamma-vs-Weibull `variant` option.
 
 ### `Petersen2011PrimaryFD` (and `_bilinear`, `_quadratic`, `_elliptical`) — [petersen2011.py](../../openquake/fdha/primary_surf_displ/petersen2011.py)
-- **Distribution:** Lognormal in *natural log* `ln(D in cm)`, evaluated via `norm.cdf` ([line 70](../../openquake/fdha/primary_surf_displ/petersen2011.py#L70)).
+- **Distribution:** Lognormal in *natural log* `ln(D in cm)`, evaluated via `norm.cdf` ([line 80](../../openquake/fdha/primary_surf_displ/petersen2011.py#L80)).
 - **σ (fixed in ln-cm):**
-  - Bilinear: `σ₁ = 1.2906` (low x/L), `σ₂ = 0.9624` (high x/L) ([lines 87–88](../../openquake/fdha/primary_surf_displ/petersen2011.py#L87-L88));
-  - Quadratic: `σ = 1.1346` ([line 139](../../openquake/fdha/primary_surf_displ/petersen2011.py#L139));
-  - Elliptical: `σ = 1.1348` ([line 118](../../openquake/fdha/primary_surf_displ/petersen2011.py#L118)).
+  - Bilinear: `σ₁ = 1.2906` (low x/L), `σ₂ = 0.9624` (high x/L) ([line 97](../../openquake/fdha/primary_surf_displ/petersen2011.py#L97));
+  - Quadratic: `σ = 1.1346` ([line 149](../../openquake/fdha/primary_surf_displ/petersen2011.py#L149));
+  - Elliptical: `σ = 1.1348` ([line 128](../../openquake/fdha/primary_surf_displ/petersen2011.py#L128)).
 - **Mean:** Magnitude- and x/L-dependent (piecewise / polynomial / elliptical).
 - **τ/φ:** Not separated. **Truncation:** none — `norm.cdf` applied directly.
 - **Epistemic branches:** the three regression variants are exposed as
   separate registered classes.
 
 ### `Takao2013PrimaryFD` — [takao2013.py](../../openquake/fdha/primary_surf_displ/takao2013.py)
-- **Distribution:** Gamma on `D/AD` ([line 129](../../openquake/fdha/primary_surf_displ/takao2013.py#L129)); Beta on `D/MD` ([line 181](../../openquake/fdha/primary_surf_displ/takao2013.py#L181)); log₁₀-normal magnitude scaling.
-- **σ:** Wells & Coppersmith — `σ_AD = 0.36`, `σ_MD = 0.42` in log₁₀ ([lines 71, 76](../../openquake/fdha/primary_surf_displ/takao2013.py#L71)). Gamma `α, β` switch on SRL < 10 km (fixed) vs ≥ 10 km (x/L-dependent) ([lines 122–127, 174–179](../../openquake/fdha/primary_surf_displ/takao2013.py#L122-L127)).
-- **Truncation:** ±3σ; logspace integration over 1000 points ([lines 78, 84](../../openquake/fdha/primary_surf_displ/takao2013.py#L78)).
+- **Distribution:** Gamma on `D/AD` (`1 − gamma.cdf`, [line 139](../../openquake/fdha/primary_surf_displ/takao2013.py#L139)); Beta on `D/MD` (`1 − beta.cdf`, [line 191](../../openquake/fdha/primary_surf_displ/takao2013.py#L191)); log₁₀-normal magnitude scaling.
+- **σ:** Wells & Coppersmith — `σ_AD = 0.36`, `σ_MD = 0.42` in log₁₀ ([lines 81, 86](../../openquake/fdha/primary_surf_displ/takao2013.py#L81)). Gamma `α, β` (and Beta `α, β` for MD) switch on SRL < 10 km (fixed) vs ≥ 10 km (x/L-dependent) ([lines 132–137, 184–189](../../openquake/fdha/primary_surf_displ/takao2013.py#L132-L137)).
+- **Truncation:** ±`n_sigma`σ; logspace integration over 1000 points. `n_sigma` is a constructor parameter (default 3) settable from the logic tree via `[Takao2013PrimaryFD] n_sigma = <value>`.
 - **τ/φ:** Not separated.
 
 ### `Moss2022PrimaryFD` — [moss2022.py](../../openquake/fdha/primary_surf_displ/moss2022.py) and `Moss2024PrimaryFD` — [moss2024.py](../../openquake/fdha/primary_surf_displ/moss2024.py)
 - **Distribution:** Gamma on `D/XD` via `gamma.cdf` ([moss2024.py:103](../../openquake/fdha/primary_surf_displ/moss2024.py#L103)); magnitude scaling log₁₀-normal via numerical integration.
 - **σ (alternatives):**
-  - "recommended" σ — e.g. 0.20 (MD-complete) / 0.25 (AD-complete);
-  - "regression" σ — e.g. 0.148 (MD) / 0.133 (AD).
+  - "recommended" σ — 0.20 (MD-complete), 0.20 (AD-complete), 0.25 (AD-"all");
+  - "regression" σ — 0.148 (MD-complete) / 0.133 (AD-complete).
+  - (These scaling tables live in [moss2022.py:19–28](../../openquake/fdha/primary_surf_displ/moss2022.py#L19-L28).)
 - **Gamma α, β source (Moss 2024):**
   - `source="EQS"` (default) — interpolated from *Earthquake Spectra* Table 2 ([lines 133–135](../../openquake/fdha/primary_surf_displ/moss2024.py#L133-L135));
   - `source="GIRS"` — x/L regression from GIRS-2022-05 Figures 4.3–4.4 ([lines 126–130](../../openquake/fdha/primary_surf_displ/moss2024.py#L126-L130)).
@@ -139,33 +140,33 @@ Distributional choices diverge widely, but two structural families dominate:
 - **Epistemic branches:** completeness (complete / all), σ source (recommended / regression), gamma source (EQS / GIRS).
 
 ### `Lavrentiadis2023PrimaryFD` — [lavrentiadis2023.py](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py)
-- **Distribution:** Normal on the **power-transformed displacement** `D^0.3`, via `norm.sf` ([line 84](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L84)). The transformation is applied as `D = μ_prime^(1/0.3)` ([line 335](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L335)), so probability statements live in the "prime" (Box–Cox-like) space.
-- **σ — full τ/φ decomposition, both magnitude-dependent** ([lines 319–331](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L319-L331)):
+- **Distribution:** Normal on the **power-transformed displacement** `D^0.3`, via `norm.sf` ([lines 94–96](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L94-L96)). The transformation is applied as `D = μ_prime^(1/0.3)` ([line 345](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L345)), so probability statements live in the "prime" (Box–Cox-like) space.
+- **σ — full τ/φ decomposition, both magnitude-dependent** ([lines 329–340](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L329-L340)):
   - between-event `τ_agg = clip(0.115 + 0.060·(M−6), [0.115, 0.205])`;
   - within-event `φ_agg = clip(0.120 + 0.150·(M−6), [0.120, 0.270])`;
   - principal φ adds a component-correlation term with `ρ = −0.15`;
   - additional segmentation variance `φ_add = c₁₈ + c₁₉·M + c₂₀·(M−6.7)²`;
   - total `σ_total = √(τ² + φ² + φ_add²)`.
 - **Discrete zero-displacement components — unique in the library:**
-  - `P_gap` (segment-gap probability, [lines 283–300](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L283-L300));
-  - `P_zero_slip` (logistic, [line 307](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L307));
-  - combined as `P_prnc · (1 − P_zero_slip) · (1 − P_gap)` ([line 89](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L89)).
+  - `P_gap` (segment-gap probability, [lines 293–310](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L293-L310));
+  - `P_zero_slip` (logistic, [line 317](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L317));
+  - combined as `ccdf_prnc · (1 − P_zero_slip) · (1 − P_gap)` ([line 99](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L99)).
 - **Epistemic branches:** style-dependent coefficient sets; three displacement
   metrics (`disp_agg_prime`, `disp_prnc_prime`, `disp_agg_seg`).
 
 ### `Kuehn2024PrimaryFD` — [kuehn2024/kuehn2024.py](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py)
-- **Distribution:** **Box–Cox-transformed Normal** — `norm.cdf` on `(D^λ − 1)/λ` (or `ln D` if λ = 0), [lines 84–90, 149–155](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py#L84-L90).
-- **σ — explicit between/within decomposition** combined as `σ_total = √(σ_mode² + σ_within²)` ([lines 185, 199, 212](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py#L185)):
-  - between-event `σ_mode` is magnitude-dependent — bilinear hinge at M = 7.0 for strike-slip ([lines 244–247](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py#L244-L247)), sigmoid for normal ([lines 249–251](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py#L249-L251)), fixed `s_m,r` for reverse ([line 210](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py#L210));
-  - within-event `σ_within` is x/L-dependent quadratic for SS/RV ([lines 269–271](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py#L269-L271)); constant for normal ([lines 196–197](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py#L196-L197)).
+- **Distribution:** **Box–Cox-transformed Normal** — `norm.cdf` on `(D^λ − 1)/λ` (or `ln D` if λ = 0), [lines 95–104, 161–169](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py#L95-L104).
+- **σ — explicit between/within decomposition** combined as `σ_total = √(σ_mode² + σ_within²)` ([lines 197, 211, 224](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py#L197)):
+  - between-event `σ_mode` is magnitude-dependent — bilinear hinge at M = 7.0 for strike-slip ([lines 256–259](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py#L256-L259)), sigmoid for normal ([lines 261–263](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py#L261-L263)), fixed `s_m,r` for reverse ([line 222](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py#L222));
+  - within-event `σ_within` is x/L-dependent quadratic for SS/RV ([lines 265–283](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py#L265-L283)); constant for normal ([lines 208–209](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py#L208-L209)).
 - **Epistemic — uniquely propagated as a full ensemble:** with
   `epistemic_uncertainty=True` the model returns one probability curve per
-  posterior coefficient sample ([lines 64–108](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py#L64-L108)); with `False` it returns a single mean-coefficient curve ([lines 110–169](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py#L110-L169)).
+  posterior coefficient sample ([lines 76–120](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py#L76-L120)); with `False` it returns a single mean-coefficient curve ([lines 122–180](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py#L122-L180)).
 - **Truncation:** None explicit.
 
 ### `Chiou2025PrimaryFD` — [chiou2025.py](../../openquake/fdha/primary_surf_displ/chiou2025.py)
-- **Distribution:** **Negative exponentially-modified Gaussian (nEMG)** via `stats.exponnorm.cdf` ([line 151](../../openquake/fdha/primary_surf_displ/chiou2025.py#L151)) — an asymmetric Gaussian + exponential combination.
-- **σ — explicit magnitude/position decomposition** ([lines 133–139](../../openquake/fdha/primary_surf_displ/chiou2025.py#L133-L139)):
+- **Distribution:** **Negative exponentially-modified Gaussian (nEMG)** via `stats.exponnorm.cdf` ([line 176](../../openquake/fdha/primary_surf_displ/chiou2025.py#L176)) — an asymmetric Gaussian + exponential combination.
+- **σ — explicit magnitude/position decomposition** ([lines 158–164](../../openquake/fdha/primary_surf_displ/chiou2025.py#L158-L164)):
   - magnitude component `σ_mag = max(0.4, cv₁·exp(cv₂·max(0, M − 6.1)))` (i.e. a **lower floor** of 0.4);
   - position component `σ_xl = cv₃·exp(cv₄·max(0, x_fold − ccap))`;
   - combined `σ' = √(σ_mag² + σ_xl²)`, with mixing shape `K = cv₅ / σ'`.
@@ -187,30 +188,30 @@ choice.
 - Deterministic constant probability.
 
 ### `Youngs2003SecondarySR` — [youngs2003.py](../../openquake/fdha/secondary_surf_rup/youngs2003.py)
-- Logistic in distance with hanging-wall indicator h: `fx = const + (c₁ + c₂·h)·log(r + offset)` ([lines 52, 55–62](../../openquake/fdha/secondary_surf_rup/youngs2003.py#L52)).
+- Logistic in distance with hanging-wall indicator h: `fx = const + (c₁ + c₂·h)·log(r + offset)` (h at [line 59](../../openquake/fdha/secondary_surf_rup/youngs2003.py#L59); v1/v2 formulas at [lines 62, 66](../../openquake/fdha/secondary_surf_rup/youngs2003.py#L62-L66)).
 - **Epistemic branches:** three versions — v1, v2, and v3 = average of v1/v2.
 
 ### `Petersen2011SecondarySR` — [petersen2011.py](../../openquake/fdha/secondary_surf_rup/petersen2011.py)
-- Far-field power law `ln(P) = a·ln(r) + b` ([line 112](../../openquake/fdha/secondary_surf_rup/petersen2011.py#L112)); near-field linear interpolation between `p₀, p₁, p₂` ([lines 123–134](../../openquake/fdha/secondary_surf_rup/petersen2011.py#L123-L134)).
-- **Epistemic branches:** cell-size-dependent coefficient tables (25 m, 50 m, 100 m, 200 m, [lines 35–41](../../openquake/fdha/secondary_surf_rup/petersen2011.py#L35-L41)); default-vs-near-field method.
+- Far-field power law `ln(P) = a·ln(r) + b` ([line 112](../../openquake/fdha/secondary_surf_rup/petersen2011.py#L112)); near-field linear interpolation between `p₀, p₁, p₂` ([lines 121–133](../../openquake/fdha/secondary_surf_rup/petersen2011.py#L121-L133)).
+- **Epistemic branches:** cell-size-dependent coefficient tables (25, 50, 100, 150, 200 m, [lines 35–41](../../openquake/fdha/secondary_surf_rup/petersen2011.py#L35-L41)); default-vs-near-field method.
 
 ### `Takao2013SecondarySR` — [takao2013.py:87](../../openquake/fdha/secondary_surf_rup/takao2013.py#L87) and `Takao2014SecondarySR` — [takao2014.py:54](../../openquake/fdha/secondary_surf_rup/takao2014.py#L54)
 - Takao 2013: logistic with `fx = C₁ + (C₂ + C₃·M)·log(r + C₄)`.
-- Takao 2014: power form `ln(P) = C₁ + C₂·ln(r + C₃)`; pixel-size-dependent coefficients (50–500 m).
+- Takao 2014: logistic — `fx = C₁ + C₂·ln(r + C₃)` then `P = exp(fx)/(1 + exp(fx))` ([takao2014.py:54, 57](../../openquake/fdha/secondary_surf_rup/takao2014.py#L54)); pixel-size-dependent coefficients (50–500 m).
 
 ### `Moss2022SecondarySR` — [moss2022.py](../../openquake/fdha/secondary_surf_rup/moss2022.py)
-- **Two methods:** simple exponential `P = min(exp(−a·r + b), 1)` ([lines 93–100](../../openquake/fdha/secondary_surf_rup/moss2022.py#L93-L100)); bi-exponential CDF `F(x) = a·exp(b·x) + c·exp(d·x)` with `P = max(1 − F, 0)` ([lines 118–120](../../openquake/fdha/secondary_surf_rup/moss2022.py#L118-L120)).
+- **Two methods:** simple exponential `P = min(exp(−a·r + b), 1)` ([lines 93–100](../../openquake/fdha/secondary_surf_rup/moss2022.py#L93-L100)); bi-exponential CDF `F(x) = a·exp(b·x) + c·exp(d·x)` with `P = clip(1 − F, 0, 1)` ([lines 118–120](../../openquake/fdha/secondary_surf_rup/moss2022.py#L118-L120)).
 - Magnitude-binned (M ≥ 7, 6–7, 5–6) and HW/FW-asymmetric coefficient tables.
 
 ### `FerrarioLivio2021SecondarySR` — [ferrario2021.py:114](../../openquake/fdha/secondary_surf_rup/ferrario2021.py#L114)
 - Logistic in `ln(r)`. **Epistemic branches:** "regular" vs "conservative" × HW/FW.
 
-### `RodriguezPadillaOskin2023SecondarySR` — [rodriguez2023.py:76](../../openquake/fdha/secondary_surf_rup/rodriguez2023.py#L76)
+### `Rodriguez2023SecondarySR` — [rodriguez2023.py:76](../../openquake/fdha/secondary_surf_rup/rodriguez2023.py#L76)
 - Power law `P = a·((r + b)/b)^c`, fixed coefficients calibrated at 1 m pixel.
 
 ### `VisiniEtAl2025SecondarySR` — [visini2025.py](../../openquake/fdha/secondary_surf_rup/visini2025.py)
-- **Compound model:** logistic `P_slice = 1/(1 + exp(a + b·M + c·r + d·fw))` ([lines 205, 210–211](../../openquake/fdha/secondary_surf_rup/visini2025.py#L205)) **combined with** a Monte-Carlo integration over truncated-lognormal distributed-rupture segment lengths (style/HW/FW-dependent μ, σ; [lines 112–115, 347–349](../../openquake/fdha/secondary_surf_rup/visini2025.py#L112-L115)).
-- **Truncation:** segment-length sampling default `"truncated"` (16th–84th percentile bounds), with `"legacy"` alternative ([line 332](../../openquake/fdha/secondary_surf_rup/visini2025.py#L332)).
+- **Compound model:** logistic `P_slice = 1/(1 + exp(a + b·M + c·r + d·fw))` ([lines 207, 212–213](../../openquake/fdha/secondary_surf_rup/visini2025.py#L207-L213)) **combined with** a Monte-Carlo integration over truncated-lognormal distributed-rupture segment lengths (style/HW/FW-dependent μ, σ at [lines 114–123](../../openquake/fdha/secondary_surf_rup/visini2025.py#L114-L123); MC draw at [lines 381–384](../../openquake/fdha/secondary_surf_rup/visini2025.py#L381-L384)).
+- **Truncation:** segment-length sampling default `"truncated"` (clipped to fixed per-mechanism min/max bounds, `_drlengths_min_max`, [lines 120–123](../../openquake/fdha/secondary_surf_rup/visini2025.py#L120-L123)), with a `"legacy"` alternative (raw lognormal clipped to `[10, fault_length]`; validated at [line 334](../../openquake/fdha/secondary_surf_rup/visini2025.py#L334)).
 - **Epistemic branches:** combinations A, B, C × style × pixel size × segment-sampling mode.
 
 ---
@@ -218,21 +219,21 @@ choice.
 ## 4. Secondary (Distributed) Surface Displacement (SSD) Models
 
 ### `Youngs2003SecondaryFD` — [youngs2003.py](../../openquake/fdha/secondary_surf_displ/youngs2003.py)
-- **Distribution:** Gamma on `D/MD` via `gamma.sf` ([line 141](../../openquake/fdha/secondary_surf_displ/youngs2003.py#L141)); MD log₁₀-normal with `σ = 0.38` (normal-fault calibration, [line 33](../../openquake/fdha/secondary_surf_displ/youngs2003.py#L33)).
-- **Scale:** Gamma `b = x / scale_factor` with `x` and decay constants HW/FW- and `r`-dependent ([line 131](../../openquake/fdha/secondary_surf_displ/youngs2003.py#L131)); shape `a = 2.5` ([line 38](../../openquake/fdha/secondary_surf_displ/youngs2003.py#L38)).
-- **Truncation:** ±3σ in log₁₀ ([line 35](../../openquake/fdha/secondary_surf_displ/youngs2003.py#L35)).
-- **Epistemic branches:** percentile option (`"85"` / `"95"`, [lines 41–46](../../openquake/fdha/secondary_surf_displ/youngs2003.py#L41-L46)); HW/FW split.
+- **Distribution:** Gamma on `D/MD` via `gamma.sf` ([line 149](../../openquake/fdha/secondary_surf_displ/youngs2003.py#L149)); MD log₁₀-normal with `σ = 0.38` (normal-fault calibration, [line 41](../../openquake/fdha/secondary_surf_displ/youngs2003.py#L41)).
+- **Scale:** Gamma `b = x / scale_factor` with `x` and decay constants HW/FW- and `r`-dependent ([lines 139, 143](../../openquake/fdha/secondary_surf_displ/youngs2003.py#L139)); shape `a = 2.5` ([line 46](../../openquake/fdha/secondary_surf_displ/youngs2003.py#L46)).
+- **Truncation:** ±3σ in log₁₀ ([line 43](../../openquake/fdha/secondary_surf_displ/youngs2003.py#L43)).
+- **Epistemic branches:** percentile option (`"85"` / `"95"`, [lines 45–54](../../openquake/fdha/secondary_surf_displ/youngs2003.py#L45-L54)); HW/FW split.
 
 ### `Petersen2011SecondaryFD` — [petersen2011.py](../../openquake/fdha/secondary_surf_displ/petersen2011.py)
-- **Distribution:** Lognormal in `ln(D in cm)` via `norm.cdf` ([line 126](../../openquake/fdha/secondary_surf_displ/petersen2011.py#L126)).
-- **σ:** `σ_dist = 1.1193` in `ln(cm)` ([line 116](../../openquake/fdha/secondary_surf_displ/petersen2011.py#L116)).
-- **Mean:** `μ = 1.4016·M − 0.1671·ln(r) − 6.7991` ([line 113](../../openquake/fdha/secondary_surf_displ/petersen2011.py#L113)).
+- **Distribution:** Lognormal in `ln(D in cm)` via `norm.cdf` ([line 133](../../openquake/fdha/secondary_surf_displ/petersen2011.py#L133)).
+- **σ:** `σ_dist = 1.1193` in `ln(cm)` ([line 123](../../openquake/fdha/secondary_surf_displ/petersen2011.py#L123)).
+- **Mean:** `μ = 1.4016·M − 0.1671·ln(r) − 6.7991` ([line 120](../../openquake/fdha/secondary_surf_displ/petersen2011.py#L120)).
 - **τ/φ:** Not separated. **Truncation:** none explicit. Single deterministic
   formulation.
 
 ### `Moss2022SecondaryFD` — [moss2022.py](../../openquake/fdha/secondary_surf_displ/moss2022.py)
 - **Distribution alternatives:** Gamma method ([line 192](../../openquake/fdha/secondary_surf_displ/moss2022.py#L192)) **or** envelope (lognormal on MD) method ([line 216](../../openquake/fdha/secondary_surf_displ/moss2022.py#L216)).
-- **σ:** Gamma uses global α/β (Table 3) with the scale rescaled per site by a distance envelope ([lines 179–181](../../openquake/fdha/secondary_surf_displ/moss2022.py#L179-L181)); envelope method uses log₁₀ σ from Table 4.4 ([line 159](../../openquake/fdha/secondary_surf_displ/moss2022.py#L159)).
+- **σ:** Gamma uses global α/β (Table 3) with the scale rescaled per site by a distance envelope ([lines 179–181](../../openquake/fdha/secondary_surf_displ/moss2022.py#L179-L181)); envelope method uses log₁₀ σ from Table 4.4 ([lines 160–162](../../openquake/fdha/secondary_surf_displ/moss2022.py#L160-L162)).
 - **Truncation:** Gamma ±6σ in ε-space ([lines 184–186](../../openquake/fdha/secondary_surf_displ/moss2022.py#L184-L186)).
 - **Epistemic branches:** AD vs MD; completeness (complete / incomplete / all); σ source (recommended / regression); method (gamma / envelope).
 
@@ -240,7 +241,7 @@ choice.
 - **Distribution:** Lognormal in `ln(Y)` via `norm.cdf` ([lines 188, 191](../../openquake/fdha/secondary_surf_displ/visini2025.py#L188)).
 - **σ:** `σ = 1.0271` in `ln(Y)` ([line 78](../../openquake/fdha/secondary_surf_displ/visini2025.py#L78)).
 - **Mean:** `ln(Y_med) = a + b·ln(s) + c·ln(TPFm) + d·M + e·I_style + f·I_fw + g_offset` ([lines 232–240](../../openquake/fdha/secondary_surf_displ/visini2025.py#L232-L240)).
-- **Truncation:** Symmetric truncated normal at ±`truncation_eps · σ` (default 3σ, [lines 171–173](../../openquake/fdha/secondary_surf_displ/visini2025.py#L171-L173)); lower clamp at `1e-16` to avoid `log(0)` ([line 162](../../openquake/fdha/secondary_surf_displ/visini2025.py#L162)).
+- **Truncation:** Symmetric truncated normal at ±`n_sigma · σ` (constructor parameter, default 3, settable via `[Visini2025SecondaryFD] n_sigma = <value>`; the legacy name `truncation_eps` is still accepted); lower clamp at `1e-16` to avoid `log(0)`.
 - **Epistemic branches:** combinations A / B / C as additive offsets `g` ([lines 73–76](../../openquake/fdha/secondary_surf_displ/visini2025.py#L73-L76)); style; HW/FW.
 
 ---
@@ -260,12 +261,23 @@ models (rupture models are uniformly logistic with no aleatory σ on `P`).
 | **Explicit discrete zero-displacement probability inside the model** | Lavrentiadis 2023 only (P_gap, P_zero_slip) |
 | **Ensemble-of-coefficients epistemic propagation inside `get_prob`** | Kuehn 2024 (with `epistemic_uncertainty=True`) |
 | **Epistemic exposed as named branches (style / dataset / version / σ source / method)** | All other models |
-| **Truncation at ±3σ** | Moss & Ross 2011; Takao 2013; Youngs 2003 (SSD); Visini 2025 (SSD, default) |
-| **Truncation at ±6σ ε-space integration** | Youngs 2003 (PSD); Moss 2022 / 2024 (PSD and Gamma-method SSD) |
+| **Truncation at ±`n_sigma`σ (user-configurable; default 3)** | Moss & Ross 2011 (PSD); Takao 2013 (PSD); Youngs 2003 (SSD); Visini 2025 (SSD) |
+| **Truncation at ±`n_sigma`σ ε-space integration (user-configurable; default 6)** | Youngs 2003 (PSD) |
+| **Truncation at ±6σ ε-space integration (fixed)** | Moss 2022 / 2024 (PSD and Gamma-method SSD) |
 | **No truncation** | Petersen 2011 (PSD and SSD); Chiou 2025; Lavrentiadis 2023; Kuehn 2024 |
 
 ### Practical guidance for users
 
+- **Truncation level is user-configurable for the truncated models.** Moss & Ross
+  2011, Takao 2013, Youngs 2003 (PSD), and Visini 2025 (SSD) expose the truncation
+  half-width as an `n_sigma` constructor parameter (defaults: 3 for Moss & Ross /
+  Takao / Visini, 6 for Youngs PSD). Set it from a logic-tree branch, e.g.:
+  ```xml
+  <uncertaintyModel><![CDATA[[MossRoss2011PrimaryFD]
+  n_sigma = 4]]></uncertaintyModel>
+  ```
+  (For backward compatibility, Visini 2025 SSD also accepts the former name
+  `truncation_eps`.)
 - **σ is mostly fixed in log space.** Apart from Lavrentiadis 2023, Kuehn 2024,
   and Chiou 2025, the aleatory σ in this library is a scalar regression value
   (commonly the Wells & Coppersmith 1994 values 0.36 / 0.42 in log₁₀) without
