@@ -33,8 +33,10 @@ class Pizza2023PrimarySR(BasePrimarySurfRup):
 
     References
     ----------
-    Pizza, M., et al. (2023). Probability of surface rupture for normal and
-    other faulting styles.
+    Pizza, M., Ferrario, M.F., Thomas, F., Tringali, G., & Livio, F. (2023).
+    Likelihood of primary surface faulting: updating of empirical regressions.
+    Bulletin of the Seismological Society of America, 113(5), 2106-2118.
+    https://doi.org/10.1785/0120230019
     """
 
     def get_prob(self, mag, style="all"):

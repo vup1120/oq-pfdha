@@ -1,42 +1,66 @@
 # -*- coding: utf-8 -*-
+# vim: tabstop=4 shiftwidth=4 softtabstop=4
+#
+# Copyright (C) 2024-2026 Yen-Shin Chen, OGS
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 """
-Optimized implementation of Visini et al. (2025) Distributed Rupture Occurrence Model.
+Module :mod:`openquake.fdha.secondary_surf_rup.visini2025` implements the
+distributed (secondary) rupture occurrence model of Visini et al. (2025) in
+:class:`Visini2025SecondarySR`.
 
-Performance Optimizations:
-1. Monte Carlo results cached by (fault_length, mechanism, hw_fw, near_far, site_width)
-2. P_slice fully vectorized over all sites
-3. Precomputed PDF tables for lognormal distributions
-4. Batched random number generation
+Supported fault styles: normal and reverse (dip-slip).
 
-Scientific Correctness:
-- All mathematical operations are equivalent to the original
-- Monte Carlo caching is EXACT because P_along_strike depends only on geometric parameters,
-  not on individual site distances (site is standardized at fault center)
-- Vectorization preserves numerical precision
+Reference
+---------
+Visini, F., Boncio, P., Valentini, A., Scotti, O., Nurminen, F., Baize, S.,
+& Pace, B. (2025). Empirical regressions for distributed faulting of dip-slip
+earthquakes. Earthquake Spectra, 41(4), 2968-3001.
+https://doi.org/10.1177/87552930241308860
+
+Implementation notes
+--------------------
+The across-strike occurrence probability uses the logistic regressions of
+Table 2; the along-strike participation uses the F-ratio lookups of Table 3
+combined with a Monte Carlo sampling of distributed-rupture segment lengths
+(truncated lognormal). Monte Carlo results are cached per
+``(fault_length, mechanism, hw_fw, near_far, site_width)`` because the
+along-strike probability depends only on those geometric parameters, and the
+per-site evaluation is vectorized.
 """
 
 import numpy as np
 from functools import lru_cache
 from scipy.stats import lognorm
 
-try:
-    from openquake.fdha.secondary_surf_rup.base import BaseSecondarySurfRup
-except ImportError:
-    # For standalone testing
-    class BaseSecondarySurfRup:
-        """Fallback stub used when the package base class cannot be imported."""
-
-        pass
+from openquake.fdha.secondary_surf_rup.base import BaseSecondarySurfRup
 
 
 class Visini2025SecondarySR(BaseSecondarySurfRup):
     """
-    Optimized implementation of Visini et al. (2025) Distributed Rupture Occurrence Model.
-    
-    Key optimizations:
-    - Monte Carlo P_along_strike cached per (fault_length, mechanism, hw_fw, near_far, site_width)
-    - P_slice vectorized over all sites simultaneously
-    - Coefficient lookup precomputed
+    Distributed (secondary) rupture occurrence model of Visini et al. (2025)
+    for normal- and reverse-faulting earthquakes, as a function of magnitude,
+    distance from the principal trace, hanging-wall/footwall position, and
+    analysis cell (slice) width.
+
+    References
+    ----------
+    Visini, F., Boncio, P., Valentini, A., Scotti, O., Nurminen, F., Baize,
+    S., & Pace, B. (2025). Empirical regressions for distributed faulting of
+    dip-slip earthquakes. Earthquake Spectra, 41(4), 2968-3001.
+    https://doi.org/10.1177/87552930241308860
     """
 
     def __init__(self):
