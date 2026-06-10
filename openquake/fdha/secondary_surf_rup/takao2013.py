@@ -81,9 +81,7 @@ class Takao2013SecondarySR(BaseSecondarySurfRup):
         # C3 are signed such that fx decreases with r (since C2 + C3*mag < 0
         # for the calibrated magnitude range), giving the physically correct
         # behaviour: probability of distributed rupture decreases with
-        # distance from the principal trace. (Bug fix: the previous form
-        # had a spurious '1 - ...' that inverted the curve so probability
-        # increased with r and saturated near 1.)
+        # distance from the principal trace.
         fx = C1 + (C2 + C3 * mag) * np.log(r + C4)
         prob = np.exp(fx) / (1.0 + np.exp(fx))
 

@@ -56,9 +56,6 @@ version = { attr = "openquake.fdha.__version__" }
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["openquake*"]
-exclude = [
-  "mock_h3*",
-]
 namespaces = true
 
 [tool.setuptools.package-data]
@@ -80,6 +77,12 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "--tb=short --strict-markers -ra --import-mode=importlib"
+# ``openquake`` is a namespace package shared with the installed
+# openquake.engine. Without this option, pytest's importlib mode registers a
+# synthetic ``openquake`` parent module whose __path__ contains only this
+# repository's portion, which breaks ``import openquake.commonlib`` during
+# collection when running bare ``pytest`` from the repository root.
+consider_namespace_packages = true
 markers = [
     "unit: marks tests as unit tests (fast, isolated)",
     "integration: marks tests as integration tests (full workflow)",

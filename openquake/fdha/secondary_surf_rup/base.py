@@ -18,7 +18,7 @@
 
 """
 Module :mod:`openquake.fdha.secondary_surf_rup.base` defines abstract base
-classes for :class:`PrimarySurfRup <BasePrimarySurfRup>`   
+classes for :class:`BaseSecondarySurfRup` and :class:`BaseSecondarySurfDispl`
 """
 
 import abc
@@ -39,7 +39,7 @@ class BaseSecondarySurfRup(metaclass=abc.ABCMeta):
 
     def __str__(self):
         """
-        Returns a TOML representation of the instance
+        Returns the name of the class
         """
         return self.__class__.__name__
 
@@ -66,7 +66,7 @@ class BaseSecondarySurfDispl(metaclass=abc.ABCMeta):
 
     def __str__(self):
         """
-        Returns a TOML representation of the instance
+        Returns the name of the class
         """
         return self.__class__.__name__
 

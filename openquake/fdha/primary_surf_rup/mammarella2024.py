@@ -1,5 +1,20 @@
 # -*- coding: utf-8 -*-
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
+#
+# Copyright (C) 2024-2026 Yen-Shin Chen, OGS
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """
 Module :mod:`openquake.fdha.primary_surf_rup.mammarella2024` implements
@@ -8,13 +23,15 @@ as a first-class model.
 
 Reference
 ---------
-Mammarella, L., et al. (2024). "Conditional probability of surface rupture:
-a numerical approach for principal faulting", Earthquake Spectra.
+Mammarella, L., Visini, F., Boncio, P., Baize, S., Scotti, O., Beauval, C.,
+Pace, B., & Thompson, S. (2024). Conditional probability of surface rupture:
+a numerical approach for principal faulting. Earthquake Spectra.
+https://doi.org/10.1177/87552930241293570
 
 Notes
 -----
-- This implementation follows the reference math/logic provided by the user,
-  refactored for readability, broadcasting, and numerical stability.
+- Vectorized re-implementation of the reference numerical (Monte Carlo style
+  discrete-integration) procedure published with the paper.
 - Probabilities are clipped to [0, 1].
 
 API

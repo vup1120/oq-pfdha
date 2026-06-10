@@ -32,9 +32,9 @@ ref_files = {
 
 # Output files
 output_jsons = {
-    'case1': base_dir / "case1_results_after_fix.json",
-    'case2': base_dir / "case2_results_after_fix.json",
-    'case3': base_dir / "case3_results_after_fix.json"
+    'case1': base_dir / "case1_results.json",
+    'case2': base_dir / "case2_results.json",
+    'case3': base_dir / "case3_results.json"
 }
 
 print("=" * 80)

@@ -55,12 +55,11 @@ class Moss2013PrimarySR(BasePrimarySurfRup):
             result in greater probabilities of surface rupture.
             
         :param style:
-            The faulting style (string). Accepted values are:
+            The faulting style (string, required). Accepted values are:
             - "reverse": Reverse faulting mechanism.
             - "strike-slip": Strike-slip faulting mechanism.
-            
-            Default is "reverse." If an unsupported style is provided, a ValueError 
-            will be raised.
+
+            If an unsupported style is provided, a ValueError will be raised.
 
         :param vs30:
             The time-averaged shear-wave velocity (float) to a depth of 30 meters 
@@ -77,7 +76,7 @@ class Moss2013PrimarySR(BasePrimarySurfRup):
 
         :example:
             # Example usage
-            model = Moss2013Primary()
+            model = Moss2013PrimarySR()
             probability = model.get_prob(mag=7.5, style="reverse", vs30=500)
             print(f"Probability of surface rupture: {probability}")
         """

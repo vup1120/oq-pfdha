@@ -17,9 +17,15 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 Module :mod:`openquake.fdha.secondary_surf_displ.visini2025` implements
-:class:`Visini2025SecondaryFD`.
+the distributed (secondary) fault displacement model of Visini et al. (2025)
+in :class:`Visini2025SecondaryFD`.
 
-Visini et al. (2025) distributed fault displacement model.
+Reference
+---------
+Visini, F., Boncio, P., Valentini, A., Scotti, O., Nurminen, F., Baize, S.,
+& Pace, B. (2025). Empirical regressions for distributed faulting of dip-slip
+earthquakes. Earthquake Spectra, 41(4), 2968-3001.
+https://doi.org/10.1177/87552930241308860
 """
 import numpy as np
 from scipy.stats import norm
