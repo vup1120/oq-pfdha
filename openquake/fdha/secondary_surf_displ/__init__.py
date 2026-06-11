@@ -24,3 +24,4 @@ from openquake.fdha.secondary_surf_displ.youngs2003 import Youngs2003SecondaryFD
 from openquake.fdha.secondary_surf_displ.petersen2011 import Petersen2011SecondaryFD
 from openquake.fdha.secondary_surf_displ.visini2025 import Visini2025SecondaryFD
 from openquake.fdha.secondary_surf_displ.moss2022 import Moss2022SecondaryFD
+from openquake.fdha.secondary_surf_displ.nishizaka2026 import Nishizaka2026SecondaryFD
