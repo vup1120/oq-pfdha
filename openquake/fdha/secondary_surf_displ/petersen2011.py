@@ -44,7 +44,8 @@ class Petersen2011SecondaryFD(BaseSecondarySurfDispl):
         200: {"a": -1.1538, "b": 4.2342, "sigma": 1.0177},  # 200 x 200 m
     }
     
-    # Near-field interpolation points from electronic supplement
+    # Near-field interpolation points from Table 5 (page 812, Petersen et al., 2011);
+    # p0/p1/p2 converted from percent to fractions
     NEAR_FIELD_POINTS = {
         25: {"p0": 0.74541, "p1": 0.078690, "p2": 0.020108, "r1": 100, "r2": 200},
         50: {"p0": 0.87162, "p1": 0.048206, "p2": 0.026177, "r1": 100, "r2": 200},

@@ -33,9 +33,12 @@ class Youngs2003PrimarySR(BasePrimarySurfRup):
     selects the normal-faulting subset, while ``"all"`` selects the broader
     regional datasets. It is not a generic faulting-style selector.
 
-    The ``"all"`` coefficients (a=-12.51, b=2.053) are the all-styles logistic
-    regression of Wells and Coppersmith (1993) adopted by Youngs et al. (2003);
-    the ``"normal"`` coefficients select the normal-faulting subset.
+    The ``"all"`` coefficients (a=-12.51, b=2.053) are the logistic regression
+    on the 276 worldwide earthquakes of Wells and Coppersmith (1993); the
+    ``"normal"`` coefficients (a=-16.02, b=2.685) are the regression on the
+    32 Great Basin earthquakes from the Pezzopane and Dawson (1996) data set.
+    Both coefficient pairs are tabulated in the Appendix of Youngs et al.
+    (2003) ("Coefficients for Equation 4 shown on Figure 4").
 
     References
     ----------
