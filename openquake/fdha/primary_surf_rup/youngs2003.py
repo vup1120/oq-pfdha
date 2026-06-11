@@ -18,7 +18,7 @@
 
 """
 Module :mod:`openquake.fdha.primary_surf_rup.youngs2003` implements
-model of Youngs et al. (2003) into :class:`Youngs2003Primary`
+the model of Youngs et al. (2003) in :class:`Youngs2003PrimarySR`
 """
 
 import numpy as np
@@ -32,6 +32,16 @@ class Youngs2003PrimarySR(BasePrimarySurfRup):
     ``style`` argument preserves the historical XML interface: ``"normal"``
     selects the normal-faulting subset, while ``"all"`` selects the broader
     regional datasets. It is not a generic faulting-style selector.
+
+    The ``"all"`` coefficients (a=-12.51, b=2.053) are the all-styles logistic
+    regression of Wells and Coppersmith (1993) adopted by Youngs et al. (2003);
+    the ``"normal"`` coefficients select the normal-faulting subset.
+
+    References
+    ----------
+    Youngs, R.R., et al. (2003). A methodology for probabilistic fault
+    displacement hazard analysis (PFDHA). Earthquake Spectra, 19(1), 191-219.
+    https://doi.org/10.1193/1.1542891
     """
     def get_prob(self, mag, style="all"):
         """
