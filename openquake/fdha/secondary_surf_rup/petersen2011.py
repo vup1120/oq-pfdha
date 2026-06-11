@@ -40,9 +40,8 @@ class Petersen2011SecondarySR(BaseSecondarySurfRup):
         200: {"a": -1.1538, "b": 4.2342, "sigma": 1.0177},  # 200 x 200 m
     }
 
-    # Near-field interpolation points derived from the text (p. 819) and the
-    # electronic supplement of Petersen et al. (2011); the paper does not
-    # tabulate them explicitly.
+    # Near-field interpolation points from Table 5 (page 812, Petersen et al.,
+    # 2011); p0/p1/p2 converted from percent to fractions
     NEAR_FIELD_POINTS = {
         25: {"p0": 0.74541, "p1": 0.078690, "p2": 0.020108, "r1": 100, "r2": 200},  # 25 x 25 m
         50: {"p0": 0.87162, "p1": 0.048206, "p2": 0.026177, "r1": 100, "r2": 200},  # 50 x 50 m
@@ -62,17 +61,17 @@ class Petersen2011SecondarySR(BaseSecondarySurfRup):
             Size of the cell in meters (25, 50, 100, 150, or 200 m; default: 25 m).
         :param version:
             Model version (case-insensitive). Options: 'default' (power function, Page 812, Table 4),
-            'near_field' (interpolated near-field, Page 819, electronic supplement). Default: 'default'.
+            'near_field' (interpolated near-field, Table 5, page 812). Default: 'default'.
         :returns:
             Probability of rupture (float or array, 0–1) for the given distance, cell_size, and version.
         :raises ValueError:
             If r is negative or exceeds 2000 m, cell_size is invalid, or version is invalid.
         :notes:
             - Uses power function from Table 4 (Page 812) for 'default' (far-field probabilities).
-            - Uses near-field interpolation from Page 819 and electronic supplement for 'near_field' (r < r1).
+            - Uses near-field interpolation points from Table 5 (page 812) for 'near_field' (r < r1),
+              as described in the text on page 819.
             - No magnitude dependence, per Petersen et al. (2011, Page 818).
             - Limited to 2 km distance from principal fault; no triggered ruptures included.
-            - Near-field points derived from text and electronic supplement, not explicitly numbered as Table 5.
         """
         # Validate inputs
         version = version.lower()
@@ -115,7 +114,7 @@ class Petersen2011SecondarySR(BaseSecondarySurfRup):
             P_rupture = np.exp(ln_P)  # Convert ln(P) to probability
             P_rupture = np.clip(P_rupture, 0, 1)  # Ensure probability is in [0, 1]
         else:  # version == "near_field"
-            # Near-field interpolation (Page 819, electronic supplement)
+            # Near-field interpolation (Table 5, page 812; method described on page 819)
             p0, p1, p2 = near_params["p0"], near_params["p1"], near_params["p2"]
             r1, r2 = near_params["r1"], near_params["r2"]
 

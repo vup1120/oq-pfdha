@@ -34,7 +34,12 @@ from openquake.fdha.primary_surf_rup.base import BasePrimarySurfRup
 class Yang2021PrimarySR(BasePrimarySurfRup):
     """
     Model of Yang et al. (2021) for the probability of surface rupture
-    for reverse faulting earthquakes in Australia.
+    for reverse-faulting earthquakes in the Australian stable continental
+    region (the "SCR Oz" logistic curve of their Fig. 11A, with a = 24.59
+    and b = -4.00 in P = 1/(1 + exp(a + b*M))).
+
+    The regression is stated by the authors to be valid only for
+    4.0 <= Mw <= 6.6.
     """
 
     def get_prob(self, mag: float) -> float:
