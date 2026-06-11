@@ -425,3 +425,24 @@ elif page.startswith("2"):
     page_run()
 else:
     page_results()
+
+# --------------------------------------------------------------------------
+# Footer (all pages)
+# --------------------------------------------------------------------------
+st.divider()
+st.markdown(
+    "<div style='text-align:center; color:#888; font-size:0.85em; "
+    "line-height:1.7'>"
+    "<b>oq-pfdha</b> — Probabilistic Fault Displacement Hazard Analysis · "
+    "GNU AGPL v3.0-or-later<br>"
+    "Cite: Chen, Y.-S. (2025). <i>openquake.fdha: Python tools for "
+    "probabilistic fault displacement hazard analysis</i> (v1.0.0) "
+    "[Software]. OGS. "
+    "<a href='https://github.com/vup1120/oq-pfdha'>github.com/vup1120/oq-pfdha</a>"
+    " (CITATION.cff)<br>"
+    "<b>⚠ Prototype — not for production hazard assessment.</b> "
+    "Results shown are pre-computed IAEA TECDOC-2092 Norcia Case 3 "
+    "benchmark outputs."
+    "</div>",
+    unsafe_allow_html=True,
+)
