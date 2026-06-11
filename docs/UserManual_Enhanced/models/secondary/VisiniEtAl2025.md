@@ -164,3 +164,7 @@ The public hazard-curve configuration supports a point site. For the Visini seco
 style = normal
 pixel_size = 100  # 100m × 100m square site
 ```
+
+## References
+
+- Visini, F., Boncio, P., Valentini, A., Scotti, O., Nurminen, F., Baize, S., & Pace, B. (2025). Empirical regressions for distributed faulting of dip-slip earthquakes. *Earthquake Spectra*, 41(4), 2968-3001. https://doi.org/10.1177/87552930241308860

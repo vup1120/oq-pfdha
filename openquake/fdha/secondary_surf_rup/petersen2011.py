@@ -40,7 +40,9 @@ class Petersen2011SecondarySR(BaseSecondarySurfRup):
         200: {"a": -1.1538, "b": 4.2342, "sigma": 1.0177},  # 200 x 200 m
     }
 
-    # Near-field interpolation points from Table 5 (Page 812, Petersen et al., 2011)
+    # Near-field interpolation points derived from the text (p. 819) and the
+    # electronic supplement of Petersen et al. (2011); the paper does not
+    # tabulate them explicitly.
     NEAR_FIELD_POINTS = {
         25: {"p0": 0.74541, "p1": 0.078690, "p2": 0.020108, "r1": 100, "r2": 200},  # 25 x 25 m
         50: {"p0": 0.87162, "p1": 0.048206, "p2": 0.026177, "r1": 100, "r2": 200},  # 50 x 50 m

@@ -34,8 +34,10 @@ class Takao2013PrimarySR(BasePrimarySurfRup):
 
     References
     ----------
-    Takao, M., et al. (2013). Application of probabilistic fault displacement
-    hazard analysis in Japan.
+    Takao, M., Tsuchiyama, J., Annaka, T., & Kurita, T. (2013). Application of
+    probabilistic fault displacement hazard analysis in Japan. Journal of Japan
+    Association for Earthquake Engineering, 13(1), 17-36.
+    https://doi.org/10.5610/jaee.13.17
     """
 
     def get_prob(

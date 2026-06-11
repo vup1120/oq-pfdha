@@ -191,3 +191,4 @@ Section 5, rather than in the Valentini et al. summary table.
 - Pizza, M., et al. (2023). Likelihood of Primary Surface Faulting: Updating of Empirical Regressions. Bulletin of the Seismological Society of America. https://doi.org/10.1785/0120230019
 - Chiou, B. S. J., et al. (2025). Fault displacement model for surface principal rupture of strike-slip faults. Earthquake Spectra. https://doi.org/10.1177/87552930251337703
 - Valentini, A., et al. (2025). Twenty-Five Years of Probabilistic Fault Displacement Hazard Assessment. Reviews of Geophysics. https://doi.org/10.1029/2024RG000875
+- Visini, F., Boncio, P., Valentini, A., Scotti, O., Nurminen, F., Baize, S., & Pace, B. (2025). Empirical regressions for distributed faulting of dip-slip earthquakes. Earthquake Spectra, 41(4), 2968-3001. https://doi.org/10.1177/87552930241308860

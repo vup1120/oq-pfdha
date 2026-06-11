@@ -33,7 +33,10 @@ class WC1993PrimarySR(BasePrimarySurfRup):
     References
     ----------
     Wells, D.L., and Coppersmith, K.J. (1993). Likelihood of surface rupture
-    as a function of magnitude.
+    as a function of magnitude (abstract). Seismological Research Letters,
+    64(1), 54. Coefficients as reported by Youngs et al. (2003), Earthquake
+    Spectra, 19(1), 191-219, and Petersen et al. (2011), Bulletin of the
+    Seismological Society of America, 101(2), 805-825.
     """
 
     def get_prob(

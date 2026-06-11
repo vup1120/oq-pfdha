@@ -17,8 +17,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.fdha.primary_surf_rup.yang_et_al_2021` implements
-model of Yang et al. (2021) into :class:`YangEtAl2021PrimarySR`
+Module :mod:`openquake.fdha.primary_surf_rup.yang2021` implements
+the model of Yang et al. (2021) in :class:`Yang2021PrimarySR`
 
 Supported Fault Styles: Reverse only
 
