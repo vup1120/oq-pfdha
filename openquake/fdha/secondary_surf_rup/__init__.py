@@ -31,4 +31,3 @@ from openquake.fdha.secondary_surf_rup.takao2013 import Takao2013SecondarySR
 from openquake.fdha.secondary_surf_rup.rodriguez2023 import Rodriguez2023SecondarySR
 from openquake.fdha.secondary_surf_rup.fixed import FixedSecondarySR
 from openquake.fdha.secondary_surf_rup.moss2022 import Moss2022SecondarySR
-from openquake.fdha.secondary_surf_rup.nishizaka2026 import Nishizaka2026SecondarySR
