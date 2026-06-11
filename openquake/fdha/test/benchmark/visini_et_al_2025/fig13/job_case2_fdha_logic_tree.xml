@@ -28,7 +28,7 @@ completeness = all]]></uncertaintyModel>
           <uncertaintyModel><![CDATA[[Visini2025SecondarySR]
 style = normal
 pixel_size = 100
-rupture_traces = ["R1p5_200m"]
+rupture_traces = ["R1p5_500m"]
 segment_sampling = legacy]]></uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
@@ -41,7 +41,7 @@ segment_sampling = legacy]]></uncertaintyModel>
 style = normal
 tpfm = 1.42
 n_sigma = 3
-rupture_traces = ["R1p5_200m"]]]></uncertaintyModel>
+rupture_traces = ["R1p5_500m"]]]></uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
