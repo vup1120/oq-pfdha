@@ -1,0 +1,55 @@
+{
+  "advisory_warnings": [],
+  "branches": [
+    {
+      "combined_branch_weight": 1.0,
+      "curve_file": "hazard_curves/branch_0000.csv",
+      "fdha_branch_id": "Y03_PRIMARY_SURF_DISPL|Y03_PRIMARY_SURF_RUP|Y03_SECONDARY_SURF_DISPL|Y03_SECONDARY_SURF_RUP",
+      "fdha_branch_weight": 1.0,
+      "fdha_models": {
+        "primary_surf_displ": "Youngs2003PrimaryFD",
+        "primary_surf_rup": "Youngs2003PrimarySR",
+        "secondary_surf_displ": "Youngs2003SecondaryFD",
+        "secondary_surf_rup": "Youngs2003SecondarySR"
+      },
+      "fdha_source_id": "MVFS,NFS",
+      "fdha_style": "normal",
+      "global_index": 0,
+      "source_model_branch_id": "b_sm_norcia_case3_iaea",
+      "source_model_file": "/home/user/oq-pfdha/openquake/fdha/test/benchmark/norcia_case3_iaea/source_model_norcia_case3.xml",
+      "source_model_uncertainties": [],
+      "source_model_weight": 1.0
+    },
+    {
+      "combined_branch_weight": 1.0,
+      "curve_file": "hazard_curves/branch_0001.csv",
+      "fdha_branch_id": "V24_PRIMARY_SURF_DISPL_PROXY|V24_PRIMARY_SURF_RUP_PROXY|V24_SECONDARY_SURF_DISPL|V24_SECONDARY_SURF_RUP",
+      "fdha_branch_weight": 1.0,
+      "fdha_models": {
+        "primary_surf_displ": "Youngs2003PrimaryFD",
+        "primary_surf_rup": "Youngs2003PrimarySR",
+        "secondary_surf_displ": "Visini2025SecondaryFD",
+        "secondary_surf_rup": "Visini2025SecondarySR"
+      },
+      "fdha_source_id": "MVFS,NFS",
+      "fdha_style": "normal",
+      "global_index": 1,
+      "source_model_branch_id": "b_sm_norcia_case3_iaea",
+      "source_model_file": "/home/user/oq-pfdha/openquake/fdha/test/benchmark/norcia_case3_iaea/source_model_norcia_case3.xml",
+      "source_model_uncertainties": [],
+      "source_model_weight": 1.0
+    }
+  ],
+  "mode": "hazard_curve",
+  "n_realizations": 2,
+  "source_model_branches": [
+    {
+      "branch_id": "b_sm_norcia_case3_iaea",
+      "n_fdha_branches": 2,
+      "source_model_file": "/home/user/oq-pfdha/openquake/fdha/test/benchmark/norcia_case3_iaea/source_model_norcia_case3.xml",
+      "weight": 1.0
+    }
+  ],
+  "source_model_logic_tree_file": "config_norcia_case3_iaea_source_model_logic_tree.xml",
+  "total_combined_weight": 2.0
+}

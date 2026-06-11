@@ -1,0 +1,194 @@
+{
+  "slots": {
+    "fdhaPrimarySRModel": {
+      "package": "openquake.fdha.primary_surf_rup",
+      "models": [
+        {
+          "class_name": "Mammarella2024PrimarySR",
+          "import_path": "openquake.fdha.primary_surf_rup.mammarella2024",
+          "module": "openquake.fdha.primary_surf_rup.mammarella2024"
+        },
+        {
+          "class_name": "Moss2013PrimarySR",
+          "import_path": "openquake.fdha.primary_surf_rup.moss2013",
+          "module": "openquake.fdha.primary_surf_rup.moss2013"
+        },
+        {
+          "class_name": "MossRoss2011PrimarySR",
+          "import_path": "openquake.fdha.primary_surf_rup.moss_ross2011",
+          "module": "openquake.fdha.primary_surf_rup.moss_ross2011"
+        },
+        {
+          "class_name": "Pizza2023PrimarySR",
+          "import_path": "openquake.fdha.primary_surf_rup.pizza2023",
+          "module": "openquake.fdha.primary_surf_rup.pizza2023"
+        },
+        {
+          "class_name": "Takao2013PrimarySR",
+          "import_path": "openquake.fdha.primary_surf_rup.takao2013",
+          "module": "openquake.fdha.primary_surf_rup.takao2013"
+        },
+        {
+          "class_name": "WC1993PrimarySR",
+          "import_path": "openquake.fdha.primary_surf_rup.wells_coppersmith1993",
+          "module": "openquake.fdha.primary_surf_rup.wells_coppersmith1993"
+        },
+        {
+          "class_name": "Yang2021PrimarySR",
+          "import_path": "openquake.fdha.primary_surf_rup.yang2021",
+          "module": "openquake.fdha.primary_surf_rup.yang2021"
+        },
+        {
+          "class_name": "Youngs2003PrimarySR",
+          "import_path": "openquake.fdha.primary_surf_rup.youngs2003",
+          "module": "openquake.fdha.primary_surf_rup.youngs2003"
+        }
+      ]
+    },
+    "fdhaPrimaryFDModel": {
+      "package": "openquake.fdha.primary_surf_displ",
+      "models": [
+        {
+          "class_name": "Chiou2025PrimaryFD",
+          "import_path": "openquake.fdha.primary_surf_displ.chiou2025",
+          "module": "openquake.fdha.primary_surf_displ.chiou2025"
+        },
+        {
+          "class_name": "Kuehn2024PrimaryFD",
+          "import_path": "openquake.fdha.primary_surf_displ.kuehn2024",
+          "module": "openquake.fdha.primary_surf_displ.kuehn2024.kuehn2024"
+        },
+        {
+          "class_name": "Lavrentiadis2023PrimaryFD",
+          "import_path": "openquake.fdha.primary_surf_displ.lavrentiadis2023",
+          "module": "openquake.fdha.primary_surf_displ.lavrentiadis2023"
+        },
+        {
+          "class_name": "Moss2022PrimaryFD",
+          "import_path": "openquake.fdha.primary_surf_displ.moss2022",
+          "module": "openquake.fdha.primary_surf_displ.moss2022"
+        },
+        {
+          "class_name": "Moss2024PrimaryFD",
+          "import_path": "openquake.fdha.primary_surf_displ.moss2024",
+          "module": "openquake.fdha.primary_surf_displ.moss2024"
+        },
+        {
+          "class_name": "MossRoss2011PrimaryFD",
+          "import_path": "openquake.fdha.primary_surf_displ.moss_ross2011",
+          "module": "openquake.fdha.primary_surf_displ.moss_ross2011",
+          "n_sigma_default": 3.0
+        },
+        {
+          "class_name": "Petersen2011PrimaryFD",
+          "import_path": "openquake.fdha.primary_surf_displ.petersen2011",
+          "module": "openquake.fdha.primary_surf_displ.petersen2011"
+        },
+        {
+          "class_name": "Petersen2011PrimaryFD_bilinear",
+          "import_path": "openquake.fdha.primary_surf_displ.petersen2011",
+          "module": "openquake.fdha.primary_surf_displ.petersen2011"
+        },
+        {
+          "class_name": "Petersen2011PrimaryFD_elliptical",
+          "import_path": "openquake.fdha.primary_surf_displ.petersen2011",
+          "module": "openquake.fdha.primary_surf_displ.petersen2011"
+        },
+        {
+          "class_name": "Petersen2011PrimaryFD_quadratic",
+          "import_path": "openquake.fdha.primary_surf_displ.petersen2011",
+          "module": "openquake.fdha.primary_surf_displ.petersen2011"
+        },
+        {
+          "class_name": "Takao2013PrimaryFD",
+          "import_path": "openquake.fdha.primary_surf_displ.takao2013",
+          "module": "openquake.fdha.primary_surf_displ.takao2013",
+          "n_sigma_default": 3.0
+        },
+        {
+          "class_name": "Youngs2003PrimaryFD",
+          "import_path": "openquake.fdha.primary_surf_displ.youngs2003",
+          "module": "openquake.fdha.primary_surf_displ.youngs2003",
+          "n_sigma_default": 6.0
+        }
+      ]
+    },
+    "fdhaSecondarySRModel": {
+      "package": "openquake.fdha.secondary_surf_rup",
+      "models": [
+        {
+          "class_name": "FerrarioLivio2021SecondarySR",
+          "import_path": "openquake.fdha.secondary_surf_rup.ferrario2021",
+          "module": "openquake.fdha.secondary_surf_rup.ferrario2021"
+        },
+        {
+          "class_name": "Moss2022SecondarySR",
+          "import_path": "openquake.fdha.secondary_surf_rup.moss2022",
+          "module": "openquake.fdha.secondary_surf_rup.moss2022"
+        },
+        {
+          "class_name": "Petersen2011SecondarySR",
+          "import_path": "openquake.fdha.secondary_surf_rup.petersen2011",
+          "module": "openquake.fdha.secondary_surf_rup.petersen2011"
+        },
+        {
+          "class_name": "Rodriguez2023SecondarySR",
+          "import_path": "openquake.fdha.secondary_surf_rup.rodriguez2023",
+          "module": "openquake.fdha.secondary_surf_rup.rodriguez2023"
+        },
+        {
+          "class_name": "Takao2013SecondarySR",
+          "import_path": "openquake.fdha.secondary_surf_rup.takao2013",
+          "module": "openquake.fdha.secondary_surf_rup.takao2013"
+        },
+        {
+          "class_name": "Takao2014SecondarySR",
+          "import_path": "openquake.fdha.secondary_surf_rup.takao2014",
+          "module": "openquake.fdha.secondary_surf_rup.takao2014"
+        },
+        {
+          "class_name": "Visini2025SecondarySR",
+          "import_path": "openquake.fdha.secondary_surf_rup.visini2025",
+          "module": "openquake.fdha.secondary_surf_rup.visini2025"
+        },
+        {
+          "class_name": "Youngs2003SecondarySR",
+          "import_path": "openquake.fdha.secondary_surf_rup.youngs2003",
+          "module": "openquake.fdha.secondary_surf_rup.youngs2003"
+        }
+      ]
+    },
+    "fdhaSecondaryFDModel": {
+      "package": "openquake.fdha.secondary_surf_displ",
+      "models": [
+        {
+          "class_name": "Moss2022SecondaryFD",
+          "import_path": "openquake.fdha.secondary_surf_displ.moss2022",
+          "module": "openquake.fdha.secondary_surf_displ.moss2022"
+        },
+        {
+          "class_name": "Petersen2011SecondaryFD",
+          "import_path": "openquake.fdha.secondary_surf_displ.petersen2011",
+          "module": "openquake.fdha.secondary_surf_displ.petersen2011"
+        },
+        {
+          "class_name": "Visini2025SecondaryFD",
+          "import_path": "openquake.fdha.secondary_surf_displ.visini2025",
+          "module": "openquake.fdha.secondary_surf_displ.visini2025",
+          "n_sigma_default": 3.0
+        },
+        {
+          "class_name": "Youngs2003SecondaryFD",
+          "import_path": "openquake.fdha.secondary_surf_displ.youngs2003",
+          "module": "openquake.fdha.secondary_surf_displ.youngs2003"
+        }
+      ]
+    }
+  },
+  "excluded_by_curation": [
+    "FixedPrimarySR",
+    "FixedSecondarySR",
+    "MammarellaEtAl2024PrimarySR",
+    "Petersen2011SecondarySR_default"
+  ]
+}
