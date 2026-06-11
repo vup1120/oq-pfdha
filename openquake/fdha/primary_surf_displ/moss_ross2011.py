@@ -159,11 +159,17 @@ class MossRoss2011PrimaryFD(BasePrimarySurfDispl):
     def get_prob_D_MD(self, D_MD, X_L_ratio):
         """
         Probability of exceeding normalized displacement D/MD.
+
+        The beta shape parameters are the linear regressions published in
+        Moss and Ross (2011): alpha = 0.901(x/L) + 0.713 and
+        beta = -1.86(x/L) + 1.74 (unlike the D/AD gamma/Weibull parameters,
+        these are not exponentiated). Both remain positive over the folded
+        domain 0 <= x/L <= 0.5.
         """
         self._check_folded_x_l(X_L_ratio)
 
-        a = np.exp(0.713 + 0.901 * X_L_ratio)
-        b = np.exp(1.74 - 1.86 * X_L_ratio)
+        a = 0.901 * X_L_ratio + 0.713
+        b = -1.86 * X_L_ratio + 1.74
         return beta.sf(D_MD, a, b)
 
     def get_prob_max_displacement(self, target_md, mag):

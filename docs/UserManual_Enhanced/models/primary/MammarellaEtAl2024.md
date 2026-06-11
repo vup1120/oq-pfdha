@@ -12,7 +12,7 @@ Select `MammarellaEtAl2024PrimarySR` (or its alias `Mammarella2024PrimarySR`) in
 
 | Name | Type | Units | Default | Allowed | Required? | Description |
 | --- | --- | --- | --- | --- | --- | --- |
-| `MSR` | int | – | – | `0`, `1`, `2` | Yes | Magnitude scaling relation code used to derive the rupture-width distribution (Table 1 of the paper). |
+| `MSR` | int | – | – | `0`, `1`, `2` | Yes | Magnitude scaling relation for the rupture-width distribution: `0` = Leonard (2014) interplate, `1` = Leonard (2014) stable continental region, `2` = Thingbaijam et al. (2017). |
 | `HDD_str` | string | – | – | `ITA_N`, `GB_N`, `AGG_N`, `ITA_R`, `TAI_R`, `JAP_R`, `AGG_R`, `CA_S`, `NZ_S`, `JAP_S`, `AGG_S` | Yes | Hypocentral depth distribution label (Table 2 of the paper); regional/style-specific mean and sigma of the hypocentral depth ratio. |
 | `dip_sigma` | float | degrees | – | > 0 | Yes | Standard deviation of the fault dip distribution. |
 | `t_d` | float | σ units | – | > 0 | Yes | Truncation of the dip distribution, in multiples of `dip_sigma`. |
