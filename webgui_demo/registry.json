@@ -5,43 +5,132 @@
       "models": [
         {
           "class_name": "Mammarella2024PrimarySR",
-          "import_path": "openquake.fdha.primary_surf_rup.mammarella2024",
-          "module": "openquake.fdha.primary_surf_rup.mammarella2024"
+          "module": "openquake.fdha.primary_surf_rup.mammarella2024",
+          "doc_page": "primary/MammarellaEtAl2024.md",
+          "doc_params": [
+            {
+              "name": "MSR",
+              "type": "int",
+              "units": "\u2013",
+              "default": "\u2013",
+              "allowed": "`0`, `1`, `2`",
+              "required": true,
+              "description": "Magnitude scaling relation for the rupture-width distribution: `0` = Leonard (2014) interplate, `1` = Leonard (2014) stable continental region, `2` = Thingbaijam et al. (2017)."
+            },
+            {
+              "name": "HDD_str",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\u2013",
+              "allowed": "`ITA_N`, `GB_N`, `AGG_N`, `ITA_R`, `TAI_R`, `JAP_R`, `AGG_R`, `CA_S`, `NZ_S`, `JAP_S`, `AGG_S`",
+              "required": true,
+              "description": "Hypocentral depth distribution label (Table 2 of the paper); regional/style-specific mean and sigma of the hypocentral depth ratio."
+            },
+            {
+              "name": "dip_sigma",
+              "type": "float",
+              "units": "degrees",
+              "default": "\u2013",
+              "allowed": "> 0",
+              "required": true,
+              "description": "Standard deviation of the fault dip distribution."
+            },
+            {
+              "name": "t_d",
+              "type": "float",
+              "units": "\u03c3 units",
+              "default": "\u2013",
+              "allowed": "> 0",
+              "required": true,
+              "description": "Truncation of the dip distribution, in multiples of `dip_sigma`."
+            },
+            {
+              "name": "Zs_sigma",
+              "type": "float",
+              "units": "km",
+              "default": "\u2013",
+              "allowed": "> 0",
+              "required": true,
+              "description": "Standard deviation of the seismogenic thickness distribution."
+            },
+            {
+              "name": "t_z",
+              "type": "float",
+              "units": "\u03c3 units",
+              "default": "\u2013",
+              "allowed": "> 0",
+              "required": true,
+              "description": "Truncation of the seismogenic-thickness distribution, in multiples of `Zs_sigma`."
+            },
+            {
+              "name": "style",
+              "type": "string",
+              "units": "\u2013",
+              "default": "inferred from rake",
+              "allowed": "`normal`, `reverse`, `strike-slip`",
+              "required": false,
+              "description": "Style of faulting; if omitted, it is inferred from the rupture rake."
+            },
+            {
+              "name": "seismothickness",
+              "type": "float",
+              "units": "km",
+              "default": "`15.0`",
+              "allowed": "> 0",
+              "required": false,
+              "description": "Mean seismogenic thickness (used as `Zs_mu`). Set this explicitly if 15 km is not appropriate for your region."
+            }
+          ],
+          "prefill": ""
         },
         {
           "class_name": "Moss2013PrimarySR",
-          "import_path": "openquake.fdha.primary_surf_rup.moss2013",
-          "module": "openquake.fdha.primary_surf_rup.moss2013"
+          "module": "openquake.fdha.primary_surf_rup.moss2013",
+          "doc_page": null,
+          "doc_params": [],
+          "prefill": ""
         },
         {
           "class_name": "MossRoss2011PrimarySR",
-          "import_path": "openquake.fdha.primary_surf_rup.moss_ross2011",
-          "module": "openquake.fdha.primary_surf_rup.moss_ross2011"
+          "module": "openquake.fdha.primary_surf_rup.moss_ross2011",
+          "doc_page": null,
+          "doc_params": [],
+          "prefill": ""
         },
         {
           "class_name": "Pizza2023PrimarySR",
-          "import_path": "openquake.fdha.primary_surf_rup.pizza2023",
-          "module": "openquake.fdha.primary_surf_rup.pizza2023"
+          "module": "openquake.fdha.primary_surf_rup.pizza2023",
+          "doc_page": null,
+          "doc_params": [],
+          "prefill": ""
         },
         {
           "class_name": "Takao2013PrimarySR",
-          "import_path": "openquake.fdha.primary_surf_rup.takao2013",
-          "module": "openquake.fdha.primary_surf_rup.takao2013"
+          "module": "openquake.fdha.primary_surf_rup.takao2013",
+          "doc_page": null,
+          "doc_params": [],
+          "prefill": ""
         },
         {
           "class_name": "WC1993PrimarySR",
-          "import_path": "openquake.fdha.primary_surf_rup.wells_coppersmith1993",
-          "module": "openquake.fdha.primary_surf_rup.wells_coppersmith1993"
+          "module": "openquake.fdha.primary_surf_rup.wells_coppersmith1993",
+          "doc_page": null,
+          "doc_params": [],
+          "prefill": ""
         },
         {
           "class_name": "Yang2021PrimarySR",
-          "import_path": "openquake.fdha.primary_surf_rup.yang2021",
-          "module": "openquake.fdha.primary_surf_rup.yang2021"
+          "module": "openquake.fdha.primary_surf_rup.yang2021",
+          "doc_page": "primary/Yang2021.md",
+          "doc_params": [],
+          "prefill": ""
         },
         {
           "class_name": "Youngs2003PrimarySR",
-          "import_path": "openquake.fdha.primary_surf_rup.youngs2003",
-          "module": "openquake.fdha.primary_surf_rup.youngs2003"
+          "module": "openquake.fdha.primary_surf_rup.youngs2003",
+          "doc_page": null,
+          "doc_params": [],
+          "prefill": ""
         }
       ]
     },
@@ -50,66 +139,277 @@
       "models": [
         {
           "class_name": "Chiou2025PrimaryFD",
-          "import_path": "openquake.fdha.primary_surf_displ.chiou2025",
-          "module": "openquake.fdha.primary_surf_displ.chiou2025"
+          "module": "openquake.fdha.primary_surf_displ.chiou2025",
+          "doc_page": "primary/Chiou2025.md",
+          "doc_params": [
+            {
+              "name": "style",
+              "type": "string",
+              "units": "\u2013",
+              "default": "`\"strike-slip\"`",
+              "allowed": "`\"strike-slip\"`, `\"strikeslip\"`, `\"ss\"` (case-insensitive)",
+              "required": false,
+              "description": "Fault style. Must be strike-slip; otherwise raises ValueError."
+            },
+            {
+              "name": "version",
+              "type": "string",
+              "units": "\u2013",
+              "default": "`\"model7\"`",
+              "allowed": "`\"model7\"`, `\"model8.1\"`, `\"model8.2\"`, `\"model8.3\"` (case-insensitive)",
+              "required": false,
+              "description": "Model formulation version. Coefficients are loaded from `chiou_2025_coefficients.csv`."
+            }
+          ],
+          "prefill": ""
         },
         {
           "class_name": "Kuehn2024PrimaryFD",
-          "import_path": "openquake.fdha.primary_surf_displ.kuehn2024",
-          "module": "openquake.fdha.primary_surf_displ.kuehn2024.kuehn2024"
+          "module": "openquake.fdha.primary_surf_displ.kuehn2024.kuehn2024",
+          "doc_page": "primary/Kuehn2024.md",
+          "doc_params": [
+            {
+              "name": "style",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\u2013",
+              "allowed": "`\"normal\"`, `\"reverse\"`, `\"strike-slip\"` (case-insensitive)",
+              "required": true,
+              "description": "Fault style. Invalid values raise ValueError."
+            },
+            {
+              "name": "folded",
+              "type": "boolean",
+              "units": "\u2013",
+              "default": "`true`",
+              "allowed": "`true`, `false`",
+              "required": false,
+              "description": "If true, averages probabilities from x/L and 1\u2212x/L positions. If false, uses only the site position."
+            },
+            {
+              "name": "epistemic_uncertainty",
+              "type": "boolean",
+              "units": "\u2013",
+              "default": "`true`",
+              "allowed": "`true`, `false`",
+              "required": false,
+              "description": "If true, uses ensemble of coefficient realizations (posterior sampling). If false, uses mean coefficients only."
+            },
+            {
+              "name": "coefficient_type",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\u2013",
+              "allowed": "`\"full\"`, `\"mean\"`",
+              "required": false,
+              "description": "Alternative to `epistemic_uncertainty`. `\"full\"` enables epistemic uncertainty, `\"mean\"` uses mean coefficients. If provided, overrides `epistemic_uncertainty`."
+            }
+          ],
+          "prefill": ""
         },
         {
           "class_name": "Lavrentiadis2023PrimaryFD",
-          "import_path": "openquake.fdha.primary_surf_displ.lavrentiadis2023",
-          "module": "openquake.fdha.primary_surf_displ.lavrentiadis2023"
+          "module": "openquake.fdha.primary_surf_displ.lavrentiadis2023",
+          "doc_page": "primary/Lavrentiadis2023.md",
+          "doc_params": [
+            {
+              "name": "style",
+              "type": "string",
+              "units": "\u2013",
+              "default": "`\"normal\"`",
+              "allowed": "`\"normal\"`, `\"strike-slip\"`, `\"reverse\"` (case-insensitive)",
+              "required": false,
+              "description": "Style of faulting."
+            },
+            {
+              "name": "output_type",
+              "type": "string",
+              "units": "\u2013",
+              "default": "`\"disp_agg_prime\"`",
+              "allowed": "`\"disp_agg_prime\"`, `\"disp_prnc_prime\"`, `\"disp_agg_seg\"`",
+              "required": false,
+              "description": "Displacement metric to evaluate. `disp_agg_prime` is aggregate for full rupture, `disp_prnc_prime` is principal for full rupture, `disp_agg_seg` is aggregate for single segment."
+            },
+            {
+              "name": "include_zero_slip",
+              "type": "boolean",
+              "units": "\u2013",
+              "default": "`false`",
+              "allowed": "`true`, `false`",
+              "required": false,
+              "description": "If `true`, the probability accounts for zero slip and gap probabilities. If `false`, uses only the displacement distribution."
+            }
+          ],
+          "prefill": ""
         },
         {
           "class_name": "Moss2022PrimaryFD",
-          "import_path": "openquake.fdha.primary_surf_displ.moss2022",
-          "module": "openquake.fdha.primary_surf_displ.moss2022"
+          "module": "openquake.fdha.primary_surf_displ.moss2022",
+          "doc_page": "primary/Moss2022.md",
+          "doc_params": [],
+          "prefill": ""
         },
         {
           "class_name": "Moss2024PrimaryFD",
-          "import_path": "openquake.fdha.primary_surf_displ.moss2024",
-          "module": "openquake.fdha.primary_surf_displ.moss2024"
+          "module": "openquake.fdha.primary_surf_displ.moss2024",
+          "doc_page": "primary/Moss2024.md",
+          "doc_params": [
+            {
+              "name": "version",
+              "type": "string",
+              "units": "\u2013",
+              "default": "`\"AD\"`",
+              "allowed": "`\"AD\"`, `\"MD\"` (case-insensitive)",
+              "required": false,
+              "description": "Normalized displacement type. `\"AD\"` uses d/AD (average displacement), `\"MD\"` uses d/MD (maximum displacement)."
+            },
+            {
+              "name": "source",
+              "type": "string",
+              "units": "\u2013",
+              "default": "`\"EQS\"`",
+              "allowed": "`\"EQS\"`, `\"GIRS\"` (case-insensitive)",
+              "required": false,
+              "description": "Alpha/beta parameter source. `\"EQS\"` uses piecewise linear interpolation from Table 2 data files. `\"GIRS\"` uses regression model from GIRS report Figures 4.3-4.4."
+            },
+            {
+              "name": "completeness",
+              "type": "string",
+              "units": "\u2013",
+              "default": "`\"all\"`",
+              "allowed": "`\"complete\"`, `\"all\"` (case-insensitive)",
+              "required": false,
+              "description": "Reference model subset. `\"complete\"` uses complete dataset coefficients, `\"all\"` uses all data coefficients."
+            }
+          ],
+          "prefill": "version = AD"
         },
         {
           "class_name": "MossRoss2011PrimaryFD",
-          "import_path": "openquake.fdha.primary_surf_displ.moss_ross2011",
           "module": "openquake.fdha.primary_surf_displ.moss_ross2011",
-          "n_sigma_default": 3.0
+          "doc_page": null,
+          "doc_params": [],
+          "prefill": "",
+          "ctor_defaults": {
+            "n_sigma": 3.0
+          }
         },
         {
           "class_name": "Petersen2011PrimaryFD",
-          "import_path": "openquake.fdha.primary_surf_displ.petersen2011",
-          "module": "openquake.fdha.primary_surf_displ.petersen2011"
+          "module": "openquake.fdha.primary_surf_displ.petersen2011",
+          "doc_page": "primary/Petersen2011.md",
+          "doc_params": [
+            {
+              "name": "version",
+              "type": "string",
+              "units": "\u2013",
+              "default": "`\"quadratic\"`",
+              "allowed": "`\"bilinear\"`, `\"elliptical\"`, `\"quadratic\"` (case-insensitive)",
+              "required": false,
+              "description": "Functional form for the along-strike displacement profile. `\"bilinear\"` uses piecewise linear (Eqns 7\u20139), `\"elliptical\"` uses elliptical profile (Eqn 13), `\"quadratic\"` uses quadratic profile with folding (Eqn 10)."
+            }
+          ],
+          "prefill": ""
         },
         {
           "class_name": "Petersen2011PrimaryFD_bilinear",
-          "import_path": "openquake.fdha.primary_surf_displ.petersen2011",
-          "module": "openquake.fdha.primary_surf_displ.petersen2011"
+          "module": "openquake.fdha.primary_surf_displ.petersen2011",
+          "doc_page": "primary/Petersen2011.md",
+          "doc_params": [
+            {
+              "name": "version",
+              "type": "string",
+              "units": "\u2013",
+              "default": "`\"quadratic\"`",
+              "allowed": "`\"bilinear\"`, `\"elliptical\"`, `\"quadratic\"` (case-insensitive)",
+              "required": false,
+              "description": "Functional form for the along-strike displacement profile. `\"bilinear\"` uses piecewise linear (Eqns 7\u20139), `\"elliptical\"` uses elliptical profile (Eqn 13), `\"quadratic\"` uses quadratic profile with folding (Eqn 10)."
+            }
+          ],
+          "prefill": ""
         },
         {
           "class_name": "Petersen2011PrimaryFD_elliptical",
-          "import_path": "openquake.fdha.primary_surf_displ.petersen2011",
-          "module": "openquake.fdha.primary_surf_displ.petersen2011"
+          "module": "openquake.fdha.primary_surf_displ.petersen2011",
+          "doc_page": "primary/Petersen2011.md",
+          "doc_params": [
+            {
+              "name": "version",
+              "type": "string",
+              "units": "\u2013",
+              "default": "`\"quadratic\"`",
+              "allowed": "`\"bilinear\"`, `\"elliptical\"`, `\"quadratic\"` (case-insensitive)",
+              "required": false,
+              "description": "Functional form for the along-strike displacement profile. `\"bilinear\"` uses piecewise linear (Eqns 7\u20139), `\"elliptical\"` uses elliptical profile (Eqn 13), `\"quadratic\"` uses quadratic profile with folding (Eqn 10)."
+            }
+          ],
+          "prefill": ""
         },
         {
           "class_name": "Petersen2011PrimaryFD_quadratic",
-          "import_path": "openquake.fdha.primary_surf_displ.petersen2011",
-          "module": "openquake.fdha.primary_surf_displ.petersen2011"
+          "module": "openquake.fdha.primary_surf_displ.petersen2011",
+          "doc_page": "primary/Petersen2011.md",
+          "doc_params": [
+            {
+              "name": "version",
+              "type": "string",
+              "units": "\u2013",
+              "default": "`\"quadratic\"`",
+              "allowed": "`\"bilinear\"`, `\"elliptical\"`, `\"quadratic\"` (case-insensitive)",
+              "required": false,
+              "description": "Functional form for the along-strike displacement profile. `\"bilinear\"` uses piecewise linear (Eqns 7\u20139), `\"elliptical\"` uses elliptical profile (Eqn 13), `\"quadratic\"` uses quadratic profile with folding (Eqn 10)."
+            }
+          ],
+          "prefill": ""
         },
         {
           "class_name": "Takao2013PrimaryFD",
-          "import_path": "openquake.fdha.primary_surf_displ.takao2013",
           "module": "openquake.fdha.primary_surf_displ.takao2013",
-          "n_sigma_default": 3.0
+          "doc_page": "primary/Takao2013.md",
+          "doc_params": [
+            {
+              "name": "norm_disp_type",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\u2013",
+              "allowed": "`\"AD\"`, `\"MD\"`",
+              "required": true,
+              "description": "Normalization displacement type. `\"AD\"` uses average displacement normalization (Gamma distribution), `\"MD\"` uses maximum displacement normalization (Beta distribution)."
+            }
+          ],
+          "prefill": "norm_disp_type = AD",
+          "ctor_defaults": {
+            "n_sigma": 3.0
+          }
         },
         {
           "class_name": "Youngs2003PrimaryFD",
-          "import_path": "openquake.fdha.primary_surf_displ.youngs2003",
           "module": "openquake.fdha.primary_surf_displ.youngs2003",
-          "n_sigma_default": 6.0
+          "doc_page": "primary/Youngs2003.md",
+          "doc_params": [
+            {
+              "name": "style",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\u2013",
+              "allowed": "`\"all\"`, `\"normal\"` (case-insensitive)",
+              "required": true,
+              "description": "Faulting style for Wells & Coppersmith (1994) coefficients. `\"all\"` uses \"All styles\" coefficients (recommended, consistent with paper and fdhpy). `\"normal\"` uses \"Normal faulting\" specific coefficients."
+            },
+            {
+              "name": "norm_disp_type",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\u2013",
+              "allowed": "`\"AD\"`, `\"MD\"`",
+              "required": true,
+              "description": "Normalization displacement type. `\"AD\"` uses average displacement normalization (Gamma distribution), `\"MD\"` uses maximum displacement normalization (Beta distribution)."
+            }
+          ],
+          "prefill": "norm_disp_type = AD",
+          "ctor_defaults": {
+            "n_sigma": 6.0
+          }
         }
       ]
     },
@@ -118,43 +418,125 @@
       "models": [
         {
           "class_name": "FerrarioLivio2021SecondarySR",
-          "import_path": "openquake.fdha.secondary_surf_rup.ferrario2021",
-          "module": "openquake.fdha.secondary_surf_rup.ferrario2021"
+          "module": "openquake.fdha.secondary_surf_rup.ferrario2021",
+          "doc_page": null,
+          "doc_params": [],
+          "prefill": ""
         },
         {
           "class_name": "Moss2022SecondarySR",
-          "import_path": "openquake.fdha.secondary_surf_rup.moss2022",
-          "module": "openquake.fdha.secondary_surf_rup.moss2022"
+          "module": "openquake.fdha.secondary_surf_rup.moss2022",
+          "doc_page": null,
+          "doc_params": [],
+          "prefill": ""
         },
         {
           "class_name": "Petersen2011SecondarySR",
-          "import_path": "openquake.fdha.secondary_surf_rup.petersen2011",
-          "module": "openquake.fdha.secondary_surf_rup.petersen2011"
+          "module": "openquake.fdha.secondary_surf_rup.petersen2011",
+          "doc_page": "secondary/Petersen2011.md",
+          "doc_params": [
+            {
+              "name": "cell_size",
+              "type": "integer",
+              "units": "meters",
+              "default": "`25`",
+              "allowed": "`25`, `50`, `100`, `150`, `200`",
+              "required": false,
+              "description": "Size of the cell/pixel for distributed rupture modeling. Different cell sizes have different regression coefficients."
+            }
+          ],
+          "prefill": ""
         },
         {
           "class_name": "Rodriguez2023SecondarySR",
-          "import_path": "openquake.fdha.secondary_surf_rup.rodriguez2023",
-          "module": "openquake.fdha.secondary_surf_rup.rodriguez2023"
+          "module": "openquake.fdha.secondary_surf_rup.rodriguez2023",
+          "doc_page": null,
+          "doc_params": [],
+          "prefill": ""
         },
         {
           "class_name": "Takao2013SecondarySR",
-          "import_path": "openquake.fdha.secondary_surf_rup.takao2013",
-          "module": "openquake.fdha.secondary_surf_rup.takao2013"
+          "module": "openquake.fdha.secondary_surf_rup.takao2013",
+          "doc_page": null,
+          "doc_params": [],
+          "prefill": ""
         },
         {
           "class_name": "Takao2014SecondarySR",
-          "import_path": "openquake.fdha.secondary_surf_rup.takao2014",
-          "module": "openquake.fdha.secondary_surf_rup.takao2014"
+          "module": "openquake.fdha.secondary_surf_rup.takao2014",
+          "doc_page": null,
+          "doc_params": [],
+          "prefill": ""
         },
         {
           "class_name": "Visini2025SecondarySR",
-          "import_path": "openquake.fdha.secondary_surf_rup.visini2025",
-          "module": "openquake.fdha.secondary_surf_rup.visini2025"
+          "module": "openquake.fdha.secondary_surf_rup.visini2025",
+          "doc_page": "secondary/VisiniEtAl2025.md",
+          "doc_params": [
+            {
+              "name": "displacement_measure_levels",
+              "type": "JSON string",
+              "units": "meters",
+              "default": "\u2013",
+              "allowed": "positive numbers",
+              "required": true,
+              "description": "Displacement thresholds for hazard curves. Used to size probability arrays. Use JSON format: `{\"FD\": [0.001, 0.01, ...]}`."
+            },
+            {
+              "name": "case",
+              "type": "string",
+              "units": "\u2013",
+              "default": "`case1`",
+              "allowed": "`case1`, `case2`, `case3`",
+              "required": true,
+              "description": "User-mandated combination set: Case 1 \u2192 A/B/C, Case 2 \u2192 A/B, Case 3 \u2192 A only."
+            },
+            {
+              "name": "near_far_threshold_km",
+              "type": "float",
+              "units": "kilometers",
+              "default": "`0.2`",
+              "allowed": ">0",
+              "required": false,
+              "description": "Distance cutoff between \"near\" and \"far\" regimes for along\u2011strike Monte Carlo (SR Rank 2)."
+            },
+            {
+              "name": "r_threshold_km",
+              "type": "float",
+              "units": "kilometers",
+              "default": "`0.1`",
+              "allowed": ">0",
+              "required": false,
+              "description": "Distance split between principal (\u2264 threshold) and distributed (> threshold) branches in the hazard curve."
+            },
+            {
+              "name": "primary_sr_reduction` / `secondary_sr_reduction",
+              "type": "JSON string",
+              "units": "\u2013",
+              "default": "median, 50th percentile",
+              "allowed": "method\u2208{`median`,`mean`,`percentile`}",
+              "required": false,
+              "description": "Reduction statistic for Monte Carlo arrays. Use JSON format: `{\"method\": \"median\", \"q\": 50}`."
+            }
+          ],
+          "prefill": "pixel_size = 100"
         },
         {
           "class_name": "Youngs2003SecondarySR",
-          "import_path": "openquake.fdha.secondary_surf_rup.youngs2003",
-          "module": "openquake.fdha.secondary_surf_rup.youngs2003"
+          "module": "openquake.fdha.secondary_surf_rup.youngs2003",
+          "doc_page": "secondary/Youngs2003.md",
+          "doc_params": [
+            {
+              "name": "percentile",
+              "type": "string",
+              "units": "\u2013",
+              "default": "`\"85\"`",
+              "allowed": "`\"85\"`, `\"95\"`",
+              "required": false,
+              "description": "Percentile used for scaling the distributed displacement relative to maximum displacement. Different percentiles use different scaling factors."
+            }
+          ],
+          "prefill": "version = 3"
         }
       ]
     },
@@ -163,24 +545,100 @@
       "models": [
         {
           "class_name": "Moss2022SecondaryFD",
-          "import_path": "openquake.fdha.secondary_surf_displ.moss2022",
-          "module": "openquake.fdha.secondary_surf_displ.moss2022"
+          "module": "openquake.fdha.secondary_surf_displ.moss2022",
+          "doc_page": null,
+          "doc_params": [],
+          "prefill": ""
         },
         {
           "class_name": "Petersen2011SecondaryFD",
-          "import_path": "openquake.fdha.secondary_surf_displ.petersen2011",
-          "module": "openquake.fdha.secondary_surf_displ.petersen2011"
+          "module": "openquake.fdha.secondary_surf_displ.petersen2011",
+          "doc_page": "secondary/Petersen2011.md",
+          "doc_params": [
+            {
+              "name": "cell_size",
+              "type": "integer",
+              "units": "meters",
+              "default": "`25`",
+              "allowed": "`25`, `50`, `100`, `150`, `200`",
+              "required": false,
+              "description": "Size of the cell/pixel for distributed rupture modeling. Different cell sizes have different regression coefficients."
+            }
+          ],
+          "prefill": ""
         },
         {
           "class_name": "Visini2025SecondaryFD",
-          "import_path": "openquake.fdha.secondary_surf_displ.visini2025",
           "module": "openquake.fdha.secondary_surf_displ.visini2025",
-          "n_sigma_default": 3.0
+          "doc_page": "secondary/VisiniEtAl2025.md",
+          "doc_params": [
+            {
+              "name": "displacement_measure_levels",
+              "type": "JSON string",
+              "units": "meters",
+              "default": "\u2013",
+              "allowed": "positive numbers",
+              "required": true,
+              "description": "Displacement thresholds for hazard curves. Used to size probability arrays. Use JSON format: `{\"FD\": [0.001, 0.01, ...]}`."
+            },
+            {
+              "name": "case",
+              "type": "string",
+              "units": "\u2013",
+              "default": "`case1`",
+              "allowed": "`case1`, `case2`, `case3`",
+              "required": true,
+              "description": "User-mandated combination set: Case 1 \u2192 A/B/C, Case 2 \u2192 A/B, Case 3 \u2192 A only."
+            },
+            {
+              "name": "near_far_threshold_km",
+              "type": "float",
+              "units": "kilometers",
+              "default": "`0.2`",
+              "allowed": ">0",
+              "required": false,
+              "description": "Distance cutoff between \"near\" and \"far\" regimes for along\u2011strike Monte Carlo (SR Rank 2)."
+            },
+            {
+              "name": "r_threshold_km",
+              "type": "float",
+              "units": "kilometers",
+              "default": "`0.1`",
+              "allowed": ">0",
+              "required": false,
+              "description": "Distance split between principal (\u2264 threshold) and distributed (> threshold) branches in the hazard curve."
+            },
+            {
+              "name": "primary_sr_reduction` / `secondary_sr_reduction",
+              "type": "JSON string",
+              "units": "\u2013",
+              "default": "median, 50th percentile",
+              "allowed": "method\u2208{`median`,`mean`,`percentile`}",
+              "required": false,
+              "description": "Reduction statistic for Monte Carlo arrays. Use JSON format: `{\"method\": \"median\", \"q\": 50}`."
+            }
+          ],
+          "prefill": "scaling_model = WC1994",
+          "ctor_defaults": {
+            "n_sigma": 3.0
+          }
         },
         {
           "class_name": "Youngs2003SecondaryFD",
-          "import_path": "openquake.fdha.secondary_surf_displ.youngs2003",
-          "module": "openquake.fdha.secondary_surf_displ.youngs2003"
+          "module": "openquake.fdha.secondary_surf_displ.youngs2003",
+          "doc_page": "secondary/Youngs2003.md",
+          "doc_params": [
+            {
+              "name": "percentile",
+              "type": "string",
+              "units": "\u2013",
+              "default": "`\"85\"`",
+              "allowed": "`\"85\"`, `\"95\"`",
+              "required": false,
+              "description": "Percentile used for scaling the distributed displacement relative to maximum displacement. Different percentiles use different scaling factors."
+            }
+          ],
+          "prefill": "percentile = 85"
         }
       ]
     }

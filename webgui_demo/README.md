@@ -1,81 +1,90 @@
-# oq-pfdha — web GUI demonstration prototype
+# oq-pfdha — web GUI (prototype front-end)
 
-A **visual proof-of-concept** of a web interface for
+A working web interface for
 [oq-pfdha](https://github.com/vup1120/oq-pfdha), the open-source
-Probabilistic Fault Displacement Hazard Analysis framework built on
-OpenQuake Engine infrastructure.
+Probabilistic Fault Displacement Hazard Analysis framework. The GUI
+assembles a complete job (INI + NRML source-model logic tree + NRML FDHA
+logic tree) from form inputs and executes the **actual engine**
+(`FdhaLogicTree.from_ini(...).run(...)`) — the same code path as the
+`fdha` command line.
 
-> ⚠️ **Prototype — not for production hazard assessment.**
-> No real calculation is performed. The "Run" button simulates progress and
-> the Results page displays **pre-computed** Norcia Case 3 outputs
-> (IAEA TECDOC-2092 benchmark) committed under `data/norcia_case3/`
-> (provenance: `data/norcia_case3/PROVENANCE.md`). Changing models or
-> parameters does **not** change the displayed results.
+> **Prototype interface** — review configurations and verify results
+> independently before use in production hazard assessment.
 
-## What it demonstrates
+## Features
 
-1. **Configure** — source-model selection, calculation parameters with the
-   exact INI names and codebase defaults (each cited in `app.py` comments),
-   and a 4-level FDHA logic-tree builder fed exclusively from the real model
-   registry (`registry.json`), with live FDLT-001 weight validation and a
-   single-file NRML preview. GUI-generated XML parses and validates cleanly
-   with the engine's own `nrml_reader` / `validate_spec`.
-2. **Run** — configuration summary, end-branch count, simulated progress,
-   and a prominent DEMO MODE banner. Running is blocked while the logic
-   tree is invalid.
-3. **Results** — interactive hazard curves (mean + fractiles, log-log) and
-   a displacement hazard map (mean + 5 fractile layers) with CSV downloads.
+1. **Configure**
+   - Built-in source models (Norcia Case 3 / minimal example) **or upload
+     your own NRML source model** — uploaded files are parsed and their
+     fault sources listed (id, name, type, rake → style).
+   - Hazard curve (sites) or hazard map (region + grid) geometry, fully
+     editable.
+   - All job parameters with the exact INI names and codebase defaults
+     (cited in `app.py` comments): `investigation_time`, `r_threshold_km`,
+     `near_far_threshold_km`, `rupture_mesh_spacing`, `width_of_mfd_bin`,
+     `reference_vs30_value`, `return_period` (maps),
+     `displacement_measure_levels` (JSON, validated live).
+   - **Logic-tree builder** over the real model registry (`registry.json`):
+     per-model branch weights **and editable model parameters**
+     (`key = value`, the engine's native `<uncertaintyModel>` syntax),
+     with the documented parameter table from the User Manual displayed
+     next to each model. Live validation by the engine's own
+     `nrml_reader` + `validate_spec` (FDLT rules), plus per-branch-set
+     weight checks.
+2. **Run** — executes the engine on a self-contained job directory under
+   `webgui_demo/runs/run_<timestamp>/`; shows the generated `job.ini`,
+   elapsed time, and the engine log. Errors are reported with the full
+   traceback.
+3. **Results** — reads the run's actual outputs: hazard curves (weighted
+   mean + fractile band + optional per-branch spaghetti), displacement
+   hazard maps (mean + fractile layers), validator reports, manifest, CSV
+   downloads, and a ZIP of the complete output directory.
+
+The **default configuration is a light single-branch calculation**
+(Youngs 2003 chain on the Norcia Case 3 source, < 1 s for curves,
+~15 s for a coarse map) — ideal for a live demonstration. Add models /
+branches / sites to scale up to full studies.
 
 ## Run locally
 
+Use a fresh virtual environment (the engine pins its own numpy/pandas
+stack — do not mix with older installs):
+
 ```bash
-pip install -r webgui_demo/requirements.txt
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e .                              # the oq-pfdha engine
+pip install -r webgui_demo/requirements.txt   # GUI libraries
 streamlit run webgui_demo/app.py
 ```
 
-The full oq-pfdha package is **not** required at runtime: model lists come
-from the committed `registry.json` snapshot, results from the committed
-CSVs.
-
 ### Regenerating the registry snapshot
 
-If the model library changes, refresh the snapshot from the actual packages
-(requires `pip install -e .` at the repository root):
+`registry.json` holds the model list, documented parameter tables and
+prefills shown in the GUI. After changing the model library or the User
+Manual, refresh it:
 
 ```bash
 python webgui_demo/generate_registry.py
 ```
 
-### Regenerating the demo data
-
-```bash
-python openquake/fdha/test/benchmark/norcia_case3_iaea/run_test.py
-# then re-copy the files listed in data/norcia_case3/PROVENANCE.md
-```
-
 ## Deploy on Hugging Face Spaces (Docker)
 
-1. Create a new Space → SDK: **Docker** (blank template).
-2. Copy the contents of `webgui_demo/` to the Space repository root
-   (`app.py`, `registry.json`, `data/`, `requirements.txt`, `Dockerfile`).
-3. Push — Spaces builds the Dockerfile and serves the app on port 7860
-   automatically.
+The Dockerfile must be built from the **repository root** (the image
+installs the full engine):
 
-Notes:
-- The image is small (~400 MB): only Streamlit + plotting libraries, no
-  OpenQuake stack.
-- For the alternative *Streamlit SDK* Space (no Dockerfile), set
-  `app_file: app.py` in the Space's README front matter and Spaces will use
-  `requirements.txt` directly.
+1. Create a Space → SDK: **Docker**.
+2. Push the whole repository to the Space, with `webgui_demo/Dockerfile`
+   copied to the repo root (or set the Space's `dockerfile` path).
+3. Spaces serves the app on port 7860 automatically.
+
+Note: the image includes the OpenQuake engine stack (~2 GB). Runs execute
+inside the Space container — size CPU accordingly and keep demo
+configurations light.
 
 ## License & citation
 
-- License: **GNU AGPL v3.0 or later** (same as oq-pfdha; see `LICENSE` at
-  the repository root).
+- License: **GNU AGPL v3.0 or later** (same as oq-pfdha).
 - Please cite: Chen, Y.-S. (2025). *openquake.fdha: Python tools for
   probabilistic fault displacement hazard analysis* (v1.0.0) [Software].
   Istituto Nazionale di Oceanografia e di Geofisica Sperimentale (OGS).
   https://github.com/vup1120/oq-pfdha (see `CITATION.cff`).
-- Benchmark reference: IAEA (2025), *Benchmarking Current Practices in
-  Probabilistic Fault Displacement Hazard Analysis for Nuclear
-  Installations*, IAEA-TECDOC-2092, DOI 10.61092/iaea.74us-dn4n.
