@@ -17,8 +17,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.fdha.secondary_surf_rup.rodriguezpadilla_oskin2023` implements
-model of Rodriguez Padilla and Oskin (2023) into :class:`RodriguezPadillaOskin2023SecondarySR`
+Module :mod:`openquake.fdha.secondary_surf_rup.rodriguez2023` implements
+the model of Rodriguez Padilla and Oskin (2023) in :class:`Rodriguez2023SecondarySR`
 
 Supported Fault Styles: Strike-slip only
 
@@ -68,12 +68,13 @@ class Rodriguez2023SecondarySR(BaseSecondarySurfRup):
         coeffs = self.COEFFS[pixel_size]
         a, b, c = coeffs['a'], coeffs['b'], coeffs['c']
 
-        # Convert r to array
-        r = np.atleast_1d(np.asarray(r, dtype=float))
+        # Convert r to array and from km to metres: Eq. 2 of the paper is
+        # nu(x) = nu0 * ((x + x_fr)/x_fr)^-gamma with x and x_fr in metres
+        # (Table 1 gives x_fr = 6.7 m for the general model).
+        r_m = np.atleast_1d(np.asarray(r, dtype=float)) * 1000.0
 
-        # Compute probability using power-law model
-        # Equation from Rodriguez Padilla and Oskin (2023)
-        prob = a * ((r + b) / b) ** c
+        # Compute probability using the power-law model (Eq. 2)
+        prob = a * ((r_m + b) / b) ** c
 
         # Clip probability to valid range [0, 1]
         prob = np.clip(prob, 0.0, 1.0)
