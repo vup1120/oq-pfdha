@@ -94,11 +94,16 @@ from openquake.fdha.primary_surf_rup.base import BasePrimarySurfRup
 # Constants and lookup tables
 # ---------------------------
 
-# Table 1: parameters by (MSR, SoF)
+# Rupture-width magnitude scaling relation parameters by (MSR, SoF).
 # columns: [MSR, SoF, a, b, W_sigma]
-# MSR codes in this build:
-#   0, 1, 2 — numeric selectors reproducing the reference behaviors.
-# Use numeric codes as-is in configuration (see docs for guidance).
+# MSR codes:
+#   0 = Leonard (2014), interplate: m = a + 2.5*log10(W)
+#       (a = 3.63 dip-slip, 3.88 strike-slip)
+#   1 = Leonard (2014), stable continental region: same form
+#       (a = 4.14 dip-slip, 4.22 strike-slip)
+#   2 = Thingbaijam et al. (2017): log10(W) = a + b*m
+#       (normal -0.829/0.323, reverse -1.669/0.435, strike-slip -0.543/0.261)
+# SoF codes: 3 = normal, 4 = reverse, 5 = strike-slip.
 TAB1 = np.array([
     [0, 3, 3.63, 2.5, 0.15],
     [0, 4, 3.63, 2.5, 0.15],
