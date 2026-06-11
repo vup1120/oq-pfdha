@@ -17,7 +17,20 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.fdha.secondary_surf_rup.takao2014` 
+Module :mod:`openquake.fdha.secondary_surf_rup.takao2014` implements
+the model of Takao et al. (2014) in :class:`Takao2014SecondarySR`
+
+Reference:
+    Takao, M., Ueta, K., Annaka, T., Kurita, T., Nakase, H., Kyoya, T., &
+    Kato, J. (2014). Reliability improvement of probabilistic fault
+    displacement hazard analysis. Journal of Japan Association for
+    Earthquake Engineering, 14(2), 16-36. https://doi.org/10.5610/jaee.14.2_16
+    (in Japanese with English abstract).
+
+    An English description of the model (magnitude-independent logistic
+    regression on ln(r + c3) for 500/250/100/50 m unit cells) is given by
+    Nishizaka et al. (2026), Seismological Research Letters,
+    https://doi.org/10.1785/0220250293.
 """
 
 import numpy as np
@@ -51,9 +64,9 @@ class Takao2014SecondarySR(BaseSecondarySurfRup):
             raise ValueError(f"Invalid pixel size. Must be one of {list(coefficients.keys())} meters")
             
         C1, C2, C3 = coefficients[pixel_size]
+        # Logistic regression z = C1 + C2*ln(r + C3); the model is
+        # independent of earthquake magnitude (Takao et al., 2014).
         fx = C1 + C2 * np.log(r + C3)
-
-        # Calculate probability using the formula: exp(-C1·ln(r·1000) + C2)
         prob = np.exp(fx) / (1 + np.exp(fx))
 
         return prob
