@@ -6,18 +6,22 @@ packages (see openquake/fdha/logic_tree/validators.py:184-195,
 _class_is_registered). This script imports those packages and snapshots
 every exported model class, so the GUI never hard-codes a model list.
 
-Curation (per project owner's decision at the Phase 0 gate):
-- utility constant-value classes are excluded: FixedPrimarySR,
-  FixedSecondarySR (openquake/fdha/*/fixed.py)
-- alias subclasses are excluded: MammarellaEtAl2024PrimarySR
-  (alias of Mammarella2024PrimarySR, primary_surf_rup/mammarella2024.py:395),
-  Petersen2011SecondarySR_default (alias variant,
-  secondary_surf_rup/petersen2011.py:152)
+It additionally harvests, for each class:
 
-For each class we also record whether its __init__ accepts the per-model
-``n_sigma`` truncation parameter and its default value (e.g.
-Youngs2003PrimaryFD n_sigma=6, primary_surf_displ/youngs2003.py:53-58;
-Takao2013PrimaryFD n_sigma=3, primary_surf_displ/takao2013.py:43-44).
+- the per-model parameter table from the User Manual
+  (docs/UserManual_Enhanced/models/{primary,secondary}/<Model>.md,
+  rows under the "| Name | Type | Units | Default | Allowed | ..." header),
+  so the GUI can render authoritative parameter documentation;
+- any constructor parameters exposed with explicit defaults
+  (e.g. n_sigma: Youngs2003PrimaryFD=6, primary_surf_displ/youngs2003.py:53-58;
+  Takao2013PrimaryFD=3, primary_surf_displ/takao2013.py:43-44);
+- a parameter prefill string for the GUI editor, taken verbatim from the
+  shipped logic trees (Norcia Case 3 benchmark and Taiwan example), i.e.
+  values with in-repo provenance.
+
+Curation (per project owner's decision): utility constant classes
+(FixedPrimarySR, FixedSecondarySR) and alias subclasses
+(MammarellaEtAl2024PrimarySR, Petersen2011SecondarySR_default) are excluded.
 
 Run from the repository root with the package installed:
 
@@ -28,27 +32,104 @@ from __future__ import annotations
 import importlib
 import inspect
 import json
+import re
 from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+DOCS = REPO / "docs" / "UserManual_Enhanced" / "models"
 
 # Slot names follow FDHA_SLOTS_BY_UTYPE in openquake/fdha/logic_tree/types.py:14-19
 SLOTS = {
-    "fdhaPrimarySRModel": ("primary_surf_rup", "BasePrimarySurfRup"),
-    "fdhaPrimaryFDModel": ("primary_surf_displ", "BasePrimarySurfDispl"),
-    "fdhaSecondarySRModel": ("secondary_surf_rup", "BaseSecondarySurfRup"),
-    "fdhaSecondaryFDModel": ("secondary_surf_displ", "BaseSecondarySurfDispl"),
+    "fdhaPrimarySRModel": "primary_surf_rup",
+    "fdhaPrimaryFDModel": "primary_surf_displ",
+    "fdhaSecondarySRModel": "secondary_surf_rup",
+    "fdhaSecondaryFDModel": "secondary_surf_displ",
 }
 
 EXCLUDED = {
-    "FixedPrimarySR",            # utility constant, primary_surf_rup/fixed.py:27
-    "FixedSecondarySR",          # utility constant, secondary_surf_rup/fixed.py:27
-    "MammarellaEtAl2024PrimarySR",       # alias, primary_surf_rup/mammarella2024.py:395
-    "Petersen2011SecondarySR_default",   # alias, secondary_surf_rup/petersen2011.py:152
+    "FixedPrimarySR",                  # utility constant, primary_surf_rup/fixed.py:27
+    "FixedSecondarySR",                # utility constant, secondary_surf_rup/fixed.py:27
+    "MammarellaEtAl2024PrimarySR",     # alias, primary_surf_rup/mammarella2024.py:395
+    "Petersen2011SecondarySR_default", # alias, secondary_surf_rup/petersen2011.py:152
 }
+
+# Class -> User-Manual page holding its parameter table.
+DOC_MAP = {
+    "Youngs2003PrimaryFD": "primary/Youngs2003.md",
+    "Petersen2011PrimaryFD": "primary/Petersen2011.md",
+    "Petersen2011PrimaryFD_bilinear": "primary/Petersen2011.md",
+    "Petersen2011PrimaryFD_elliptical": "primary/Petersen2011.md",
+    "Petersen2011PrimaryFD_quadratic": "primary/Petersen2011.md",
+    "Chiou2025PrimaryFD": "primary/Chiou2025.md",
+    "Kuehn2024PrimaryFD": "primary/Kuehn2024.md",
+    "Lavrentiadis2023PrimaryFD": "primary/Lavrentiadis2023.md",
+    "Moss2022PrimaryFD": "primary/Moss2022.md",
+    "Moss2024PrimaryFD": "primary/Moss2024.md",
+    "Takao2013PrimaryFD": "primary/Takao2013.md",
+    "Mammarella2024PrimarySR": "primary/MammarellaEtAl2024.md",
+    "Yang2021PrimarySR": "primary/Yang2021.md",
+    "Petersen2011SecondarySR": "secondary/Petersen2011.md",
+    "Petersen2011SecondaryFD": "secondary/Petersen2011.md",
+    "Visini2025SecondarySR": "secondary/VisiniEtAl2025.md",
+    "Visini2025SecondaryFD": "secondary/VisiniEtAl2025.md",
+    "Youngs2003SecondarySR": "secondary/Youngs2003.md",
+    "Youngs2003SecondaryFD": "secondary/Youngs2003.md",
+}
+
+# Editor prefill for <uncertaintyModel> parameter lines. Values are taken
+# verbatim from logic trees shipped in this repository:
+#   [N] openquake/fdha/test/benchmark/norcia_case3_iaea/
+#       config_norcia_case3_iaea_fdha_logic_tree.xml
+#   [T] openquake/fdha/test/fixtures/examples_archive/
+#       logic_tree_validation_taiwan/fdha_logic_tree_*.xml
+PREFILL = {
+    "Youngs2003PrimaryFD": "norm_disp_type = AD",       # [N]
+    "Takao2013PrimaryFD": "norm_disp_type = AD",        # [T]
+    "Moss2024PrimaryFD": "version = AD",                # [T]
+    "Youngs2003SecondarySR": "version = 3",             # [N]
+    "Youngs2003SecondaryFD": "percentile = 85",         # [N]
+    "Visini2025SecondarySR": "pixel_size = 100",        # [N] (pixel_size is Required)
+    "Visini2025SecondaryFD": "scaling_model = WC1994",  # [N]
+}
+
+PARAM_HEADER = re.compile(
+    r"^\|\s*Name\s*\|\s*Type\s*\|\s*Units\s*\|\s*Default\s*\|\s*Allowed\s*\|"
+)
+
+
+def parse_doc_params(md_rel: str) -> list[dict]:
+    """Extract the parameter table rows from a User-Manual model page."""
+    path = DOCS / md_rel
+    if not path.exists():
+        return []
+    rows, in_table = [], False
+    for line in path.read_text().splitlines():
+        if PARAM_HEADER.match(line):
+            in_table = True
+            continue
+        if in_table:
+            if not line.startswith("|"):
+                break
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if not cells or set(cells[0]) <= {"-", " ", ":"}:
+                continue
+            # Name | Type | Units | Default | Allowed | Required? | Description
+            rows.append({
+                "name": cells[0].strip("`"),
+                "type": cells[1] if len(cells) > 1 else "",
+                "units": cells[2] if len(cells) > 2 else "",
+                "default": cells[3] if len(cells) > 3 else "",
+                "allowed": cells[4] if len(cells) > 4 else "",
+                "required": (cells[5].lower().startswith("yes")
+                             if len(cells) > 5 else False),
+                "description": cells[6] if len(cells) > 6 else "",
+            })
+    return rows
 
 
 def snapshot() -> dict:
     out: dict = {"slots": {}, "excluded_by_curation": sorted(EXCLUDED)}
-    for utype, (pkg_name, _base) in SLOTS.items():
+    for utype, pkg_name in SLOTS.items():
         pkg = importlib.import_module(f"openquake.fdha.{pkg_name}")
         models = []
         for name in sorted(dir(pkg)):
@@ -57,22 +138,30 @@ def snapshot() -> dict:
                 continue
             if name.startswith("Base") or name in EXCLUDED:
                 continue
-            entry = {
+            entry: dict = {
                 "class_name": name,
-                "import_path": f"openquake.fdha.{pkg_name}.{obj.__module__.split('.')[-1]}",
                 "module": obj.__module__,
+                "doc_page": DOC_MAP.get(name),
+                "doc_params": parse_doc_params(DOC_MAP[name]) if name in DOC_MAP else [],
+                "prefill": PREFILL.get(name, ""),
             }
+            # Constructor params with explicit defaults (e.g. n_sigma)
             try:
-                params = inspect.signature(obj.__init__).parameters
-                if "n_sigma" in params:
-                    default = params["n_sigma"].default
-                    entry["n_sigma_default"] = (
-                        None if default is inspect.Parameter.empty else default
-                    )
+                sig_params = inspect.signature(obj.__init__).parameters
+                ctor = {
+                    p.name: p.default
+                    for p in list(sig_params.values())[1:]
+                    if p.kind not in (p.VAR_POSITIONAL, p.VAR_KEYWORD)
+                    and p.default is not inspect.Parameter.empty
+                    and isinstance(p.default, (int, float, str, bool))
+                }
+                if ctor:
+                    entry["ctor_defaults"] = ctor
             except (TypeError, ValueError):
                 pass
             models.append(entry)
-        out["slots"][utype] = {"package": f"openquake.fdha.{pkg_name}", "models": models}
+        out["slots"][utype] = {"package": f"openquake.fdha.{pkg_name}",
+                               "models": models}
     return out
 
 
@@ -81,4 +170,5 @@ if __name__ == "__main__":
     dest = Path(__file__).parent / "registry.json"
     dest.write_text(json.dumps(data, indent=2) + "\n")
     n = sum(len(v["models"]) for v in data["slots"].values())
-    print(f"wrote {dest} with {n} model classes")
+    nd = sum(1 for v in data["slots"].values() for m in v["models"] if m["doc_params"])
+    print(f"wrote {dest}: {n} model classes, {nd} with documented parameter tables")
