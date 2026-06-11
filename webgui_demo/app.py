@@ -245,16 +245,168 @@ def page_configure() -> None:
 
 
 # --------------------------------------------------------------------------
-# Pages 2 & 3 — placeholders until Phase 2
+# Page 2 — Run (simulated; demo displays pre-computed benchmark outputs)
 # --------------------------------------------------------------------------
 def page_run() -> None:
     st.header("Run")
-    st.info("Phase 2 of the demo build — coming next.")
+    cfg = st.session_state.get("config")
+    if cfg is None:
+        st.warning("No configuration yet — visit **1 · Configure** first.")
+        return
+
+    st.subheader("Configuration summary")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Source model", "Norcia Case 3")
+    c1.metric("Calculation type", cfg["calc_type"].replace("_", " "))
+    c2.metric("investigation_time", f'{cfg["investigation_time"]} yr')
+    c2.metric("r_threshold_km", f'{cfg["r_threshold_km"]} km')
+    c3.metric("near_far_threshold_km", f'{cfg["near_far_threshold_km"]} km')
+    if cfg["return_period"]:
+        c3.metric("return_period", f'{cfg["return_period"]} yr')
+    n_branches = 1
+    for rows in cfg["selections"].values():
+        n_branches *= max(len(rows), 1)
+    st.metric("Logic-tree end-branches (full enumeration)", n_branches)
+    with st.expander("Selected models and weights"):
+        for utype, rows in cfg["selections"].items():
+            st.markdown(f"**{SLOT_LABELS[utype]}**")
+            for r in rows:
+                extra = f", n_sigma = {r['n_sigma']}" if r.get("n_sigma") is not None else ""
+                st.markdown(f"- `{r['class_name']}` — weight {r['weight']}{extra}")
+
+    if not cfg["lt_valid"]:
+        st.error(
+            "Logic-tree validation failed (weights must sum to 1.0 per "
+            "branch set). Fix the configuration before running."
+        )
+        return
+
+    if st.button("▶ Run calculation", type="primary"):
+        bar = st.progress(0, text="Enumerating logic-tree branches…")
+        steps = [
+            "Enumerating logic-tree branches…",
+            "Building rupture contexts…",
+            "Evaluating principal models…",
+            "Evaluating distributed models…",
+            "Aggregating branch rates…",
+        ]
+        for i, msg in enumerate(steps):
+            time.sleep(0.8)  # simulated only — no computation happens
+            bar.progress((i + 1) / len(steps), text=msg)
+        st.session_state["ran"] = True
+        st.success("Done — see **3 · Results**.")
+
+    if st.session_state.get("ran"):
+        st.info(
+            "**DEMO MODE — displaying pre-computed Norcia Case 3 results** "
+            "(IAEA TECDOC-2092 benchmark). The button above did not run a "
+            "real calculation; your model selection does not change the "
+            "displayed outputs."
+        )
+
+
+# --------------------------------------------------------------------------
+# Page 3 — Results (reads pre-computed CSVs from webgui_demo/data/)
+# --------------------------------------------------------------------------
+DATA = HERE / "data" / "norcia_case3"
+SITE_NAMES = {0: "PF (13.278, 42.767)", 1: "MS (13.188, 42.749)",
+              2: "SL (13.212, 42.853)"}  # order from job_norcia_case3_iaea_curve.ini:6
+FRACTILES = ["quantile-0.05", "quantile-0.16", "quantile-0.5",
+             "quantile-0.84", "quantile-0.95"]
+
+
+@st.cache_data
+def load_curves():
+    import pandas as pd
+    return pd.read_csv(DATA / "aggregate_hazard.csv")
+
+
+@st.cache_data
+def load_map(which: str):
+    import pandas as pd
+    return pd.read_csv(DATA / "map" / f"displacement_map_{which}.csv",
+                       comment="#")
 
 
 def page_results() -> None:
     st.header("Results")
-    st.info("Phase 2 of the demo build — coming next.")
+    if not st.session_state.get("ran"):
+        st.warning("No results yet — press **Run calculation** on page 2 first.")
+        return
+    st.info("**DEMO MODE** — pre-computed Norcia Case 3 outputs "
+            "(see webgui_demo/data/norcia_case3/PROVENANCE.md).")
+
+    # ---- Hazard curves -----------------------------------------------------
+    st.subheader("Hazard curves (mean + fractiles)")
+    df = load_curves()
+    sites = sorted(df["site_id"].unique())
+    chosen = st.selectbox("Site", sites,
+                          format_func=lambda s: SITE_NAMES.get(s, str(s)))
+    d = df[df["site_id"] == chosen]
+
+    import plotly.graph_objects as go
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=d["D0"], y=d["quantile-0.84"], line=dict(width=0),
+        showlegend=False, hoverinfo="skip"))
+    fig.add_trace(go.Scatter(
+        x=d["D0"], y=d["quantile-0.16"], fill="tonexty",
+        fillcolor="rgba(170,51,119,0.15)", line=dict(width=0),
+        name="16–84% fractiles"))
+    for q, dash in [("quantile-0.05", "dot"), ("quantile-0.95", "dot"),
+                    ("quantile-0.5", "dash")]:
+        fig.add_trace(go.Scatter(x=d["D0"], y=d[q], name=q,
+                                 line=dict(color="#888888", dash=dash, width=1.2)))
+    fig.add_trace(go.Scatter(x=d["D0"], y=d["mean"], name="weighted mean",
+                             line=dict(color="#AA3377", width=3.5)))
+    fig.update_xaxes(type="log", title="Displacement (m)")
+    # Values are annual exceedance RATES (column 'mean'/'annual_rate' in the
+    # engine outputs), not probabilities — labelled accordingly.
+    fig.update_yaxes(type="log", title="Annual rate of exceedance (1/yr)")
+    fig.update_layout(height=480, margin=dict(t=10),
+                      legend=dict(orientation="h", y=-0.25))
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.download_button(
+        "⬇ Download hazard curves (CSV)",
+        (DATA / "aggregate_hazard.csv").read_bytes(),
+        file_name="aggregate_hazard.csv", mime="text/csv")
+
+    # ---- Hazard map ----------------------------------------------------------
+    st.subheader("Hazard map (displacement at return period = 100 000 yr)")
+    which = st.radio(
+        "Layer", ["mean"] + [f.replace("quantile-", "quantile ") for f in FRACTILES],
+        horizontal=True)
+    key = which.replace("quantile ", "quantile-")
+    m = load_map(key)
+    col = "displ_mean" if key == "mean" else [c for c in m.columns
+                                              if c.startswith("displ")][0]
+    import numpy as np
+    import pydeck as pdk
+    pos = m[m[col] > 0].copy()
+    lo, hi = np.log10(pos[col].min()), np.log10(pos[col].max())
+    t = (np.log10(pos[col]) - lo) / max(hi - lo, 1e-12)
+    pos["color"] = [[int(40 + 215 * x), int(60 * (1 - x)), int(140 * (1 - x)), 200]
+                    for x in t]
+    layer = pdk.Layer(
+        "ScatterplotLayer", data=pos,
+        get_position=["lon", "lat"], get_fill_color="color",
+        get_radius=180, pickable=True)
+    st.pydeck_chart(pdk.Deck(
+        layers=[layer],
+        initial_view_state=pdk.ViewState(latitude=42.80, longitude=13.20,
+                                         zoom=10.2),
+        tooltip={"text": f"{col}: {{{col}}} m"},
+        map_style=None))
+    st.caption(
+        f"Sites with zero displacement omitted; colour = log10({col}), "
+        "dark red = highest. MVFS and NFS fault corridors are visible as "
+        "the two coloured bands."
+    )
+    st.download_button(
+        f"⬇ Download map layer ({key}, CSV)",
+        (DATA / "map" / f"displacement_map_{key}.csv").read_bytes(),
+        file_name=f"displacement_map_{key}.csv", mime="text/csv")
 
 
 # --------------------------------------------------------------------------
