@@ -111,19 +111,34 @@ def list_sources(xml_path: Path) -> list[dict]:
     return out
 
 
-def build_fdha_lt_xml(primary: dict, pairs: list) -> str:
-    """Serialize the selection to one NRML logic-tree XML (schema per
+# Distributed model families the engine requires to co-occur in a branch:
+# the Visini et al. (2025) models run on a special calculator dispatched
+# when EITHER distributed slot is Visini (calc/hazard.py:241), which needs
+# the Visini SR's get_prob_slice (calc/visini.py:247) and the Visini FD's
+# extended get_prob signature (calc/visini.py:320-329). Extend this list if
+# future coupled model families are added.
+COUPLED_DISTRIBUTED = [("Visini2025SecondarySR", "Visini2025SecondaryFD")]
+COUPLED_SR_TO_FD = dict(COUPLED_DISTRIBUTED)
+COUPLED_FD_TO_SR = {fd: sr for sr, fd in COUPLED_DISTRIBUTED}
+
+
+def build_fdha_lt_xml(selections: dict) -> str:
+    """Serialize the 4-slot selection to one NRML logic-tree XML (schema per
     openquake/fdha/logic_tree/nrml_reader.py:24-56).
 
-    Primary SR and primary FD are independent branch sets (full Cartesian
-    product, as in the Taiwan example tree). Distributed models are locked
-    (SR, FD) pairs: one SR branch per pair at level 3, and per-pair FD
-    branch sets chained with applyToBranches at level 4 — mirroring the
-    Norcia Case 3 and Taiwan trees. This guarantees engine-compatible
-    combinations (the Visini et al. 2025 FD model can only run on top of
-    the Visini SR model: calc/hazard.py:241, calc/visini.py:247).
+    All four slots are presented to the user as independent choices. Levels
+    1-3 serialize as plain branch sets. At level 4, engine-coupled FD models
+    (COUPLED_DISTRIBUTED) are chained to their SR partner with
+    applyToBranches, and the remaining FD models are chained to the
+    remaining SR branches — applyToBranches matches by set intersection
+    (enumerator.py:81-84), so one branch set serves many parents. With no
+    coupled model selected the tree is fully flat.
     """
-    def branch(ind: str, bid: str, body: str, weight) -> list[str]:
+    def branch(ind: str, bid: str, m: dict, weight) -> list[str]:
+        body = f"[{m['class_name']}]"
+        params = (m.get("params") or "").strip()
+        if params:
+            body += "\n" + params
         return [
             f'{ind}<logicTreeBranch branchID="{bid}">',
             f"{ind}  <uncertaintyModel><![CDATA[{body}]]></uncertaintyModel>",
@@ -131,50 +146,56 @@ def build_fdha_lt_xml(primary: dict, pairs: list) -> str:
             f"{ind}</logicTreeBranch>",
         ]
 
-    def body_of(m: dict) -> str:
-        body = f"[{m['class_name']}]"
-        params = (m.get("params") or "").strip()
-        return body + ("\n" + params if params else "")
-
     parts = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<nrml xmlns="http://openquake.org/xmlns/nrml/0.4">',
         '  <logicTree logicTreeID="lt_fdha_webgui">',
     ]
-    for i, utype in enumerate(["fdhaPrimarySRModel", "fdhaPrimaryFDModel"], 1):
+    plain_levels = ["fdhaPrimarySRModel", "fdhaPrimaryFDModel",
+                    "fdhaSecondarySRModel"]
+    for i, utype in enumerate(plain_levels, 1):
         slot = REGISTRY["slots"][utype]["package"].rsplit(".", 1)[-1]
         parts.append(f'    <logicTreeBranchingLevel branchingLevelID="bl_{i}_{slot}">')
         parts.append(f'      <logicTreeBranchSet branchSetID="bs_{i}_{slot}"'
                      f' uncertaintyType="{utype}">')
-        for m in primary[utype]:
+        for m in selections[utype]:
             parts += branch("        ", f"{m['class_name'].upper()}_{i}",
-                            body_of(m), m["weight"])
+                            m, m["weight"])
         parts += ["      </logicTreeBranchSet>", "    </logicTreeBranchingLevel>"]
 
-    # Level 3: distributed SR — one branch per pair
-    parts.append('    <logicTreeBranchingLevel branchingLevelID="bl_3_secondary_surf_rup">')
-    parts.append('      <logicTreeBranchSet branchSetID="bs_3_secondary_surf_rup"'
-                 ' uncertaintyType="fdhaSecondarySRModel">')
-    for k, pr in enumerate(pairs, 1):
-        parts += branch("        ", f"PAIR{k}_SSR", body_of(pr["sr"]),
-                        pr["weight"])
-    parts += ["      </logicTreeBranchSet>", "    </logicTreeBranchingLevel>"]
+    ssr = selections["fdhaSecondarySRModel"]
+    sfd = selections["fdhaSecondaryFDModel"]
+    free_fd = [m for m in sfd if m["class_name"] not in COUPLED_FD_TO_SR]
+    coupled_fd = [m for m in sfd if m["class_name"] in COUPLED_FD_TO_SR]
+    free_sr_ids = [f"{m['class_name'].upper()}_3" for m in ssr
+                   if m["class_name"] not in COUPLED_SR_TO_FD]
 
-    # Level 4: distributed FD — per-pair branch set chained to its SR branch
     parts.append('    <logicTreeBranchingLevel branchingLevelID="bl_4_secondary_surf_displ">')
-    for k, pr in enumerate(pairs, 1):
-        parts.append(f'      <logicTreeBranchSet branchSetID="bs_4_pair{k}"'
+    if free_fd:
+        cond = (f' applyToBranches="{" ".join(free_sr_ids)}"'
+                if coupled_fd else "")
+        parts.append('      <logicTreeBranchSet branchSetID="bs_4_secondary_surf_displ"'
+                     f' uncertaintyType="fdhaSecondaryFDModel"{cond}>')
+        for m in free_fd:
+            parts += branch("        ", f"{m['class_name'].upper()}_4",
+                            m, m["weight"])
+        parts.append("      </logicTreeBranchSet>")
+    for m in coupled_fd:
+        sr_id = f"{COUPLED_FD_TO_SR[m['class_name']].upper()}_3"
+        parts.append(f'      <logicTreeBranchSet branchSetID="bs_4_{m["class_name"].lower()}"'
                      f' uncertaintyType="fdhaSecondaryFDModel"'
-                     f' applyToBranches="PAIR{k}_SSR">')
-        parts += branch("        ", f"PAIR{k}_SFD", body_of(pr["fd"]), "1.0")
+                     f' applyToBranches="{sr_id}">')
+        parts += branch("        ", f"{m['class_name'].upper()}_4", m, "1.0")
         parts.append("      </logicTreeBranchSet>")
     parts.append("    </logicTreeBranchingLevel>")
     parts += ["  </logicTree>", "</nrml>"]
     return "\n".join(parts)
 
 
-def engine_validate(xml_text: str) -> tuple[list, list, str | None]:
-    """Validate the logic tree with the engine's own parser/validator."""
+def engine_validate(xml_text: str):
+    """Validate the logic tree with the engine's own parser/validator.
+
+    Returns (errors, warnings, parse_error, spec)."""
     import tempfile
     try:
         from openquake.fdha.logic_tree import nrml_reader, validators
@@ -182,9 +203,9 @@ def engine_validate(xml_text: str) -> tuple[list, list, str | None]:
         p.write_text(xml_text)
         spec = nrml_reader.parse(p)
         report = validators.validate_spec(spec)
-        return list(report.errors), list(report.warnings), None
+        return list(report.errors), list(report.warnings), None, spec
     except Exception as exc:  # parse failure
-        return [], [], str(exc)
+        return [], [], str(exc), None
 
 
 SM_LT_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
@@ -277,6 +298,7 @@ def page_configure() -> None:
                 src_xml = dest
     if choice == "Uploaded NRML file…" and src_xml is None:
         st.warning("Upload a source model XML, or pick a built-in one.")
+    sources: list = []
     if src_xml is not None:
         try:
             sources = list_sources(src_xml)
@@ -387,30 +409,42 @@ def page_configure() -> None:
                        "internal defaults.")
 
     weights_ok = True
-    primary: dict = {}
-    for utype in ["fdhaPrimarySRModel", "fdhaPrimaryFDModel"]:
+    selections: dict = {}
+    for utype, label in SLOT_LABELS.items():
         models = REGISTRY["slots"][utype]["models"]
         names = [m["class_name"] for m in models]
         by_name = {m["class_name"]: m for m in models}
-        with st.expander(SLOT_LABELS[utype], expanded=True):
+        with st.expander(label, expanded=True):
             chosen = st.multiselect("Models", names,
                                     default=LIGHT_PRESET[utype],
                                     key=f"ms_{utype}",
                                     label_visibility="collapsed")
             rows = []
+            # Coupled FD models carry weight 1.0 inside their own chained
+            # branch set; only "free" models share a user-weighted set.
+            free = [n for n in chosen if n not in COUPLED_FD_TO_SR] \
+                if utype == "fdhaSecondaryFDModel" else chosen
             if chosen:
-                n = len(chosen)
-                eq = [round(1.0 / n, 6)] * (n - 1)
-                eq.append(round(1.0 - sum(eq), 6))
-                for k, name in enumerate(chosen):
+                n = len(free)
+                eq = ([round(1.0 / n, 6)] * (n - 1)
+                      + [round(1.0 - (n - 1) * round(1.0 / n, 6), 6)]) if n else []
+                for name in chosen:
                     meta = by_name[name]
                     wcol, pcol, dcol = st.columns([1, 2, 2])
                     with wcol:
-                        w = st.number_input(f"weight — {name}",
-                                            min_value=0.0, max_value=1.0,
-                                            value=eq[k], step=0.05,
-                                            format="%.6f",
-                                            key=f"w_{utype}_{name}")
+                        if name in COUPLED_FD_TO_SR and utype == "fdhaSecondaryFDModel":
+                            st.markdown(f"**weight — {name}**")
+                            st.caption(
+                                f"chained to `{COUPLED_FD_TO_SR[name]}` — "
+                                "weight 1.0 within its chain (the pair "
+                                "shares the SR branch weight)")
+                            w = 1.0
+                        else:
+                            w = st.number_input(f"weight — {name}",
+                                                min_value=0.0, max_value=1.0,
+                                                value=eq[free.index(name)],
+                                                step=0.05, format="%.6f",
+                                                key=f"w_{utype}_{name}")
                     with pcol:
                         params = param_editor(meta, f"p_{utype}_{name}",
                                               f"parameters — {name}")
@@ -418,90 +452,50 @@ def page_configure() -> None:
                         doc_table(meta)
                     rows.append({"class_name": name, "weight": w,
                                  "params": params})
-                total = sum(r["weight"] for r in rows)
-                if abs(total - 1.0) <= WEIGHT_TOL:
-                    st.success(f"✓ weights sum to {total:.6f}")
-                else:
-                    st.error(f"✗ weights sum to {total:.6f} — must be "
-                             "1.0 ± 1e-6 (FDLT-001)")
-                    weights_ok = False
+                checked = [r for r in rows if r["class_name"] in free]
+                if checked:
+                    total = sum(r["weight"] for r in checked)
+                    if abs(total - 1.0) <= WEIGHT_TOL:
+                        st.success(f"✓ weights sum to {total:.6f}")
+                    else:
+                        st.error(f"✗ weights sum to {total:.6f} — must be "
+                                 "1.0 ± 1e-6 (FDLT-001)")
+                        weights_ok = False
             else:
                 st.error("✗ select at least one model")
                 weights_ok = False
-            primary[utype] = rows
+            selections[utype] = rows
 
-    # Distributed models: locked (SR + FD) pairs, as in the shipped Norcia
-    # and Taiwan logic trees. The Visini et al. (2025) FD model runs on a
-    # special calculator that requires the Visini SR model
-    # (calc/hazard.py:241, calc/visini.py:247), so Visini appears only as
-    # a complete pair and cross-combinations are never generated.
-    ssr_models = {m["class_name"]: m
-                  for m in REGISTRY["slots"]["fdhaSecondarySRModel"]["models"]}
-    sfd_models = {m["class_name"]: m
-                  for m in REGISTRY["slots"]["fdhaSecondaryFDModel"]["models"]}
-    VISINI = {"Visini2025SecondarySR", "Visini2025SecondaryFD"}
-    pair_labels = [f"{sr}  +  {fd}"
-                   for sr in ssr_models for fd in sfd_models
-                   if (sr in VISINI) == (fd in VISINI)]
-    default_pair = "Youngs2003SecondarySR  +  Youngs2003SecondaryFD"
-    pairs: list = []
-    with st.expander("3+4 — Distributed rupture + displacement (locked pairs)",
-                     expanded=True):
-        st.caption(
-            "Distributed SR and FD models are selected as locked pairs and "
-            "serialized with `applyToBranches` chaining, mirroring the "
-            "published logic trees. Incompatible combinations (e.g. "
-            "Visini 2025 displacement on a non-Visini rupture model) are "
-            "not offered."
-        )
-        chosen_pairs = st.multiselect("Pairs", pair_labels,
-                                      default=[default_pair],
-                                      key="ms_pairs",
-                                      label_visibility="collapsed")
-        if chosen_pairs:
-            n = len(chosen_pairs)
-            eq = [round(1.0 / n, 6)] * (n - 1)
-            eq.append(round(1.0 - sum(eq), 6))
-            for k, lab in enumerate(chosen_pairs):
-                sr_name, fd_name = [s.strip() for s in lab.split("+")]
-                sr_meta, fd_meta = ssr_models[sr_name], sfd_models[fd_name]
-                wcol, pcol1, pcol2 = st.columns([1, 2, 2])
-                with wcol:
-                    w = st.number_input(f"weight — pair {k + 1}",
-                                        min_value=0.0, max_value=1.0,
-                                        value=eq[k], step=0.05,
-                                        format="%.6f", key=f"w_pair_{lab}")
-                with pcol1:
-                    sr_params = param_editor(sr_meta, f"p_pair_sr_{lab}",
-                                             f"SR parameters — {sr_name}")
-                with pcol2:
-                    fd_params = param_editor(fd_meta, f"p_pair_fd_{lab}",
-                                             f"FD parameters — {fd_name}")
-                dc1, dc2 = st.columns(2)
-                with dc1:
-                    doc_table(sr_meta)
-                with dc2:
-                    doc_table(fd_meta)
-                pairs.append({"weight": w,
-                              "sr": {"class_name": sr_name, "params": sr_params},
-                              "fd": {"class_name": fd_name, "params": fd_params}})
-            total = sum(p["weight"] for p in pairs)
-            if abs(total - 1.0) <= WEIGHT_TOL:
-                st.success(f"✓ pair weights sum to {total:.6f}")
-            else:
-                st.error(f"✗ pair weights sum to {total:.6f} — must be "
-                         "1.0 ± 1e-6 (FDLT-001)")
-                weights_ok = False
-        else:
-            st.error("✗ select at least one (SR + FD) pair")
-            weights_ok = False
+    # Cross-slot constraints for engine-coupled distributed families
+    # (Visini 2025 SR ⇔ FD: calc/hazard.py:241, calc/visini.py:247,320-329).
+    ssr_names = {r["class_name"] for r in selections["fdhaSecondarySRModel"]}
+    sfd_names = {r["class_name"] for r in selections["fdhaSecondaryFDModel"]}
+    coupling_ok = True
+    for sr, fd in COUPLED_DISTRIBUTED:
+        if (sr in ssr_names) != (fd in sfd_names):
+            missing, present = (fd, sr) if sr in ssr_names else (sr, fd)
+            st.error(f"`{present}` requires `{missing}` — the engine "
+                     "computes this model family on a dedicated calculator "
+                     "that needs both (calc/hazard.py:241). Add the partner "
+                     "model or remove this one.")
+            coupling_ok = False
+    free_sr = ssr_names - set(COUPLED_SR_TO_FD)
+    free_fd = sfd_names - set(COUPLED_FD_TO_SR)
+    if bool(free_sr) != bool(free_fd):
+        a, b = (("rupture", "displacement") if free_sr
+                else ("displacement", "rupture"))
+        st.error(f"The selected distributed {a} model(s) "
+                 f"{sorted(free_sr or free_fd)} have no compatible "
+                 f"distributed {b} model selected.")
+        coupling_ok = False
+    weights_ok = weights_ok and coupling_ok
 
     # Visini et al. (2025) job-level 'case' parameter ([calculation].case,
     # cf. job_norcia_case3_iaea_curve.ini:18 and the model docs, which mark
     # it Required). case3 = Combination A only — the configuration used by
     # the shipped Norcia benchmark.
     visini_case = None
-    if any("Visini" in p["sr"]["class_name"] for p in pairs):
+    if any("Visini" in n for n in ssr_names | sfd_names):
         visini_case = st.selectbox(
             "Visini et al. (2025) combination case ([calculation].case)",
             ["case3", "case2", "case1"],
@@ -511,11 +505,12 @@ def page_configure() -> None:
                  "get_prob without the required style/pixel_size "
                  "arguments) — prefer case2/case3 until fixed upstream.")
 
-    # ---- Live engine validation + preview ------------------------------------
-    lt_xml = build_fdha_lt_xml(primary, pairs) if weights_ok else None
+    # ---- Live engine validation + end-branch preview --------------------------
+    lt_xml = build_fdha_lt_xml(selections) if weights_ok else None
     engine_ok = False
+    spec = None
     if lt_xml:
-        errors, warnings, parse_err = engine_validate(lt_xml)
+        errors, warnings, parse_err, spec = engine_validate(lt_xml)
         if parse_err:
             st.error(f"Logic tree does not parse: {parse_err}")
         elif errors:
@@ -529,19 +524,41 @@ def page_configure() -> None:
                            "\n".join(f"- {w.code}: {w.message}" for w in warnings))
             else:
                 st.success("✓ " + msg)
-    n_branches = (max(len(primary["fdhaPrimarySRModel"]), 1)
-                  * max(len(primary["fdhaPrimaryFDModel"]), 1)
-                  * max(len(pairs), 1))
-    st.caption(f"Full enumeration: **{n_branches} end-branch(es)**. "
-               "Runtime grows linearly with branches × sites; keep it small "
-               "for a live demonstration.")
+
+    # Enumerate end-branches with the engine's own enumerator so the
+    # preview cannot drift from what actually runs.
+    n_branches = 0
+    if spec is not None and engine_ok and sources:
+        from openquake.fdha.logic_tree.enumerator import (
+            SourceInfo, enumerate_end_branches)
+        infos = [SourceInfo(s["id"], float(s["rake"] or 0.0)) for s in sources]
+        ebs = enumerate_end_branches(spec, infos)
+        n_branches = len(ebs) // max(len(infos), 1)
+        st.caption(f"Full enumeration: **{n_branches} end-branch(es) per "
+                   "source**. Runtime grows with branches × sites; keep it "
+                   "small for a live demonstration.")
+        with st.expander(f"Enumerated end-branches ({len(ebs)} total)"):
+            rows = [{
+                "source": eb.source_id, "style": eb.style,
+                "principal SR": eb.selections["primary_surf_rup"].class_name,
+                "principal FD": eb.selections["primary_surf_displ"].class_name,
+                "distributed SR": eb.selections["secondary_surf_rup"].class_name,
+                "distributed FD": eb.selections["secondary_surf_displ"].class_name,
+                "weight": round(eb.weight, 6),
+            } for eb in ebs]
+            st.dataframe(rows, use_container_width=True)
+            for sid in sorted({r["source"] for r in rows}):
+                tot = sum(r["weight"] for r in rows if r["source"] == sid)
+                mark = "✓" if abs(tot - 1.0) <= 1e-6 else "✗"
+                st.caption(f"{mark} source `{sid}`: weights sum to {tot:.6f}")
+
     with st.expander("Preview: fdha_logic_tree.xml"):
         if lt_xml:
             st.code(lt_xml, language="xml")
             st.download_button("⬇ fdha_logic_tree.xml", lt_xml,
                                file_name="fdha_logic_tree.xml")
         else:
-            st.warning("Fix the weight errors above to generate the XML.")
+            st.warning("Fix the errors above to generate the XML.")
 
     st.session_state["config"] = {
         "description": f"webgui job ({choice})",
@@ -557,8 +574,7 @@ def page_configure() -> None:
         "near_far_threshold_km": near_far,
         "return_period": return_period,
         "dml": dml.replace("\n", " ").strip(),
-        "primary": primary,
-        "pairs": pairs,
+        "selections": selections,
         "visini_case": visini_case,
         "n_branches": n_branches,
         "valid": bool(weights_ok and engine_ok and dml_ok and src_xml),
