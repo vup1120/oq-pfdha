@@ -30,7 +30,8 @@ class Takao2013PrimarySR(BasePrimarySurfRup):
     """Principal surface-rupture probability model of Takao et al. (2013).
 
     Logistic model of the probability of principal surface rupture as a
-    function of magnitude, for reverse and strike-slip faulting.
+    function of magnitude (their Equation 4, z = -32.03 + 4.90*Mw),
+    regressed on Japanese reverse- and strike-slip-faulting earthquakes.
 
     References
     ----------
