@@ -127,6 +127,7 @@ These models answer the question: *Given an earthquake, what is the probability 
 | `Takao2013SecondarySR` | Takao et al. (2013) | Reverse, strike-slip | 5.8–7.4 | 0–25 km | A model for distributed surface rupture probability. |
 | `Petersen2011SecondarySR_default` | Petersen et al. (2011) | Strike-slip | 6.5–7.5 | 0–2.5 km | Default Petersen secondary surface rupture variant exposed by the library. |
 | `Moss2022SecondarySR` | Moss et al. (2022) | Reverse | Report-specific | Report-specific | Distributed surface-rupture probability model from GIRS-2022-05 Section 5.2.1; simple mode uses Eq. 5.5 / Table 5.3 and biexponential mode uses Eqs. 5.6-5.7 / Tables 5.4-5.5. |
+| `Nishizaka2026SecondarySR` | Nishizaka et al. (2026) | Strike-slip | Magnitude-independent | 0–25 km | Far-field probability of *any* surface rupture (principal/distributed not separated) as a function of distance from the source fault and distance from mapped, pre-existing active faults; 2016 Kumamoto and 2019 Ridgecrest regressions, 250 m cells. Intended for far-field sites (≳3 km). |
 | `FixedSecondarySR` | Fixed value | — | — | — | Constant secondary surface rupture probability model (not data-derived). |
 
 ¹ Applicable Mw and fault-normal-distance (r) ranges, from Valentini et al.
@@ -147,6 +148,7 @@ These models answer the question: *Given that secondary rupture has occurred, wh
 | `Petersen2011SecondaryFD` | Petersen et al. (2011) | Strike-slip | Lateral | 6.5–7.5 | 0–2.5 km | Provides exceedance probability for distributed displacement on strike-slip faults. |
 | `Moss2022SecondaryFD` | Moss et al. (2022) | Reverse | Vertical distributed displacement normalized by MD/AD | Report-specific | Report-specific | Distributed displacement model from GIRS-2022-05 Section 5.2.3; envelope mode uses Eq. 5.8 / Tables 5.7-5.8 and gamma mode combines the report's global gamma distribution with the distance envelope. |
 | `Visini2025SecondaryFD` | Visini et al. (2025) | Normal, reverse | Vertical | 5.5–7.9 (N); 4.9–7.9 (R) | 0–10 km (HW); 0–8 km (FW) | A regression model for normal/reverse faults predicting median displacement from magnitude, distance, and mean throw. |
+| `Nishizaka2026SecondaryFD` | Nishizaka et al. (2026) | Strike-slip | Net (field-measured) | Magnitude-independent (via EAD) | 0–25 km | Gamma-distributed displacement normalized by source-fault average displacement (EAD), attenuating with distance; separate regressions for sites proximal (≤1 km) and non-proximal to mapped, pre-existing active faults. 2016 Kumamoto regression only. |
 
 ¹ Applicable Mw and fault-normal-distance (r) ranges, from Valentini et al.
 (2025), *Reviews of Geophysics*, Table 4. HW = hanging wall, FW = footwall.
@@ -173,6 +175,7 @@ Section 5, rather than in the Valentini et al. summary table.
     - [Youngs et al. (2003)](models/primary/Youngs2003.md) — Normal faults, normalized displacement
 
     **Secondary Surface Displacement Models:**
+    - [Nishizaka et al. (2026)](models/secondary/Nishizaka2026.md) — Strike-slip faults, far-field rupture probability and displacement (covers both `Nishizaka2026SecondarySR` and `Nishizaka2026SecondaryFD`)
     - [Petersen et al. (2011)](models/secondary/Petersen2011.md) — Strike-slip faults, distributed displacement
     - [Visini et al. (2025)](models/secondary/VisiniEtAl2025.md) — Normal and reverse faults, distributed displacement (Note: Model class name is `Visini2025SecondarySR` and `Visini2025SecondaryFD`)
     - [Youngs et al. (2003)](models/secondary/Youngs2003.md) — Normal faults, distributed displacement
@@ -192,3 +195,4 @@ Section 5, rather than in the Valentini et al. summary table.
 - Chiou, B. S. J., et al. (2025). Fault displacement model for surface principal rupture of strike-slip faults. Earthquake Spectra. https://doi.org/10.1177/87552930251337703
 - Valentini, A., et al. (2025). Twenty-Five Years of Probabilistic Fault Displacement Hazard Assessment. Reviews of Geophysics. https://doi.org/10.1029/2024RG000875
 - Visini, F., Boncio, P., Valentini, A., Scotti, O., Nurminen, F., Baize, S., & Pace, B. (2025). Empirical regressions for distributed faulting of dip-slip earthquakes. Earthquake Spectra, 41(4), 2968-3001. https://doi.org/10.1177/87552930241308860
+- Nishizaka, N., Onishi, K., Ikeda, M., Si, H., Yamamoto, K., & Tsuji, T. (2026). Characteristics of far-field surface ruptures caused by two recent strike-slip earthquakes: Insights into fault displacement prediction. Seismological Research Letters. https://doi.org/10.1785/0220250293
