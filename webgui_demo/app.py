@@ -111,31 +111,64 @@ def list_sources(xml_path: Path) -> list[dict]:
     return out
 
 
-def build_fdha_lt_xml(selections: dict) -> str:
-    """Serialize the 4-slot model selection to one NRML logic-tree XML
-    (schema per openquake/fdha/logic_tree/nrml_reader.py:24-56)."""
+def build_fdha_lt_xml(primary: dict, pairs: list) -> str:
+    """Serialize the selection to one NRML logic-tree XML (schema per
+    openquake/fdha/logic_tree/nrml_reader.py:24-56).
+
+    Primary SR and primary FD are independent branch sets (full Cartesian
+    product, as in the Taiwan example tree). Distributed models are locked
+    (SR, FD) pairs: one SR branch per pair at level 3, and per-pair FD
+    branch sets chained with applyToBranches at level 4 — mirroring the
+    Norcia Case 3 and Taiwan trees. This guarantees engine-compatible
+    combinations (the Visini et al. 2025 FD model can only run on top of
+    the Visini SR model: calc/hazard.py:241, calc/visini.py:247).
+    """
+    def branch(ind: str, bid: str, body: str, weight) -> list[str]:
+        return [
+            f'{ind}<logicTreeBranch branchID="{bid}">',
+            f"{ind}  <uncertaintyModel><![CDATA[{body}]]></uncertaintyModel>",
+            f"{ind}  <uncertaintyWeight>{weight}</uncertaintyWeight>",
+            f"{ind}</logicTreeBranch>",
+        ]
+
+    def body_of(m: dict) -> str:
+        body = f"[{m['class_name']}]"
+        params = (m.get("params") or "").strip()
+        return body + ("\n" + params if params else "")
+
     parts = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<nrml xmlns="http://openquake.org/xmlns/nrml/0.4">',
         '  <logicTree logicTreeID="lt_fdha_webgui">',
     ]
-    for i, (utype, models) in enumerate(selections.items(), start=1):
+    for i, utype in enumerate(["fdhaPrimarySRModel", "fdhaPrimaryFDModel"], 1):
         slot = REGISTRY["slots"][utype]["package"].rsplit(".", 1)[-1]
         parts.append(f'    <logicTreeBranchingLevel branchingLevelID="bl_{i}_{slot}">')
         parts.append(f'      <logicTreeBranchSet branchSetID="bs_{i}_{slot}"'
                      f' uncertaintyType="{utype}">')
-        for m in models:
-            body = f"[{m['class_name']}]"
-            params = (m.get("params") or "").strip()
-            if params:
-                body += "\n" + params
-            parts += [
-                f'        <logicTreeBranch branchID="{m["class_name"].upper()}_{i}">',
-                f"          <uncertaintyModel><![CDATA[{body}]]></uncertaintyModel>",
-                f"          <uncertaintyWeight>{m['weight']}</uncertaintyWeight>",
-                "        </logicTreeBranch>",
-            ]
+        for m in primary[utype]:
+            parts += branch("        ", f"{m['class_name'].upper()}_{i}",
+                            body_of(m), m["weight"])
         parts += ["      </logicTreeBranchSet>", "    </logicTreeBranchingLevel>"]
+
+    # Level 3: distributed SR — one branch per pair
+    parts.append('    <logicTreeBranchingLevel branchingLevelID="bl_3_secondary_surf_rup">')
+    parts.append('      <logicTreeBranchSet branchSetID="bs_3_secondary_surf_rup"'
+                 ' uncertaintyType="fdhaSecondarySRModel">')
+    for k, pr in enumerate(pairs, 1):
+        parts += branch("        ", f"PAIR{k}_SSR", body_of(pr["sr"]),
+                        pr["weight"])
+    parts += ["      </logicTreeBranchSet>", "    </logicTreeBranchingLevel>"]
+
+    # Level 4: distributed FD — per-pair branch set chained to its SR branch
+    parts.append('    <logicTreeBranchingLevel branchingLevelID="bl_4_secondary_surf_displ">')
+    for k, pr in enumerate(pairs, 1):
+        parts.append(f'      <logicTreeBranchSet branchSetID="bs_4_pair{k}"'
+                     f' uncertaintyType="fdhaSecondaryFDModel"'
+                     f' applyToBranches="PAIR{k}_SSR">')
+        parts += branch("        ", f"PAIR{k}_SFD", body_of(pr["fd"]), "1.0")
+        parts.append("      </logicTreeBranchSet>")
+    parts.append("    </logicTreeBranchingLevel>")
     parts += ["  </logicTree>", "</nrml>"]
     return "\n".join(parts)
 
@@ -200,6 +233,8 @@ def build_job_ini(cfg: dict) -> str:
         f"r_threshold_km = {cfg['r_threshold_km']}",
         f"near_far_threshold_km = {cfg['near_far_threshold_km']}",
     ]
+    if cfg.get("visini_case"):
+        lines.append(f"case = {cfg['visini_case']}")
     if cfg["calc_type"] == "hazard_map":
         lines.append(f"return_period = {cfg['return_period']}")
     lines += [
@@ -319,21 +354,45 @@ def page_configure() -> None:
     # ---- Logic-tree builder -------------------------------------------------
     st.subheader("FDHA logic tree")
     st.caption(
-        "Pick one or more models per component and edit their parameters "
-        "(`key = value` lines, the engine's native <uncertaintyModel> "
-        "syntax). Weights within each branch set must sum to 1.0 "
-        "(FDLT-001, logic_tree/validators.py:133-143). The default "
+        "Edit model parameters as `key = value` lines — the engine's native "
+        "<uncertaintyModel> syntax. Weights within each branch set must sum "
+        "to 1.0 (FDLT-001, logic_tree/validators.py:133-143). The default "
         "selection is a light single-branch calculation suitable for a "
         "quick live demonstration."
     )
 
-    selections: dict = {}
+    def param_editor(meta: dict, key: str, label: str) -> str:
+        prefill = meta.get("prefill", "")
+        ctor = meta.get("ctor_defaults") or {}
+        if ctor and not any(c in prefill for c in ctor):
+            extra = "\n".join(f"{k2} = {v2}" for k2, v2 in ctor.items())
+            prefill = (prefill + "\n" + extra).strip()
+        return st.text_area(label, prefill, height=100, key=key,
+                            help="One `key = value` per line; leave empty "
+                                 "to use model defaults.")
+
+    def doc_table(meta: dict) -> None:
+        dp = meta.get("doc_params") or []
+        if dp:
+            md = "| param | default | required | allowed |\n|---|---|---|---|\n"
+            for r in dp:
+                md += (f"| `{r['name']}` | {r['default']} | "
+                       f"{'**yes**' if r['required'] else 'no'} | "
+                       f"{r['allowed'][:60]} |\n")
+            st.markdown(md)
+            st.caption("Full reference: docs/UserManual_Enhanced/models/"
+                       f"{meta['doc_page']}")
+        else:
+            st.caption("No documented parameters — the model runs with "
+                       "internal defaults.")
+
     weights_ok = True
-    for utype, label in SLOT_LABELS.items():
+    primary: dict = {}
+    for utype in ["fdhaPrimarySRModel", "fdhaPrimaryFDModel"]:
         models = REGISTRY["slots"][utype]["models"]
         names = [m["class_name"] for m in models]
         by_name = {m["class_name"]: m for m in models}
-        with st.expander(label, expanded=True):
+        with st.expander(SLOT_LABELS[utype], expanded=True):
             chosen = st.multiselect("Models", names,
                                     default=LIGHT_PRESET[utype],
                                     key=f"ms_{utype}",
@@ -353,31 +412,10 @@ def page_configure() -> None:
                                             format="%.6f",
                                             key=f"w_{utype}_{name}")
                     with pcol:
-                        prefill = meta.get("prefill", "")
-                        ctor = meta.get("ctor_defaults") or {}
-                        if ctor and not any(c in prefill for c in ctor):
-                            extra = "\n".join(f"{k2} = {v2}"
-                                              for k2, v2 in ctor.items())
-                            prefill = (prefill + "\n" + extra).strip()
-                        params = st.text_area(
-                            f"parameters — {name}", prefill, height=100,
-                            key=f"p_{utype}_{name}",
-                            help="One `key = value` per line; leave empty "
-                                 "to use model defaults.")
+                        params = param_editor(meta, f"p_{utype}_{name}",
+                                              f"parameters — {name}")
                     with dcol:
-                        dp = meta.get("doc_params") or []
-                        if dp:
-                            md = "| param | default | required | allowed |\n|---|---|---|---|\n"
-                            for r in dp:
-                                md += (f"| `{r['name']}` | {r['default']} | "
-                                       f"{'**yes**' if r['required'] else 'no'} | "
-                                       f"{r['allowed'][:60]} |\n")
-                            st.markdown(md)
-                            st.caption(f"Full reference: docs/UserManual_Enhanced/"
-                                       f"models/{meta['doc_page']}")
-                        else:
-                            st.caption("No documented parameters — the model "
-                                       "runs with internal defaults.")
+                        doc_table(meta)
                     rows.append({"class_name": name, "weight": w,
                                  "params": params})
                 total = sum(r["weight"] for r in rows)
@@ -390,10 +428,91 @@ def page_configure() -> None:
             else:
                 st.error("✗ select at least one model")
                 weights_ok = False
-            selections[utype] = rows
+            primary[utype] = rows
+
+    # Distributed models: locked (SR + FD) pairs, as in the shipped Norcia
+    # and Taiwan logic trees. The Visini et al. (2025) FD model runs on a
+    # special calculator that requires the Visini SR model
+    # (calc/hazard.py:241, calc/visini.py:247), so Visini appears only as
+    # a complete pair and cross-combinations are never generated.
+    ssr_models = {m["class_name"]: m
+                  for m in REGISTRY["slots"]["fdhaSecondarySRModel"]["models"]}
+    sfd_models = {m["class_name"]: m
+                  for m in REGISTRY["slots"]["fdhaSecondaryFDModel"]["models"]}
+    VISINI = {"Visini2025SecondarySR", "Visini2025SecondaryFD"}
+    pair_labels = [f"{sr}  +  {fd}"
+                   for sr in ssr_models for fd in sfd_models
+                   if (sr in VISINI) == (fd in VISINI)]
+    default_pair = "Youngs2003SecondarySR  +  Youngs2003SecondaryFD"
+    pairs: list = []
+    with st.expander("3+4 — Distributed rupture + displacement (locked pairs)",
+                     expanded=True):
+        st.caption(
+            "Distributed SR and FD models are selected as locked pairs and "
+            "serialized with `applyToBranches` chaining, mirroring the "
+            "published logic trees. Incompatible combinations (e.g. "
+            "Visini 2025 displacement on a non-Visini rupture model) are "
+            "not offered."
+        )
+        chosen_pairs = st.multiselect("Pairs", pair_labels,
+                                      default=[default_pair],
+                                      key="ms_pairs",
+                                      label_visibility="collapsed")
+        if chosen_pairs:
+            n = len(chosen_pairs)
+            eq = [round(1.0 / n, 6)] * (n - 1)
+            eq.append(round(1.0 - sum(eq), 6))
+            for k, lab in enumerate(chosen_pairs):
+                sr_name, fd_name = [s.strip() for s in lab.split("+")]
+                sr_meta, fd_meta = ssr_models[sr_name], sfd_models[fd_name]
+                wcol, pcol1, pcol2 = st.columns([1, 2, 2])
+                with wcol:
+                    w = st.number_input(f"weight — pair {k + 1}",
+                                        min_value=0.0, max_value=1.0,
+                                        value=eq[k], step=0.05,
+                                        format="%.6f", key=f"w_pair_{lab}")
+                with pcol1:
+                    sr_params = param_editor(sr_meta, f"p_pair_sr_{lab}",
+                                             f"SR parameters — {sr_name}")
+                with pcol2:
+                    fd_params = param_editor(fd_meta, f"p_pair_fd_{lab}",
+                                             f"FD parameters — {fd_name}")
+                dc1, dc2 = st.columns(2)
+                with dc1:
+                    doc_table(sr_meta)
+                with dc2:
+                    doc_table(fd_meta)
+                pairs.append({"weight": w,
+                              "sr": {"class_name": sr_name, "params": sr_params},
+                              "fd": {"class_name": fd_name, "params": fd_params}})
+            total = sum(p["weight"] for p in pairs)
+            if abs(total - 1.0) <= WEIGHT_TOL:
+                st.success(f"✓ pair weights sum to {total:.6f}")
+            else:
+                st.error(f"✗ pair weights sum to {total:.6f} — must be "
+                         "1.0 ± 1e-6 (FDLT-001)")
+                weights_ok = False
+        else:
+            st.error("✗ select at least one (SR + FD) pair")
+            weights_ok = False
+
+    # Visini et al. (2025) job-level 'case' parameter ([calculation].case,
+    # cf. job_norcia_case3_iaea_curve.ini:18 and the model docs, which mark
+    # it Required). case3 = Combination A only — the configuration used by
+    # the shipped Norcia benchmark.
+    visini_case = None
+    if any("Visini" in p["sr"]["class_name"] for p in pairs):
+        visini_case = st.selectbox(
+            "Visini et al. (2025) combination case ([calculation].case)",
+            ["case3", "case2", "case1"],
+            help="Case 3 → combination A only; Case 2 → A/B; Case 1 → "
+                 "A/B/C. Note: the combination-C path (case1) currently "
+                 "raises an error in the engine (visini.py:305 calls "
+                 "get_prob without the required style/pixel_size "
+                 "arguments) — prefer case2/case3 until fixed upstream.")
 
     # ---- Live engine validation + preview ------------------------------------
-    lt_xml = build_fdha_lt_xml(selections) if weights_ok else None
+    lt_xml = build_fdha_lt_xml(primary, pairs) if weights_ok else None
     engine_ok = False
     if lt_xml:
         errors, warnings, parse_err = engine_validate(lt_xml)
@@ -410,9 +529,9 @@ def page_configure() -> None:
                            "\n".join(f"- {w.code}: {w.message}" for w in warnings))
             else:
                 st.success("✓ " + msg)
-    n_branches = 1
-    for rows in selections.values():
-        n_branches *= max(len(rows), 1)
+    n_branches = (max(len(primary["fdhaPrimarySRModel"]), 1)
+                  * max(len(primary["fdhaPrimaryFDModel"]), 1)
+                  * max(len(pairs), 1))
     st.caption(f"Full enumeration: **{n_branches} end-branch(es)**. "
                "Runtime grows linearly with branches × sites; keep it small "
                "for a live demonstration.")
@@ -438,7 +557,9 @@ def page_configure() -> None:
         "near_far_threshold_km": near_far,
         "return_period": return_period,
         "dml": dml.replace("\n", " ").strip(),
-        "selections": selections,
+        "primary": primary,
+        "pairs": pairs,
+        "visini_case": visini_case,
         "n_branches": n_branches,
         "valid": bool(weights_ok and engine_ok and dml_ok and src_xml),
         "lt_xml": lt_xml,
