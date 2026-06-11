@@ -2,29 +2,33 @@
 <nrml xmlns="http://openquake.org/xmlns/nrml/0.5"
       xmlns:gml="http://www.opengis.net/gml">
   <rank1p5Ruptures>
-    <!-- Case 1: Local traces -->
+    <!-- Case 1: fault documented under the site (oblique trace through the
+         site center at 16.2275, 39.650986) plus the 200 m fault -->
     <trace name="R1p5_local_A" sourceId="1">
       <gml:LineString>
-        <gml:posList>16.155 39.665 16.17 39.648</gml:posList>
+        <gml:posList>16.22003 39.65982 16.23503 39.64282</gml:posList>
       </gml:LineString>
     </trace>
     <trace name="R1p5_local_B" sourceId="2">
       <gml:LineString>
-        <gml:posList>16.15 39.654 16.175 39.654</gml:posList>
+        <gml:posList>16.2075 39.64648968 16.2475 39.64648968</gml:posList>
       </gml:LineString>
     </trace>
 
-    <!-- Case 2: ~200 m trace (b872964) -->
-    <trace name="R1p5_200m" sourceId="3">
+    <!-- Case 2: fault near the site. The paper text says 200 m, but the
+         published Figure 13 curves (and the FDHLab script
+         Model/script_combB_pfdhcurves.m, dist=[500]) were computed with
+         the Rank 1.5 fault at 500 m; we use 500 m to match the figure. -->
+    <trace name="R1p5_500m" sourceId="3">
       <gml:LineString>
-        <gml:posList>16.09246068 39.65797081 16.2324776 39.65797081</gml:posList>
+        <gml:posList>16.1575 39.64648968 16.2975 39.64648968</gml:posList>
       </gml:LineString>
     </trace>
 
-    <!-- Case 3: Far trace (paper TOML lat minus 0.04° for digitised case3 CSV) -->
+    <!-- Case 3: no Rank 1.5 fault within 1 km (trace ~2.6 km away) -->
     <trace name="R1p5_far1" sourceId="6">
       <gml:LineString>
-        <gml:posList>16.09246068 39.62785223 16.2324776 39.62785223</gml:posList>
+        <gml:posList>16.1575 39.62785223 16.2975 39.62785223</gml:posList>
       </gml:LineString>
     </trace>
   </rank1p5Ruptures>
