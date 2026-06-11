@@ -696,9 +696,16 @@ def page_results() -> None:
                                      hoverinfo="skip"))
             fig.add_trace(go.Scatter(x=d["D0"], y=d["quantile-0.16"],
                                      fill="tonexty",
-                                     fillcolor="rgba(170,51,119,0.15)",
+                                     fillcolor="rgba(170,51,119,0.25)",
                                      line=dict(width=0),
                                      name="16–84% fractiles"))
+        for q, dash, lbl in [("quantile-0.05", "dot", "5 / 95%"),
+                             ("quantile-0.95", "dot", None),
+                             ("quantile-0.5", "dash", "median")]:
+            if q in d:
+                fig.add_trace(go.Scatter(
+                    x=d["D0"], y=d[q], name=lbl, showlegend=lbl is not None,
+                    line=dict(color="#888888", dash=dash, width=1.2)))
         # per-branch spaghetti
         branch_dir = outdir / "hazard_curves"
         branch_files = sorted(branch_dir.glob("branch_*.csv"))
@@ -708,15 +715,63 @@ def page_results() -> None:
                 b = pd.read_csv(bf, comment="#")
                 b = b[b["site_id"] == chosen]
                 fig.add_trace(go.Scatter(x=b["D0"], y=b["annual_rate"],
-                                         line=dict(color="#bbbbbb", width=0.8),
+                                         line=dict(color="#999999", width=0.8),
                                          showlegend=False, hoverinfo="skip"))
         fig.add_trace(go.Scatter(x=d["D0"], y=d["mean"], name="weighted mean",
-                                 line=dict(color="#AA3377", width=3.5)))
+                                 line=dict(color="#AA3377", width=3)))
         fig.update_xaxes(type="log", title="Displacement (m)")
         fig.update_yaxes(type="log", title="Annual rate of exceedance (1/yr)")
         fig.update_layout(height=500, margin=dict(t=10),
                           legend=dict(orientation="h", y=-0.25))
         st.plotly_chart(fig, use_container_width=True)
+
+        # When the branch-to-branch spread is narrower than the plotted line
+        # width, say so explicitly — otherwise the band looks "missing".
+        if "quantile-0.84" in d and len(branch_files) > 1:
+            with pd.option_context("mode.chained_assignment", None):
+                rel = ((d["quantile-0.84"] - d["quantile-0.16"])
+                       / d["mean"].where(d["mean"] > 0)).max()
+            if pd.notna(rel) and rel < 0.02:
+                st.info(
+                    f"The 16–84% fractile band spans at most "
+                    f"**{rel:.2%} of the mean** at this site — the branch "
+                    "curves nearly coincide, so the band and spaghetti are "
+                    "hidden under the mean line. This typically happens "
+                    "when all branches share the same principal models and "
+                    "differ only in distributed models whose contribution "
+                    "is small at this site. Use the relative-spread view "
+                    "below to inspect the differences.")
+            if st.checkbox("Show relative spread (curves ÷ weighted mean)",
+                           value=False):
+                rfig = go.Figure()
+                base = d["mean"].where(d["mean"] > 0)
+                rfig.add_trace(go.Scatter(
+                    x=d["D0"], y=d["quantile-0.84"] / base,
+                    line=dict(width=0), showlegend=False, hoverinfo="skip"))
+                rfig.add_trace(go.Scatter(
+                    x=d["D0"], y=d["quantile-0.16"] / base, fill="tonexty",
+                    fillcolor="rgba(170,51,119,0.25)", line=dict(width=0),
+                    name="16–84% fractiles"))
+                for q, dash, lbl in [("quantile-0.05", "dot", "5 / 95%"),
+                                     ("quantile-0.95", "dot", None),
+                                     ("quantile-0.5", "dash", "median")]:
+                    rfig.add_trace(go.Scatter(
+                        x=d["D0"], y=d[q] / base, name=lbl,
+                        showlegend=lbl is not None,
+                        line=dict(color="#888888", dash=dash, width=1.2)))
+                for bf in branch_files:
+                    b = pd.read_csv(bf, comment="#")
+                    b = b[b["site_id"] == chosen]
+                    rfig.add_trace(go.Scatter(
+                        x=b["D0"], y=b["annual_rate"].to_numpy() / base.to_numpy(),
+                        line=dict(color="#999999", width=0.8),
+                        showlegend=False, hoverinfo="skip"))
+                rfig.add_hline(y=1.0, line_color="#AA3377", line_width=2)
+                rfig.update_xaxes(type="log", title="Displacement (m)")
+                rfig.update_yaxes(title="Rate ÷ weighted mean (–)")
+                rfig.update_layout(height=380, margin=dict(t=10),
+                                   legend=dict(orientation="h", y=-0.3))
+                st.plotly_chart(rfig, use_container_width=True)
         st.download_button("⬇ aggregate_hazard.csv", agg.read_bytes(),
                            file_name="aggregate_hazard.csv", mime="text/csv")
     else:
