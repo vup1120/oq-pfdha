@@ -30,7 +30,12 @@ logic tree) from form inputs and executes the **actual engine**
      with the documented parameter table from the User Manual displayed
      next to each model. Live validation by the engine's own
      `nrml_reader` + `validate_spec` (FDLT rules), plus per-branch-set
-     weight checks.
+     weight checks. Engine-coupled model families (e.g. the Visini et al.
+     2025 distributed SR ⇔ FD models, which must co-occur in a branch) are
+     chained automatically with `applyToBranches` during serialization —
+     the four slots stay independent in the UI — and an **end-branch
+     preview** (computed with the engine's own enumerator) shows exactly
+     which model combinations and weights will run.
 2. **Run** — executes the engine on a self-contained job directory under
    `webgui_demo/runs/run_<timestamp>/`; shows the generated `job.ini`,
    elapsed time, and the engine log. Errors are reported with the full
