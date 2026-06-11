@@ -1,0 +1,39 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest
+
+      - name: Run test suite (unit, integration, benchmark; excluding slow)
+        run: pytest -m "not slow"
+
+      - name: Run quickstart example
+        run: |
+          mkdir -p examples/outputs
+          fdha examples/hazard_curve_minimal.ini \
+               --output examples/outputs/hazard_curve_minimal_results.json \
+               --plot examples/outputs/hazard_curve_minimal.png
