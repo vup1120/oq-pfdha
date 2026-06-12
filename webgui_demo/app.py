@@ -122,6 +122,31 @@ COUPLED_SR_TO_FD = dict(COUPLED_DISTRIBUTED)
 COUPLED_FD_TO_SR = {fd: sr for sr, fd in COUPLED_DISTRIBUTED}
 
 
+def style_fig(fig, height: int = 560) -> None:
+    """Publication-style plot formatting (large fonts, framed axes,
+    power-of-ten tick labels)."""
+    fig.update_layout(
+        template="simple_white", height=height,
+        font=dict(family="Helvetica, Arial, sans-serif", size=17,
+                  color="#1a1a1a"),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0,
+                    font=dict(size=16)),
+        margin=dict(t=40, r=25, b=15, l=15),
+        hoverlabel=dict(font_size=15),
+    )
+    axis_kw = dict(
+        title_font=dict(size=20), tickfont=dict(size=16),
+        showline=True, linewidth=1.6, linecolor="#1a1a1a", mirror=True,
+        ticks="outside", tickwidth=1.4, ticklen=7,
+        showgrid=True, gridcolor="rgba(0,0,0,0.13)",
+        exponentformat="power",
+        minor=dict(showgrid=True, gridcolor="rgba(0,0,0,0.05)",
+                   ticks="outside", ticklen=4),
+    )
+    fig.update_xaxes(**axis_kw)
+    fig.update_yaxes(**axis_kw)
+
+
 def build_fdha_lt_xml(selections: dict) -> str:
     """Serialize the 4-slot selection to one NRML logic-tree XML (schema per
     openquake/fdha/logic_tree/nrml_reader.py:24-56).
@@ -208,19 +233,41 @@ def engine_validate(xml_text: str):
         return [], [], str(exc), None
 
 
-SM_LT_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
-<nrml xmlns:gml="http://www.opengis.net/gml"
-      xmlns="http://openquake.org/xmlns/nrml/0.4">
-  <logicTree logicTreeID="lt_sm_webgui">
-    <logicTreeBranchSet uncertaintyType="sourceModel" branchSetID="bs_sm_webgui">
-      <logicTreeBranch branchID="b_sm_webgui">
-        <uncertaintyModel>source_model.xml</uncertaintyModel>
-        <uncertaintyWeight>1.0</uncertaintyWeight>
-      </logicTreeBranch>
-    </logicTreeBranchSet>
-  </logicTree>
-</nrml>
-"""
+def build_sm_lt(rows: list[tuple[str, float]]) -> str:
+    """Source-model logic tree over (filename, weight) branches — same NRML
+    structure as the shipped trees (e.g. config_norcia_case3_iaea_
+    source_model_logic_tree.xml)."""
+    branches = "\n".join(
+        f'      <logicTreeBranch branchID="b_sm_{k}">\n'
+        f"        <uncertaintyModel>{fname}</uncertaintyModel>\n"
+        f"        <uncertaintyWeight>{w}</uncertaintyWeight>\n"
+        "      </logicTreeBranch>"
+        for k, (fname, w) in enumerate(rows))
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<nrml xmlns:gml="http://www.opengis.net/gml"\n'
+        '      xmlns="http://openquake.org/xmlns/nrml/0.4">\n'
+        '  <logicTree logicTreeID="lt_sm_webgui">\n'
+        '    <logicTreeBranchSet uncertaintyType="sourceModel"'
+        ' branchSetID="bs_sm_webgui">\n'
+        f"{branches}\n"
+        "    </logicTreeBranchSet>\n"
+        "  </logicTree>\n"
+        "</nrml>\n")
+
+
+def parse_sm_lt(xml_text: str) -> list[tuple[str, float]]:
+    """List (source-model filename, weight) branches of a source-model
+    logic-tree XML (NRML 0.4, uncertaintyType='sourceModel')."""
+    ns = {"n": "http://openquake.org/xmlns/nrml/0.4"}
+    root = ET.fromstring(xml_text)
+    out = []
+    for br in root.iter("{http://openquake.org/xmlns/nrml/0.4}logicTreeBranch"):
+        um = br.find("n:uncertaintyModel", ns)
+        uw = br.find("n:uncertaintyWeight", ns)
+        if um is not None and uw is not None:
+            out.append((um.text.strip(), float(uw.text)))
+    return out
 
 
 def build_job_ini(cfg: dict) -> str:
@@ -277,40 +324,116 @@ def page_configure() -> None:
     st.header("Configure")
 
     # ---- Source model ------------------------------------------------------
-    st.subheader("Seismic source model")
-    col1, col2 = st.columns(2)
-    with col1:
-        choice = st.selectbox("Source model",
-                              list(BUILTIN_SOURCES) + ["Uploaded NRML file…"])
-    src_xml: Path | None = None
+    st.subheader("Seismic source model & source-model logic tree")
+    sm_mode = st.radio(
+        "Source-model input",
+        ["Built-in example", "Upload source model(s) — build the logic tree",
+         "Upload a source-model logic-tree XML"],
+        horizontal=True,
+        help="The job always runs through a source-model logic tree "
+             "([calculation].source_model_logic_tree_file); single models "
+             "are wrapped in a one-branch tree with weight 1.0.")
+    updir = HERE / "uploads"
+    sm_files: list[Path] = []
+    sm_lt_text = None
+    sm_ok = False
+    choice = sm_mode
     geo_defaults = BUILTIN_SOURCES["Norcia Case 3 (IAEA TECDOC-2092)"]
-    if choice in BUILTIN_SOURCES:
+
+    if sm_mode == "Built-in example":
+        choice = st.selectbox("Source model", list(BUILTIN_SOURCES))
         geo_defaults = BUILTIN_SOURCES[choice]
-        src_xml = geo_defaults["xml"]
-    with col2:
-        up = st.file_uploader("Upload a NRML source model (XML)", type=["xml"])
-        if up is not None:
-            updir = HERE / "uploads"
+        sm_files = [geo_defaults["xml"]]
+        sm_lt_text = build_sm_lt([(geo_defaults["xml"].name, 1.0)])
+        sm_ok = True
+    elif sm_mode.startswith("Upload source model(s)"):
+        ups = st.file_uploader("NRML source model file(s)", type=["xml"],
+                               accept_multiple_files=True, key="sm_ups")
+        if ups:
             updir.mkdir(exist_ok=True)
-            dest = updir / up.name
-            dest.write_bytes(up.getvalue())
-            if choice == "Uploaded NRML file…":
-                src_xml = dest
-    if choice == "Uploaded NRML file…" and src_xml is None:
-        st.warning("Upload a source model XML, or pick a built-in one.")
-    sources: list = []
-    if src_xml is not None:
-        try:
-            sources = list_sources(src_xml)
-            if sources:
-                st.caption(f"`{src_xml.name}` — {len(sources)} fault source(s):")
-                st.table(sources)
+            n = len(ups)
+            eq = ([round(1.0 / n, 6)] * (n - 1)
+                  + [round(1.0 - (n - 1) * round(1.0 / n, 6), 6)])
+            rows = []
+            cols = st.columns(min(n, 4))
+            for k, up in enumerate(ups):
+                dest = updir / up.name
+                dest.write_bytes(up.getvalue())
+                sm_files.append(dest)
+                with cols[k % len(cols)]:
+                    w = st.number_input(f"weight — {up.name}", min_value=0.0,
+                                        max_value=1.0, value=eq[k], step=0.05,
+                                        format="%.6f", key=f"smw_{up.name}")
+                rows.append((up.name, w))
+            total = sum(w for _, w in rows)
+            if abs(total - 1.0) <= WEIGHT_TOL:
+                st.success(f"✓ source-model weights sum to {total:.6f}")
+                sm_ok = True
             else:
-                st.error("No fault sources found in this NRML file.")
-                src_xml = None
+                st.error(f"✗ source-model weights sum to {total:.6f} — "
+                         "must be 1.0 ± 1e-6")
+            sm_lt_text = build_sm_lt(rows)
+            with st.expander("Preview: source_model_logic_tree.xml"):
+                st.code(sm_lt_text, language="xml")
+                st.download_button("⬇ source_model_logic_tree.xml",
+                                   sm_lt_text,
+                                   file_name="source_model_logic_tree.xml")
+        else:
+            st.warning("Upload at least one NRML source model.")
+    else:  # upload a ready-made source-model logic tree
+        lt_up = st.file_uploader("Source-model logic-tree XML",
+                                 type=["xml"], key="smlt_up")
+        refs_up = st.file_uploader(
+            "Source-model file(s) referenced by the logic tree",
+            type=["xml"], accept_multiple_files=True, key="sm_refs")
+        if lt_up is not None:
+            sm_lt_text = lt_up.getvalue().decode("utf-8", errors="replace")
+            try:
+                branches = parse_sm_lt(sm_lt_text)
+            except Exception as exc:
+                st.error(f"Could not parse the logic-tree XML: {exc}")
+                branches = []
+            if branches:
+                st.table([{"source model file": f, "weight": w}
+                          for f, w in branches])
+                total = sum(w for _, w in branches)
+                if abs(total - 1.0) > WEIGHT_TOL:
+                    st.warning(f"Branch weights sum to {total:.6f} — the "
+                               "engine requires 1.0.")
+                updir.mkdir(exist_ok=True)
+                by_name = {}
+                for up in refs_up or []:
+                    dest = updir / up.name
+                    dest.write_bytes(up.getvalue())
+                    by_name[up.name] = dest
+                missing = [f for f, _ in branches if f not in by_name]
+                if missing:
+                    st.error("Referenced file(s) not uploaded yet: "
+                             + ", ".join(f"`{f}`" for f in missing))
+                else:
+                    sm_files = [by_name[f] for f, _ in branches]
+                    sm_ok = abs(total - 1.0) <= WEIGHT_TOL
+        else:
+            st.warning("Upload the logic-tree XML and its source-model "
+                       "files.")
+
+    sources: list = []
+    for f in sm_files:
+        try:
+            ss = list_sources(f)
+            if ss:
+                with st.expander(f"`{f.name}` — {len(ss)} fault source(s)",
+                                 expanded=len(sm_files) == 1):
+                    st.table(ss)
+                sources.extend(ss)
+            else:
+                st.error(f"No fault sources found in `{f.name}`.")
+                sm_ok = False
         except Exception as exc:
-            st.error(f"Could not parse the source model: {exc}")
-            src_xml = None
+            st.error(f"Could not parse `{f.name}`: {exc}")
+            sm_ok = False
+    # de-duplicate by source id for the end-branch preview
+    sources = list({s["id"]: s for s in sources}.values())
 
     # ---- Geometry & calculation parameters ---------------------------------
     st.subheader("Geometry and calculation parameters")
@@ -375,127 +498,155 @@ def page_configure() -> None:
 
     # ---- Logic-tree builder -------------------------------------------------
     st.subheader("FDHA logic tree")
-    st.caption(
-        "Edit model parameters as `key = value` lines — the engine's native "
-        "<uncertaintyModel> syntax. Weights within each branch set must sum "
-        "to 1.0 (FDLT-001, logic_tree/validators.py:133-143). The default "
-        "selection is a light single-branch calculation suitable for a "
-        "quick live demonstration."
-    )
-
-    def param_editor(meta: dict, key: str, label: str) -> str:
-        prefill = meta.get("prefill", "")
-        ctor = meta.get("ctor_defaults") or {}
-        if ctor and not any(c in prefill for c in ctor):
-            extra = "\n".join(f"{k2} = {v2}" for k2, v2 in ctor.items())
-            prefill = (prefill + "\n" + extra).strip()
-        return st.text_area(label, prefill, height=100, key=key,
-                            help="One `key = value` per line; leave empty "
-                                 "to use model defaults.")
-
-    def doc_table(meta: dict) -> None:
-        dp = meta.get("doc_params") or []
-        if dp:
-            md = "| param | default | required | allowed |\n|---|---|---|---|\n"
-            for r in dp:
-                md += (f"| `{r['name']}` | {r['default']} | "
-                       f"{'**yes**' if r['required'] else 'no'} | "
-                       f"{r['allowed'][:60]} |\n")
-            st.markdown(md)
-            st.caption("Full reference: docs/UserManual_Enhanced/models/"
-                       f"{meta['doc_page']}")
-        else:
-            st.caption("No documented parameters — the model runs with "
-                       "internal defaults.")
-
-    weights_ok = True
+    fdha_mode = st.radio(
+        "FDHA logic-tree input",
+        ["Build in the UI", "Upload fdha_logic_tree.xml"],
+        horizontal=True)
     selections: dict = {}
-    for utype, label in SLOT_LABELS.items():
-        models = REGISTRY["slots"][utype]["models"]
-        names = [m["class_name"] for m in models]
-        by_name = {m["class_name"]: m for m in models}
-        with st.expander(label, expanded=True):
-            chosen = st.multiselect("Models", names,
-                                    default=LIGHT_PRESET[utype],
-                                    key=f"ms_{utype}",
-                                    label_visibility="collapsed")
-            rows = []
-            # Coupled FD models carry weight 1.0 inside their own chained
-            # branch set; only "free" models share a user-weighted set.
-            free = [n for n in chosen if n not in COUPLED_FD_TO_SR] \
-                if utype == "fdhaSecondaryFDModel" else chosen
-            if chosen:
-                n = len(free)
-                eq = ([round(1.0 / n, 6)] * (n - 1)
-                      + [round(1.0 - (n - 1) * round(1.0 / n, 6), 6)]) if n else []
-                for name in chosen:
-                    meta = by_name[name]
-                    wcol, pcol, dcol = st.columns([1, 2, 2])
-                    with wcol:
-                        if name in COUPLED_FD_TO_SR and utype == "fdhaSecondaryFDModel":
-                            st.markdown(f"**weight — {name}**")
-                            st.caption(
-                                f"chained to `{COUPLED_FD_TO_SR[name]}` — "
-                                "weight 1.0 within its chain (the pair "
-                                "shares the SR branch weight)")
-                            w = 1.0
-                        else:
-                            w = st.number_input(f"weight — {name}",
-                                                min_value=0.0, max_value=1.0,
-                                                value=eq[free.index(name)],
-                                                step=0.05, format="%.6f",
-                                                key=f"w_{utype}_{name}")
-                    with pcol:
-                        params = param_editor(meta, f"p_{utype}_{name}",
-                                              f"parameters — {name}")
-                    with dcol:
-                        doc_table(meta)
-                    rows.append({"class_name": name, "weight": w,
-                                 "params": params})
-                checked = [r for r in rows if r["class_name"] in free]
-                if checked:
-                    total = sum(r["weight"] for r in checked)
-                    if abs(total - 1.0) <= WEIGHT_TOL:
-                        st.success(f"✓ weights sum to {total:.6f}")
-                    else:
-                        st.error(f"✗ weights sum to {total:.6f} — must be "
-                                 "1.0 ± 1e-6 (FDLT-001)")
-                        weights_ok = False
-            else:
-                st.error("✗ select at least one model")
-                weights_ok = False
-            selections[utype] = rows
+    uploaded_lt = None
+    weights_ok = False
+    if fdha_mode == "Build in the UI":
+        st.caption(
+            "Edit model parameters as `key = value` lines — the engine's native "
+            "<uncertaintyModel> syntax. Weights within each branch set must sum "
+            "to 1.0 (FDLT-001, logic_tree/validators.py:133-143). The default "
+            "selection is a light single-branch calculation suitable for a "
+            "quick live demonstration."
+        )
 
-    # Cross-slot constraints for engine-coupled distributed families
-    # (Visini 2025 SR ⇔ FD: calc/hazard.py:241, calc/visini.py:247,320-329).
-    ssr_names = {r["class_name"] for r in selections["fdhaSecondarySRModel"]}
-    sfd_names = {r["class_name"] for r in selections["fdhaSecondaryFDModel"]}
-    coupling_ok = True
-    for sr, fd in COUPLED_DISTRIBUTED:
-        if (sr in ssr_names) != (fd in sfd_names):
-            missing, present = (fd, sr) if sr in ssr_names else (sr, fd)
-            st.error(f"`{present}` requires `{missing}` — the engine "
-                     "computes this model family on a dedicated calculator "
-                     "that needs both (calc/hazard.py:241). Add the partner "
-                     "model or remove this one.")
+        def param_editor(meta: dict, key: str, label: str) -> str:
+            prefill = meta.get("prefill", "")
+            ctor = meta.get("ctor_defaults") or {}
+            if ctor and not any(c in prefill for c in ctor):
+                extra = "\n".join(f"{k2} = {v2}" for k2, v2 in ctor.items())
+                prefill = (prefill + "\n" + extra).strip()
+            return st.text_area(label, prefill, height=100, key=key,
+                                help="One `key = value` per line; leave empty "
+                                     "to use model defaults.")
+
+        def doc_table(meta: dict) -> None:
+            dp = meta.get("doc_params") or []
+            if dp:
+                md = "| param | default | required | allowed |\n|---|---|---|---|\n"
+                for r in dp:
+                    md += (f"| `{r['name']}` | {r['default']} | "
+                           f"{'**yes**' if r['required'] else 'no'} | "
+                           f"{r['allowed'][:60]} |\n")
+                st.markdown(md)
+                if any(r["name"] == "style" for r in dp):
+                    st.caption("ℹ `style` is assigned automatically from "
+                               "the source rake when omitted "
+                               "(calc/contexts.py, classify_style).")
+                st.caption("Full reference: docs/UserManual_Enhanced/models/"
+                           f"{meta['doc_page']}")
+            else:
+                st.caption("No documented parameters — the model runs with "
+                           "internal defaults.")
+
+        weights_ok = True
+        for utype, label in SLOT_LABELS.items():
+            models = REGISTRY["slots"][utype]["models"]
+            names = [m["class_name"] for m in models]
+            by_name = {m["class_name"]: m for m in models}
+            with st.expander(label, expanded=True):
+                chosen = st.multiselect("Models", names,
+                                        default=LIGHT_PRESET[utype],
+                                        key=f"ms_{utype}",
+                                        label_visibility="collapsed")
+                rows = []
+                # Coupled FD models carry weight 1.0 inside their own chained
+                # branch set; only "free" models share a user-weighted set.
+                free = [n for n in chosen if n not in COUPLED_FD_TO_SR] \
+                    if utype == "fdhaSecondaryFDModel" else chosen
+                if chosen:
+                    n = len(free)
+                    eq = ([round(1.0 / n, 6)] * (n - 1)
+                          + [round(1.0 - (n - 1) * round(1.0 / n, 6), 6)]) if n else []
+                    for name in chosen:
+                        meta = by_name[name]
+                        wcol, pcol, dcol = st.columns([1, 2, 2])
+                        with wcol:
+                            if name in COUPLED_FD_TO_SR and utype == "fdhaSecondaryFDModel":
+                                st.markdown(f"**weight — {name}**")
+                                st.caption(
+                                    f"chained to `{COUPLED_FD_TO_SR[name]}` — "
+                                    "weight 1.0 within its chain (the pair "
+                                    "shares the SR branch weight)")
+                                w = 1.0
+                            else:
+                                w = st.number_input(f"weight — {name}",
+                                                    min_value=0.0, max_value=1.0,
+                                                    value=eq[free.index(name)],
+                                                    step=0.05, format="%.6f",
+                                                    key=f"w_{utype}_{name}")
+                        with pcol:
+                            params = param_editor(meta, f"p_{utype}_{name}",
+                                                  f"parameters — {name}")
+                        with dcol:
+                            doc_table(meta)
+                        rows.append({"class_name": name, "weight": w,
+                                     "params": params})
+                    checked = [r for r in rows if r["class_name"] in free]
+                    if checked:
+                        total = sum(r["weight"] for r in checked)
+                        if abs(total - 1.0) <= WEIGHT_TOL:
+                            st.success(f"✓ weights sum to {total:.6f}")
+                        else:
+                            st.error(f"✗ weights sum to {total:.6f} — must be "
+                                     "1.0 ± 1e-6 (FDLT-001)")
+                            weights_ok = False
+                else:
+                    st.error("✗ select at least one model")
+                    weights_ok = False
+                selections[utype] = rows
+
+        # Cross-slot constraints for engine-coupled distributed families
+        # (Visini 2025 SR ⇔ FD: calc/hazard.py:241, calc/visini.py:247,320-329).
+        ssr_names = {r["class_name"] for r in selections["fdhaSecondarySRModel"]}
+        sfd_names = {r["class_name"] for r in selections["fdhaSecondaryFDModel"]}
+        coupling_ok = True
+        for sr, fd in COUPLED_DISTRIBUTED:
+            if (sr in ssr_names) != (fd in sfd_names):
+                missing, present = (fd, sr) if sr in ssr_names else (sr, fd)
+                st.error(f"`{present}` requires `{missing}` — the engine "
+                         "computes this model family on a dedicated calculator "
+                         "that needs both (calc/hazard.py:241). Add the partner "
+                         "model or remove this one.")
+                coupling_ok = False
+        free_sr = ssr_names - set(COUPLED_SR_TO_FD)
+        free_fd = sfd_names - set(COUPLED_FD_TO_SR)
+        if bool(free_sr) != bool(free_fd):
+            a, b = (("rupture", "displacement") if free_sr
+                    else ("displacement", "rupture"))
+            st.error(f"The selected distributed {a} model(s) "
+                     f"{sorted(free_sr or free_fd)} have no compatible "
+                     f"distributed {b} model selected.")
             coupling_ok = False
-    free_sr = ssr_names - set(COUPLED_SR_TO_FD)
-    free_fd = sfd_names - set(COUPLED_FD_TO_SR)
-    if bool(free_sr) != bool(free_fd):
-        a, b = (("rupture", "displacement") if free_sr
-                else ("displacement", "rupture"))
-        st.error(f"The selected distributed {a} model(s) "
-                 f"{sorted(free_sr or free_fd)} have no compatible "
-                 f"distributed {b} model selected.")
-        coupling_ok = False
-    weights_ok = weights_ok and coupling_ok
+        weights_ok = weights_ok and coupling_ok
+    else:
+        lt_up2 = st.file_uploader("fdha_logic_tree.xml (NRML)",
+                                  type=["xml"], key="fdha_lt_up")
+        if lt_up2 is not None:
+            uploaded_lt = lt_up2.getvalue().decode("utf-8",
+                                                   errors="replace")
+            weights_ok = True
+        else:
+            st.warning("Upload an FDHA logic-tree XML — it will be "
+                       "validated by the engine below.")
+
+
+    # ---- Live engine validation + end-branch preview --------------------------
+    if fdha_mode == "Build in the UI":
+        lt_xml = build_fdha_lt_xml(selections) if weights_ok else None
+    else:
+        lt_xml = uploaded_lt
 
     # Visini et al. (2025) job-level 'case' parameter ([calculation].case,
     # cf. job_norcia_case3_iaea_curve.ini:18 and the model docs, which mark
     # it Required). case3 = Combination A only — the configuration used by
     # the shipped Norcia benchmark.
     visini_case = None
-    if any("Visini" in n for n in ssr_names | sfd_names):
+    if lt_xml and "Visini" in lt_xml:
         visini_case = st.selectbox(
             "Visini et al. (2025) combination case ([calculation].case)",
             ["case3", "case2", "case1"],
@@ -504,9 +655,6 @@ def page_configure() -> None:
                  "raises an error in the engine (visini.py:305 calls "
                  "get_prob without the required style/pixel_size "
                  "arguments) — prefer case2/case3 until fixed upstream.")
-
-    # ---- Live engine validation + end-branch preview --------------------------
-    lt_xml = build_fdha_lt_xml(selections) if weights_ok else None
     engine_ok = False
     spec = None
     if lt_xml:
@@ -563,7 +711,8 @@ def page_configure() -> None:
     st.session_state["config"] = {
         "description": f"webgui job ({choice})",
         "source_label": choice,
-        "source_xml": str(src_xml) if src_xml else None,
+        "sm_files": [str(f) for f in sm_files],
+        "sm_lt_text": sm_lt_text,
         "calc_type": "hazard_map" if is_map else "hazard_curve",
         "sites": sites.replace("\n", " ").strip(),
         "region": region.replace("\n", " ").strip(),
@@ -577,7 +726,8 @@ def page_configure() -> None:
         "selections": selections,
         "visini_case": visini_case,
         "n_branches": n_branches,
-        "valid": bool(weights_ok and engine_ok and dml_ok and src_xml),
+        "valid": bool(weights_ok and engine_ok and dml_ok and sm_ok
+                      and sm_files),
         "lt_xml": lt_xml,
     }
 
@@ -619,8 +769,9 @@ def page_run() -> None:
         jobdir = RUNS / f"run_{stamp}"
         outdir = jobdir / "out"
         jobdir.mkdir(parents=True, exist_ok=True)
-        shutil.copy(cfg["source_xml"], jobdir / "source_model.xml")
-        (jobdir / "source_model_logic_tree.xml").write_text(SM_LT_TEMPLATE)
+        for f in cfg["sm_files"]:
+            shutil.copy(f, jobdir / Path(f).name)
+        (jobdir / "source_model_logic_tree.xml").write_text(cfg["sm_lt_text"])
         (jobdir / "fdha_logic_tree.xml").write_text(cfg["lt_xml"])
         ini = jobdir / "job.ini"
         ini.write_text(build_job_ini(cfg))
@@ -718,11 +869,11 @@ def page_results() -> None:
                                          line=dict(color="#999999", width=0.8),
                                          showlegend=False, hoverinfo="skip"))
         fig.add_trace(go.Scatter(x=d["D0"], y=d["mean"], name="weighted mean",
-                                 line=dict(color="#AA3377", width=3)))
+                                 line=dict(color="#AA3377", width=3.5)))
+        style_fig(fig)
         fig.update_xaxes(type="log", title="Displacement (m)")
-        fig.update_yaxes(type="log", title="Annual rate of exceedance (1/yr)")
-        fig.update_layout(height=500, margin=dict(t=10),
-                          legend=dict(orientation="h", y=-0.25))
+        fig.update_yaxes(type="log",
+                         title="Annual rate of exceedance (yr⁻¹)")
         st.plotly_chart(fig, use_container_width=True)
 
         # When the branch-to-branch spread is narrower than the plotted line
@@ -766,11 +917,10 @@ def page_results() -> None:
                         x=b["D0"], y=b["annual_rate"].to_numpy() / base.to_numpy(),
                         line=dict(color="#999999", width=0.8),
                         showlegend=False, hoverinfo="skip"))
-                rfig.add_hline(y=1.0, line_color="#AA3377", line_width=2)
+                rfig.add_hline(y=1.0, line_color="#AA3377", line_width=2.5)
+                style_fig(rfig, height=440)
                 rfig.update_xaxes(type="log", title="Displacement (m)")
                 rfig.update_yaxes(title="Rate ÷ weighted mean (–)")
-                rfig.update_layout(height=380, margin=dict(t=10),
-                                   legend=dict(orientation="h", y=-0.3))
                 st.plotly_chart(rfig, use_container_width=True)
         st.download_button("⬇ aggregate_hazard.csv", agg.read_bytes(),
                            file_name="aggregate_hazard.csv", mime="text/csv")
