@@ -83,17 +83,16 @@ DOC_MAP = {
 #   [T] openquake/fdha/test/fixtures/examples_archive/
 #       logic_tree_validation_taiwan/fdha_logic_tree_*.xml
 PREFILL = {
-    # 'style = all' on the Youngs2003 models: the adapter rejects styles
-    # other than all/normal unless set explicitly (calc/model_adapter.py:
-    # 126-137 and analogues), and the User Manual recommends the
-    # Wells & Coppersmith "all styles" coefficients ("recommended,
-    # consistent with paper and fdhpy", primary/Youngs2003.md).
-    "Youngs2003PrimarySR": "style = all",
-    "Youngs2003PrimaryFD": "norm_disp_type = AD\nstyle = all",  # [N]
+    # Youngs et al. (2003) is a normal-faulting model; its `style` parameter
+    # selects the coefficient dataset ("all" = WC1994 all-styles, "normal" =
+    # normal-only), NOT the source mechanism. It is left unset here so the
+    # engine uses normal coefficients on normal sources; the GUI warns when
+    # the source is reverse/strike-slip (see STYLE_CONSTRAINTS in app.py).
+    "Youngs2003PrimaryFD": "norm_disp_type = AD",       # [N]
     "Takao2013PrimaryFD": "norm_disp_type = AD",        # [T]
     "Moss2024PrimaryFD": "version = AD",                # [T]
-    "Youngs2003SecondarySR": "version = 3\nstyle = all",   # [N]
-    "Youngs2003SecondaryFD": "percentile = 85\nstyle = all",  # [N]
+    "Youngs2003SecondarySR": "version = 3",             # [N]
+    "Youngs2003SecondaryFD": "percentile = 85",         # [N]
     "Visini2025SecondarySR": "pixel_size = 100",        # [N] (pixel_size is Required)
     "Visini2025SecondaryFD": "scaling_model = WC1994",  # [N]
 }
