@@ -96,6 +96,21 @@ PARAM_HEADER = re.compile(
     r"^\|\s*Name\s*\|\s*Type\s*\|\s*Units\s*\|\s*Default\s*\|\s*Allowed\s*\|"
 )
 
+# Some classes share a doc page with their partner model and the page's
+# parameter table does not apply to them. Override with code-derived rows.
+CLASS_PARAM_OVERRIDES = {
+    # secondary/Youngs2003.md documents only the FD 'percentile' parameter;
+    # the SR class takes 'version' (get_prob signature and docstring,
+    # openquake/fdha/secondary_surf_rup/youngs2003.py:36-41).
+    "Youngs2003SecondarySR": [{
+        "name": "version", "type": "string", "units": "–",
+        "default": '"3"', "allowed": '"1", "2", "3"', "required": False,
+        "description": ('Model equation: "1" original formulation, "2" '
+                        'average-site formulation, "3" 50/50 weighted '
+                        'average of both (default).'),
+    }],
+}
+
 
 def parse_doc_params(md_rel: str) -> list[dict]:
     """Extract the parameter table rows from a User-Manual model page."""
@@ -142,7 +157,9 @@ def snapshot() -> dict:
                 "class_name": name,
                 "module": obj.__module__,
                 "doc_page": DOC_MAP.get(name),
-                "doc_params": parse_doc_params(DOC_MAP[name]) if name in DOC_MAP else [],
+                "doc_params": (CLASS_PARAM_OVERRIDES.get(name)
+                               or (parse_doc_params(DOC_MAP[name])
+                                   if name in DOC_MAP else [])),
                 "prefill": PREFILL.get(name, ""),
             }
             # Constructor params with explicit defaults (e.g. n_sigma)

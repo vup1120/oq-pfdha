@@ -527,13 +527,13 @@
           "doc_page": "secondary/Youngs2003.md",
           "doc_params": [
             {
-              "name": "percentile",
+              "name": "version",
               "type": "string",
               "units": "\u2013",
-              "default": "`\"85\"`",
-              "allowed": "`\"85\"`, `\"95\"`",
+              "default": "\"3\"",
+              "allowed": "\"1\", \"2\", \"3\"",
               "required": false,
-              "description": "Percentile used for scaling the distributed displacement relative to maximum displacement. Different percentiles use different scaling factors."
+              "description": "Model equation: \"1\" original formulation, \"2\" average-site formulation, \"3\" 50/50 weighted average of both (default)."
             }
           ],
           "prefill": "version = 3"
