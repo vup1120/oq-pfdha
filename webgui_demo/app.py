@@ -708,12 +708,12 @@ def page_configure() -> None:
         # combination be rejected by the engine at run time?
         problems = set()
         for eb in ebs:
-            for choice in eb.selections.values():
+            for mc in eb.selections.values():
                 for prefix, ok_styles, remedy in STYLE_CONSTRAINTS:
-                    if (prefix in choice.class_name
-                            and "style" not in choice.params
+                    if (prefix in mc.class_name
+                            and "style" not in mc.params
                             and eb.style not in ok_styles):
-                        problems.add((choice.class_name, eb.source_id,
+                        problems.add((mc.class_name, eb.source_id,
                                       eb.style, remedy))
         for cn, sid, sty, remedy in sorted(problems):
             st.error(f"`{cn}` would fail on source `{sid}` "
