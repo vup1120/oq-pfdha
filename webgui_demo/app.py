@@ -121,21 +121,32 @@ COUPLED_DISTRIBUTED = [("Visini2025SecondarySR", "Visini2025SecondaryFD")]
 COUPLED_SR_TO_FD = dict(COUPLED_DISTRIBUTED)
 COUPLED_FD_TO_SR = {fd: sr for sr, fd in COUPLED_DISTRIBUTED}
 
-# Model families with restricted faulting-style applicability, checked
-# before running so the user gets the remedy instead of a deep traceback.
-# (class-name prefix, styles accepted when 'style' is not set explicitly,
-#  remedy / explanation)
+# Model families whose calibrated faulting mechanism differs from some
+# source styles, checked against the engine-enumerated end-branches so the
+# user is informed in Configure instead of hitting a deep traceback.
+#   intended : source mechanisms the model is calibrated for
+#   kind     : "warn"  -> advisory only, run still allowed
+#              "block" -> the engine cannot run this pairing, run prevented
+# NB: for Youngs2003 the `style` parameter is the WC1994 coefficient-dataset
+# selector ("all"/"normal"), NOT the source mechanism — the model is a
+# normal-faulting model, so reverse/strike-slip sources get an advisory.
 STYLE_CONSTRAINTS = [
-    ("Youngs2003", {"all", "normal"},
-     "add `style = all` to this model's parameters to use the Wells & "
-     "Coppersmith (1994) all-styles coefficients "
-     "(calc/model_adapter.py:126-137)"),
-    ("Chiou2025", {"strike-slip"},
-     "this model is applicable to strike-slip sources only "
-     "(primary_surf_displ/chiou2025.py:106)"),
-    ("Visini2025", {"normal", "reverse"},
-     "this model family is dip-slip only (normal/reverse; "
-     "secondary_surf_rup/visini2025.py)"),
+    {"prefix": "Youngs2003", "intended": {"normal"}, "kind": "warn",
+     "message": (
+         "Youngs et al. (2003) is a **normal-faulting** model. Its `style` "
+         "parameter only selects the coefficient dataset (`all` = "
+         "Wells & Coppersmith 1994 all-styles, `normal` = normal-only) and "
+         "does not extend the model to other mechanisms. This pairing is "
+         "outside the model's calibrated range — set `style = all` or "
+         "`style = normal` explicitly to run, and interpret the result with "
+         "caution.")},
+    {"prefix": "Chiou2025", "intended": {"strike-slip"}, "kind": "block",
+     "message": ("Chiou et al. (2025) is a strike-slip model and cannot run "
+                 "on this source (primary_surf_displ/chiou2025.py:106).")},
+    {"prefix": "Visini2025", "intended": {"normal", "reverse"},
+     "kind": "block",
+     "message": ("Visini et al. (2025) is a dip-slip (normal/reverse) model "
+                 "and cannot run on a strike-slip source.")},
 ]
 
 
@@ -704,22 +715,24 @@ def page_configure() -> None:
                    "source**. Runtime grows with branches × sites; keep it "
                    "small for a live demonstration.")
 
-        # Applicability check: would any enumerated (model, source-style)
-        # combination be rejected by the engine at run time?
-        problems = set()
+        # Applicability check over the enumerated (model, source-style)
+        # combinations: hard blocks for pairings the engine cannot run,
+        # advisories for ones outside a model's calibrated mechanism.
+        blocks: dict[tuple, str] = {}
+        warns: dict[tuple, str] = {}
         for eb in ebs:
             for mc in eb.selections.values():
-                for prefix, ok_styles, remedy in STYLE_CONSTRAINTS:
-                    if (prefix in mc.class_name
-                            and "style" not in mc.params
-                            and eb.style not in ok_styles):
-                        problems.add((mc.class_name, eb.source_id,
-                                      eb.style, remedy))
-        for cn, sid, sty, remedy in sorted(problems):
-            st.error(f"`{cn}` would fail on source `{sid}` "
-                     f"({sty} faulting, derived from rake): {remedy}.")
-        if problems:
+                for c in STYLE_CONSTRAINTS:
+                    if (c["prefix"] in mc.class_name
+                            and eb.style not in c["intended"]):
+                        key = (mc.class_name, eb.source_id, eb.style)
+                        (blocks if c["kind"] == "block" else warns)[key] = \
+                            c["message"]
+        for (cn, sid, sty), msg in sorted(blocks.items()):
+            st.error(f"`{cn}` on source `{sid}` ({sty} faulting): {msg}")
             style_ok = False
+        for (cn, sid, sty), msg in sorted(warns.items()):
+            st.warning(f"`{cn}` on source `{sid}` ({sty} faulting): {msg}")
         with st.expander(f"Enumerated end-branches ({len(ebs)} total)"):
             rows = [{
                 "source": eb.source_id, "style": eb.style,
