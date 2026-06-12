@@ -130,7 +130,7 @@
           "module": "openquake.fdha.primary_surf_rup.youngs2003",
           "doc_page": null,
           "doc_params": [],
-          "prefill": ""
+          "prefill": "style = all"
         }
       ]
     },
@@ -406,7 +406,7 @@
               "description": "Normalization displacement type. `\"AD\"` uses average displacement normalization (Gamma distribution), `\"MD\"` uses maximum displacement normalization (Beta distribution)."
             }
           ],
-          "prefill": "norm_disp_type = AD",
+          "prefill": "norm_disp_type = AD\nstyle = all",
           "ctor_defaults": {
             "n_sigma": 6.0
           }
@@ -536,7 +536,7 @@
               "description": "Model equation: \"1\" original formulation, \"2\" average-site formulation, \"3\" 50/50 weighted average of both (default)."
             }
           ],
-          "prefill": "version = 3"
+          "prefill": "version = 3\nstyle = all"
         }
       ]
     },
@@ -638,7 +638,7 @@
               "description": "Percentile used for scaling the distributed displacement relative to maximum displacement. Different percentiles use different scaling factors."
             }
           ],
-          "prefill": "percentile = 85"
+          "prefill": "percentile = 85\nstyle = all"
         }
       ]
     }
