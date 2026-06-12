@@ -121,6 +121,23 @@ COUPLED_DISTRIBUTED = [("Visini2025SecondarySR", "Visini2025SecondaryFD")]
 COUPLED_SR_TO_FD = dict(COUPLED_DISTRIBUTED)
 COUPLED_FD_TO_SR = {fd: sr for sr, fd in COUPLED_DISTRIBUTED}
 
+# Model families with restricted faulting-style applicability, checked
+# before running so the user gets the remedy instead of a deep traceback.
+# (class-name prefix, styles accepted when 'style' is not set explicitly,
+#  remedy / explanation)
+STYLE_CONSTRAINTS = [
+    ("Youngs2003", {"all", "normal"},
+     "add `style = all` to this model's parameters to use the Wells & "
+     "Coppersmith (1994) all-styles coefficients "
+     "(calc/model_adapter.py:126-137)"),
+    ("Chiou2025", {"strike-slip"},
+     "this model is applicable to strike-slip sources only "
+     "(primary_surf_displ/chiou2025.py:106)"),
+    ("Visini2025", {"normal", "reverse"},
+     "this model family is dip-slip only (normal/reverse; "
+     "secondary_surf_rup/visini2025.py)"),
+]
+
 
 def style_fig(fig, height: int = 560) -> None:
     """Publication-style plot formatting (large fonts, framed axes,
@@ -676,6 +693,7 @@ def page_configure() -> None:
     # Enumerate end-branches with the engine's own enumerator so the
     # preview cannot drift from what actually runs.
     n_branches = 0
+    style_ok = True
     if spec is not None and engine_ok and sources:
         from openquake.fdha.logic_tree.enumerator import (
             SourceInfo, enumerate_end_branches)
@@ -685,6 +703,23 @@ def page_configure() -> None:
         st.caption(f"Full enumeration: **{n_branches} end-branch(es) per "
                    "source**. Runtime grows with branches × sites; keep it "
                    "small for a live demonstration.")
+
+        # Applicability check: would any enumerated (model, source-style)
+        # combination be rejected by the engine at run time?
+        problems = set()
+        for eb in ebs:
+            for choice in eb.selections.values():
+                for prefix, ok_styles, remedy in STYLE_CONSTRAINTS:
+                    if (prefix in choice.class_name
+                            and "style" not in choice.params
+                            and eb.style not in ok_styles):
+                        problems.add((choice.class_name, eb.source_id,
+                                      eb.style, remedy))
+        for cn, sid, sty, remedy in sorted(problems):
+            st.error(f"`{cn}` would fail on source `{sid}` "
+                     f"({sty} faulting, derived from rake): {remedy}.")
+        if problems:
+            style_ok = False
         with st.expander(f"Enumerated end-branches ({len(ebs)} total)"):
             rows = [{
                 "source": eb.source_id, "style": eb.style,
@@ -727,7 +762,7 @@ def page_configure() -> None:
         "visini_case": visini_case,
         "n_branches": n_branches,
         "valid": bool(weights_ok and engine_ok and dml_ok and sm_ok
-                      and sm_files),
+                      and style_ok and sm_files),
         "lt_xml": lt_xml,
     }
 
