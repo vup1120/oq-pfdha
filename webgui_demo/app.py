@@ -1357,87 +1357,11 @@ def page_results() -> None:
             st.error(f"Expected output not found: {agg}")
             return
         df = pd.read_csv(agg, comment="#")
-        jobdir = Path(run["jobdir"])
-        traces = fault_traces_for_run(jobdir)
-        ref_level = 0.1
-        site_rows = []
-        for site_id, site_df in df.groupby("site_id", sort=True):
-            ref_idx = (site_df["D0"] - ref_level).abs().idxmin()
-            ref_row = site_df.loc[ref_idx]
-            site_rows.append({
-                "site_id": int(site_id),
-                "label": f"site {int(site_id)}",
-                "lon": float(site_df["lon"].iloc[0]),
-                "lat": float(site_df["lat"].iloc[0]),
-                "mean_at_ref": float(ref_row["mean"]),
-                "ref_d0": float(ref_row["D0"]),
-                "max_mean": float(site_df["mean"].max()),
-            })
-
-        st.subheader("Geographic hazard context")
-        import pydeck as pdk
-
-        context_layers = []
-        if traces:
-            context_layers.append(pdk.Layer(
-                "PathLayer",
-                id="fault-traces",
-                data=traces,
-                get_path="path",
-                get_color=[242, 118, 43, 230],
-                get_width=6,
-                width_min_pixels=3,
-                rounded=True,
-                pickable=False,
-            ))
-        context_layers.append(pdk.Layer(
-            "ScatterplotLayer",
-            id="hazard-sites",
-            data=site_rows,
-            get_position=["lon", "lat"],
-            get_fill_color=[59, 130, 246, 220],
-            get_line_color=[14, 23, 39, 230],
-            get_line_width=2,
-            get_radius=260,
-            radius_min_pixels=7,
-            radius_max_pixels=18,
-            pickable=True,
-            auto_highlight=True,
-        ))
-        context_layers.append(pdk.Layer(
-            "TextLayer",
-            id="site-labels",
-            data=site_rows,
-            get_position=["lon", "lat"],
-            get_text="label",
-            get_color=[27, 44, 75, 230],
-            get_size=13,
-            get_pixel_offset=[0, -24],
-            pickable=False,
-        ))
-        context_event = st.pydeck_chart(
-            pdk.Deck(
-                layers=context_layers,
-                initial_view_state=map_view_state(site_rows, traces),
-                map_style="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
-                tooltip={
-                    "html": (
-                        "<b>{label}</b><br/>"
-                        "lon {lon}<br/>lat {lat}<br/>"
-                        "mean rate at {ref_d0} m: {mean_at_ref}"
-                    ),
-                    "style": {"fontFamily": "Hanken Grotesk"},
-                },
-            ),
-            key="hazard_curve_context_map",
-            height=520,
-            on_select="rerun",
-            selection_mode="single-object",
-        )
-        selected_site = selected_pydeck_object(context_event, "hazard-sites")
-        selected_site_id = (
-            int(selected_site["site_id"]) if selected_site is not None else None
-        )
+        # Geographic hazard context map removed: the interactive PyDeck basemap
+        # made the Results page slow (tile downloads + on_select="rerun" reran
+        # the whole page on every map click). Site selection is handled by the
+        # selectbox below instead.
+        selected_site_id = None
 
         st.subheader("Hazard curves (weighted mean + fractiles)")
         site_ids = sorted(df["site_id"].unique())
