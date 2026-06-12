@@ -1,13 +1,12 @@
 # Streamlit theme for the oq-pfdha web GUI (webgui_demo/app.py).
-# Light institutional palette in the style of www.ogs.it (Italia PA
-# design system): deep azure-blue accents on white, light blue-gray
-# surfaces. Typography (Titillium Web) is loaded in app.py.
+# Warm, earthy palette from the oq-pfdha design-system handoff. Typography
+# is loaded in app.py because Streamlit theme config only supports built-ins.
 [theme]
 base = "light"
-primaryColor = "#005B96"
-backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F2F6FA"
-textColor = "#1B2A3A"
+primaryColor = "#f2762b"
+backgroundColor = "#faf8f3"
+secondaryBackgroundColor = "#f3eee6"
+textColor = "#352d24"
 
 [browser]
 gatherUsageStats = false
