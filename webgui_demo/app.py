@@ -82,6 +82,116 @@ WEIGHT_TOL = 1e-6
 
 st.set_page_config(page_title="oq-pfdha GUI", page_icon="🌍", layout="wide")
 
+# --------------------------------------------------------------------------
+# Institutional light theme, in the style of www.ogs.it (Italia PA design
+# system): Titillium Web typography, deep azure-blue on white, light
+# blue-gray surfaces. Palette colors match .streamlit/config.toml at the
+# repository root.
+# --------------------------------------------------------------------------
+ACCENT = "#005B96"    # institutional azure-blue (links, buttons, accents)
+NAVY = "#17324D"      # headings / emphasis
+SURFACE = "#F2F6FA"   # light blue-gray surface (sidebar, cards)
+HAIRLINE = "#D6E2EE"  # subtle borders
+
+st.markdown(f"""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Titillium+Web:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+/* ---- Base typography: larger and darker for readability ---- */
+html, body, [data-testid="stAppViewContainer"] * {{
+    font-family: 'Titillium Web', 'Segoe UI', Helvetica, Arial, sans-serif;
+}}
+[data-testid="stAppViewContainer"] .stMarkdown p,
+[data-testid="stAppViewContainer"] .stMarkdown li {{
+    font-size: 1.06rem; line-height: 1.65; color: #1B2A3A;
+}}
+[data-testid="stCaptionContainer"] p {{
+    font-size: 0.97rem !important; color: #44586C !important;
+}}
+[data-testid="stWidgetLabel"] p {{
+    font-size: 1.02rem !important; font-weight: 600; color: {NAVY};
+}}
+[data-testid="stRadio"] label p,
+[data-testid="stCheckbox"] label p {{ font-size: 1.0rem !important; }}
+
+/* ---- Headings: navy with a thin azure accent rule ---- */
+h1 {{ color: {NAVY}; font-weight: 700; letter-spacing: -0.01em; }}
+h2 {{
+    color: {NAVY}; font-weight: 700; font-size: 1.7rem !important;
+    border-bottom: 3px solid {ACCENT}; padding-bottom: 0.3rem;
+    margin-top: 0.4rem;
+}}
+h3 {{
+    color: {ACCENT}; font-weight: 600; font-size: 1.3rem !important;
+    margin-top: 1.2rem;
+}}
+
+/* ---- Masthead band (institutional site header) ---- */
+.pfdha-band {{
+    border-bottom: 4px solid {ACCENT};
+    padding: 0 0 0.55rem 0; margin-bottom: 1.1rem;
+}}
+.pfdha-band .t {{
+    color: {NAVY}; font-size: 2.0rem; font-weight: 700; line-height: 1.15;
+}}
+.pfdha-band .s {{
+    color: #44586C; font-size: 1.12rem; font-weight: 400;
+}}
+
+/* ---- Sidebar: light institutional surface ---- */
+section[data-testid="stSidebar"] {{
+    background: {SURFACE}; border-right: 1px solid {HAIRLINE};
+}}
+section[data-testid="stSidebar"] h1 {{
+    color: {NAVY}; font-size: 1.45rem !important;
+}}
+section[data-testid="stSidebar"] [data-testid="stRadio"] label p {{
+    font-size: 1.08rem !important; font-weight: 600; color: {NAVY};
+}}
+
+/* ---- Buttons: azure, clear affordance ---- */
+.stButton button, .stDownloadButton button, .stFormSubmitButton button {{
+    border: 1.5px solid {ACCENT}; color: {ACCENT};
+    font-weight: 600; font-size: 1.02rem; border-radius: 6px;
+}}
+.stButton button:hover, .stDownloadButton button:hover,
+.stFormSubmitButton button:hover {{
+    background: {ACCENT}; color: #fff; border-color: {ACCENT};
+}}
+.stButton button[kind="primary"] {{
+    background: {ACCENT}; color: #fff; border-color: {ACCENT};
+}}
+.stButton button[kind="primary"]:hover {{ background: {NAVY}; }}
+
+/* ---- Expanders & tabs: card-like surfaces ---- */
+[data-testid="stExpander"] {{
+    border: 1px solid {HAIRLINE}; border-radius: 8px; background: #fff;
+}}
+[data-testid="stExpander"] summary p {{
+    font-size: 1.0rem !important; font-weight: 600; color: {NAVY};
+}}
+
+/* ---- Tables, code, metrics ---- */
+[data-testid="stTable"] td, [data-testid="stTable"] th,
+[data-testid="stDataFrame"] {{ font-size: 1.0rem; }}
+code {{ font-size: 0.95em; }}
+[data-testid="stMetricValue"] {{ color: {NAVY}; }}
+
+/* Hide Streamlit chrome for a cleaner institutional look */
+#MainMenu {{ visibility: hidden; }}
+header[data-testid="stHeader"] {{ background: transparent; }}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown(
+    "<div class='pfdha-band'>"
+    "<div class='t'>oq-pfdha</div>"
+    "<div class='s'>Probabilistic Fault Displacement Hazard Analysis — "
+    "web interface</div>"
+    "</div>",
+    unsafe_allow_html=True,
+)
+
 
 # --------------------------------------------------------------------------
 # Helpers
@@ -155,8 +265,8 @@ def style_fig(fig, height: int = 560) -> None:
     power-of-ten tick labels)."""
     fig.update_layout(
         template="simple_white", height=height,
-        font=dict(family="Helvetica, Arial, sans-serif", size=17,
-                  color="#1a1a1a"),
+        font=dict(family="Titillium Web, Helvetica, Arial, sans-serif",
+                  size=17, color="#1a1a1a"),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0,
                     font=dict(size=16)),
         margin=dict(t=40, r=25, b=15, l=15),
@@ -742,7 +852,7 @@ def page_configure() -> None:
                 "distributed FD": eb.selections["secondary_surf_displ"].class_name,
                 "weight": round(eb.weight, 6),
             } for eb in ebs]
-            st.dataframe(rows, use_container_width=True)
+            st.dataframe(rows, width="stretch")
             for sid in sorted({r["source"] for r in rows}):
                 tot = sum(r["weight"] for r in rows if r["source"] == sid)
                 mark = "✓" if abs(tot - 1.0) <= 1e-6 else "✗"
@@ -922,7 +1032,7 @@ def page_results() -> None:
         fig.update_xaxes(type="log", title="Displacement (m)")
         fig.update_yaxes(type="log",
                          title="Annual rate of exceedance (yr⁻¹)")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
         # When the branch-to-branch spread is narrower than the plotted line
         # width, say so explicitly — otherwise the band looks "missing".
@@ -969,7 +1079,7 @@ def page_results() -> None:
                 style_fig(rfig, height=440)
                 rfig.update_xaxes(type="log", title="Displacement (m)")
                 rfig.update_yaxes(title="Rate ÷ weighted mean (–)")
-                st.plotly_chart(rfig, use_container_width=True)
+                st.plotly_chart(rfig, width="stretch")
         st.download_button("⬇ aggregate_hazard.csv", agg.read_bytes(),
                            file_name="aggregate_hazard.csv", mime="text/csv")
     else:
@@ -1050,14 +1160,15 @@ else:
 
 st.divider()
 st.markdown(
-    "<div style='text-align:center; color:#888; font-size:0.85em; "
-    "line-height:1.7'>"
-    "<b>oq-pfdha</b> — Probabilistic Fault Displacement Hazard Analysis · "
-    "GNU AGPL v3.0-or-later<br>"
+    "<div style='text-align:center; color:#44586C; font-size:0.97em; "
+    "line-height:1.8'>"
+    "<b style='color:#17324D'>oq-pfdha</b> — Probabilistic Fault "
+    "Displacement Hazard Analysis · GNU AGPL v3.0-or-later<br>"
     "Cite: Chen, Y.-S. (2025). <i>openquake.fdha: Python tools for "
     "probabilistic fault displacement hazard analysis</i> (v1.0.0) "
     "[Software]. OGS. "
-    "<a href='https://github.com/vup1120/oq-pfdha'>github.com/vup1120/oq-pfdha</a>"
+    "<a href='https://github.com/vup1120/oq-pfdha' "
+    "style='color:#005B96'>github.com/vup1120/oq-pfdha</a>"
     " (CITATION.cff)<br>"
     "<b>Prototype interface</b> — review configurations and verify results "
     "independently before use in production hazard assessment."
