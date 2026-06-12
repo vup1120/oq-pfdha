@@ -8,7 +8,7 @@
 # Note: oq-pfdha pins its own numpy/pandas-compatible versions; install it
 # FIRST and let pip resolve. The pins below are upper-level GUI libraries
 # that do not conflict with the engine stack.
--e ..
+-e .
 streamlit==1.58.0
 plotly==6.8.0
 pydeck==0.9.2
