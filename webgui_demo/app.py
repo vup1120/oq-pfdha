@@ -1,9 +1,9 @@
-"""oq-pfdha web GUI — prototype front-end (Streamlit).
+"""oq-pfdha web GUI - prototype front-end (Streamlit).
 
 A working web interface for Probabilistic Fault Displacement Hazard
 Analysis: it assembles a real job (INI + NRML source-model logic tree +
 NRML FDHA logic tree) from the form inputs and executes the actual
-oq-pfdha engine (`FdhaLogicTree.from_ini(...).run(...)`) — the same code
+oq-pfdha engine (`FdhaLogicTree.from_ini(...).run(...)`) - the same code
 path as the `fdha` command line.
 
 Model lists and per-model parameter documentation come from registry.json,
@@ -18,9 +18,11 @@ Run:  streamlit run webgui_demo/app.py
 from __future__ import annotations
 
 import datetime as _dt
+import base64
 import io
 import json
 import logging
+import os
 import shutil
 import xml.etree.ElementTree as ET
 import zipfile
@@ -32,18 +34,22 @@ HERE = Path(__file__).parent
 REPO = HERE.parent
 RUNS = HERE / "runs"
 REGISTRY = json.loads((HERE / "registry.json").read_text())
+PLATFORM_ICON = HERE / "assets" / "platform_icon.png"
+
+os.environ.setdefault("NUMBA_CACHE_DIR", str(Path("/tmp") / "oq_pfdha_numba"))
+os.environ.setdefault("MPLCONFIGDIR", str(Path("/tmp") / "oq_pfdha_matplotlib"))
 
 # Display order/labels for the four logic-tree slots
 # (uncertaintyType values from openquake/fdha/logic_tree/types.py:7-12).
 SLOT_LABELS = {
-    "fdhaPrimarySRModel": "1 — Principal surface rupture (probability)",
-    "fdhaPrimaryFDModel": "2 — Principal fault displacement",
-    "fdhaSecondarySRModel": "3 — Distributed surface rupture (probability)",
-    "fdhaSecondaryFDModel": "4 — Distributed fault displacement",
+    "fdhaPrimarySRModel": "1 - Principal surface rupture (probability)",
+    "fdhaPrimaryFDModel": "2 - Principal fault displacement",
+    "fdhaSecondarySRModel": "3 - Distributed surface rupture (probability)",
+    "fdhaSecondaryFDModel": "4 - Distributed fault displacement",
 }
 
 # Light-calculation default: the Youngs-2003 chain of the Norcia Case 3
-# benchmark logic tree (config_norcia_case3_iaea_fdha_logic_tree.xml) —
+# benchmark logic tree (config_norcia_case3_iaea_fdha_logic_tree.xml) -
 # a single end-branch that completes in well under a minute.
 LIGHT_PRESET = {
     "fdhaPrimarySRModel": ["Youngs2003PrimarySR"],
@@ -80,104 +86,345 @@ DEFAULT_DML = ('{"FD": [0.0001, 0.001, 0.005, 0.01, 0.015, 0.03, 0.05, '
 # (openquake/fdha/logic_tree/validators.py:133-143).
 WEIGHT_TOL = 1e-6
 
-st.set_page_config(page_title="oq-pfdha GUI", page_icon="🌍", layout="wide")
+st.set_page_config(
+    page_title="oq-pfdha GUI",
+    page_icon=PLATFORM_ICON if PLATFORM_ICON.exists() else None,
+    layout="wide",
+)
 
 # --------------------------------------------------------------------------
-# Institutional light theme, in the style of www.ogs.it (Italia PA design
-# system): Titillium Web typography, deep azure-blue on white, light
-# blue-gray surfaces. Palette colors match .streamlit/config.toml at the
-# repository root.
+# oq-pfdha design system tokens, ported from the June 2026 handoff for
+# Streamlit. The source design system is React/CSS; these constants preserve
+# its brand palette, typography, rounded controls and warm scientific tone.
 # --------------------------------------------------------------------------
-ACCENT = "#005B96"    # institutional azure-blue (links, buttons, accents)
-NAVY = "#17324D"      # headings / emphasis
-SURFACE = "#F2F6FA"   # light blue-gray surface (sidebar, cards)
-HAIRLINE = "#D6E2EE"  # subtle borders
+BRAND = "#1b2c4b"
+BRAND_DARK = "#142138"
+BRAND_DEEP = "#0e1727"
+ACCENT = "#f2762b"
+ACCENT_DARK = "#db5f14"
+BLUE = "#3b82f6"
+SAGE = "#6f8140"
+OCHRE = "#c2891c"
+BRICK = "#c5402c"
+PAPER = "#faf8f3"
+CLAY_50 = "#faf7f2"
+CLAY_100 = "#f3eee6"
+CLAY_150 = "#ebe4d9"
+CLAY_200 = "#e0d7c8"
+CLAY_500 = "#877560"
+CLAY_600 = "#655647"
+CLAY_800 = "#352d24"
+
+def image_data_uri(path: Path) -> str:
+    """Return a PNG data URI for small local brand assets."""
+    return "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode()
+
+
+PLATFORM_ICON_URI = image_data_uri(PLATFORM_ICON) if PLATFORM_ICON.exists() else ""
+LOGO_MARK = f"<img class='pfdha-logo' src='{PLATFORM_ICON_URI}' alt='oq-pfdha'>" if PLATFORM_ICON_URI else ""
 
 st.markdown(f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Titillium+Web:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:ital,wght@0,400..800;1,400..600&family=JetBrains+Mono:ital,wght@0,400..700;1,400..600&display=swap');
 
-/* ---- Base typography: larger and darker for readability ---- */
-html, body, [data-testid="stAppViewContainer"] * {{
-    font-family: 'Titillium Web', 'Segoe UI', Helvetica, Arial, sans-serif;
+:root {{
+    --font-display: 'Bricolage Grotesque', 'Hanken Grotesk', system-ui, sans-serif;
+    --font-sans: 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --brand: {BRAND};
+    --brand-dark: {BRAND_DARK};
+    --brand-deep: {BRAND_DEEP};
+    --accent: {ACCENT};
+    --accent-dark: {ACCENT_DARK};
+    --paper: {PAPER};
+    --clay-50: {CLAY_50};
+    --clay-100: {CLAY_100};
+    --clay-150: {CLAY_150};
+    --clay-200: {CLAY_200};
+    --clay-500: {CLAY_500};
+    --clay-600: {CLAY_600};
+    --clay-800: {CLAY_800};
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --shadow-sm: 0 2px 6px rgba(61, 45, 32, 0.08);
+    --shadow-md: 0 6px 18px rgba(61, 45, 32, 0.10);
+    --ring: 0 0 0 3px rgba(242, 118, 43, 0.28);
+}}
+
+/* ---- Base typography and page shell ---- */
+html, body, [data-testid="stAppViewContainer"] {{
+    font-family: var(--font-sans);
+}}
+[data-testid="stAppViewContainer"] p,
+[data-testid="stAppViewContainer"] label,
+[data-testid="stAppViewContainer"] input,
+[data-testid="stAppViewContainer"] textarea,
+[data-testid="stAppViewContainer"] button,
+[data-testid="stAppViewContainer"] table {{
+    font-family: var(--font-sans);
+}}
+[data-testid="stAppViewContainer"] {{
+    background:
+        repeating-linear-gradient(0deg, transparent 0 31px, rgba(194, 137, 28, 0.045) 31px 32px),
+        var(--paper);
+}}
+.block-container {{
+    max-width: 1180px;
+    padding-top: 2rem;
+    padding-bottom: 4rem;
 }}
 [data-testid="stAppViewContainer"] .stMarkdown p,
 [data-testid="stAppViewContainer"] .stMarkdown li {{
-    font-size: 1.06rem; line-height: 1.65; color: #1B2A3A;
+    font-size: 1rem; line-height: 1.6; color: var(--clay-800);
 }}
 [data-testid="stCaptionContainer"] p {{
-    font-size: 0.97rem !important; color: #44586C !important;
+    color: var(--clay-600) !important;
+    font-size: 0.88rem !important;
 }}
 [data-testid="stWidgetLabel"] p {{
-    font-size: 1.02rem !important; font-weight: 600; color: {NAVY};
+    color: var(--brand);
+    font-size: 0.96rem !important;
+    font-weight: 650;
 }}
 [data-testid="stRadio"] label p,
-[data-testid="stCheckbox"] label p {{ font-size: 1.0rem !important; }}
+[data-testid="stCheckbox"] label p {{
+    font-size: 0.96rem !important;
+}}
 
-/* ---- Headings: navy with a thin azure accent rule ---- */
-h1 {{ color: {NAVY}; font-weight: 700; letter-spacing: -0.01em; }}
+/* ---- Headings and product masthead ---- */
+h1, h2, h3 {{
+    color: var(--brand);
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+}}
+h1 {{
+    font-size: 2.35rem !important;
+    font-weight: 760;
+}}
 h2 {{
-    color: {NAVY}; font-weight: 700; font-size: 1.7rem !important;
-    border-bottom: 3px solid {ACCENT}; padding-bottom: 0.3rem;
+    border-bottom: 2px solid var(--accent);
+    font-size: 1.75rem !important;
+    font-weight: 700;
     margin-top: 0.4rem;
+    padding-bottom: 0.35rem;
 }}
 h3 {{
-    color: {ACCENT}; font-weight: 600; font-size: 1.3rem !important;
+    color: var(--brand);
+    font-size: 1.28rem !important;
+    font-weight: 650;
     margin-top: 1.2rem;
 }}
-
-/* ---- Masthead band (institutional site header) ---- */
 .pfdha-band {{
-    border-bottom: 4px solid {ACCENT};
-    padding: 0 0 0.55rem 0; margin-bottom: 1.1rem;
+    align-items: center;
+    background:
+        linear-gradient(90deg, rgba(242, 118, 43, 0.10), transparent 40%),
+        #fff;
+    border: 1px solid var(--clay-150);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.35rem;
+    overflow: hidden;
+    padding: 1rem 1.15rem;
+    position: relative;
+}}
+.pfdha-band::after {{
+    background: var(--accent);
+    bottom: 0;
+    content: "";
+    height: 4px;
+    left: 0;
+    position: absolute;
+    right: 0;
 }}
 .pfdha-band .t {{
-    color: {NAVY}; font-size: 2.0rem; font-weight: 700; line-height: 1.15;
+    color: var(--brand);
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 760;
+    line-height: 1.05;
+}}
+.pfdha-logo {{
+    border-radius: 13px;
+    box-shadow: 0 10px 24px rgba(14, 23, 39, 0.18);
+    flex: 0 0 auto;
+    height: 44px;
+    object-fit: cover;
+    width: 44px;
 }}
 .pfdha-band .s {{
-    color: #44586C; font-size: 1.12rem; font-weight: 400;
+    color: var(--clay-600);
+    font-size: 1rem;
+    margin-top: 0.15rem;
+}}
+.pfdha-badge {{
+    background: #fcf3da;
+    border: 1px solid #f2d177;
+    border-radius: 999px;
+    color: #785212;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 650;
+    margin-left: auto;
+    padding: 0.38rem 0.62rem;
+    text-transform: uppercase;
 }}
 
-/* ---- Sidebar: light institutional surface ---- */
+/* ---- Sidebar: dark brand rail from the handoff ---- */
 section[data-testid="stSidebar"] {{
-    background: {SURFACE}; border-right: 1px solid {HAIRLINE};
+    background: var(--brand);
+    border-right: 1px solid rgba(255,255,255,0.08);
 }}
-section[data-testid="stSidebar"] h1 {{
-    color: {NAVY}; font-size: 1.45rem !important;
+section[data-testid="stSidebar"] > div:first-child {{
+    padding-top: 1.25rem;
 }}
 section[data-testid="stSidebar"] [data-testid="stRadio"] label p {{
-    font-size: 1.08rem !important; font-weight: 600; color: {NAVY};
+    color: #e0d7c8;
+    font-weight: 650;
+}}
+section[data-testid="stSidebar"] [data-testid="stRadio"] label:hover p {{
+    color: #fff;
+}}
+section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {{
+    color: #cabca6;
+    font-family: var(--font-mono);
+    font-size: 0.74rem !important;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}}
+.pfdha-side-brand {{
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+    margin: 0 0 1.25rem;
+}}
+.pfdha-side-brand .pfdha-logo {{
+    height: 42px;
+    width: 42px;
+}}
+.pfdha-side-brand .t {{
+    color: #fff;
+    font-family: var(--font-display);
+    font-size: 1.38rem;
+    font-weight: 760;
+    line-height: 1;
+}}
+.pfdha-side-brand .s {{
+    color: #cabca6;
+    font-family: var(--font-mono);
+    font-size: 0.57rem;
+    letter-spacing: 0.12em;
+    margin-top: 0.25rem;
+    text-transform: uppercase;
+}}
+.pfdha-side-note {{
+    background: rgba(255,255,255,0.055);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: var(--radius-md);
+    color: #e0d7c8;
+    font-size: 0.84rem;
+    line-height: 1.5;
+    margin-top: 1rem;
+    padding: 0.85rem 0.9rem;
+}}
+.pfdha-side-note b {{
+    color: #fff;
 }}
 
-/* ---- Buttons: azure, clear affordance ---- */
+/* ---- Controls ---- */
 .stButton button, .stDownloadButton button, .stFormSubmitButton button {{
-    border: 1.5px solid {ACCENT}; color: {ACCENT};
-    font-weight: 600; font-size: 1.02rem; border-radius: 6px;
+    border: 1.5px solid var(--accent);
+    border-radius: 999px;
+    color: var(--accent-dark);
+    font-weight: 650;
+    transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
 }}
 .stButton button:hover, .stDownloadButton button:hover,
 .stFormSubmitButton button:hover {{
-    background: {ACCENT}; color: #fff; border-color: {ACCENT};
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: var(--shadow-sm);
+    color: #fff;
+    transform: translateY(-1px);
 }}
 .stButton button[kind="primary"] {{
-    background: {ACCENT}; color: #fff; border-color: {ACCENT};
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
 }}
-.stButton button[kind="primary"]:hover {{ background: {NAVY}; }}
+.stButton button[kind="primary"]:hover {{
+    background: var(--accent);
+    border-color: var(--accent);
+}}
+button:focus-visible, input:focus-visible, textarea:focus-visible {{
+    box-shadow: var(--ring) !important;
+}}
 
-/* ---- Expanders & tabs: card-like surfaces ---- */
+/* ---- Cards, tables, code and feedback ---- */
 [data-testid="stExpander"] {{
-    border: 1px solid {HAIRLINE}; border-radius: 8px; background: #fff;
+    background: #fff;
+    border: 1px solid var(--clay-150);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
 }}
 [data-testid="stExpander"] summary p {{
-    font-size: 1.0rem !important; font-weight: 600; color: {NAVY};
+    color: var(--brand);
+    font-weight: 650;
+}}
+[data-testid="stExpander"] summary [data-testid="stIconMaterial"],
+[data-testid="stExpander"] summary span:has(> span[data-testid="stIconMaterial"]) {{
+    display: none !important;
+}}
+[data-testid="stTable"] td, [data-testid="stTable"] th,
+[data-testid="stDataFrame"] {{
+    font-size: 0.94rem;
+}}
+code, pre, [data-testid="stCodeBlock"] * {{
+    font-family: var(--font-mono) !important;
+}}
+code {{
+    background: var(--clay-100);
+    border: 1px solid var(--clay-150);
+    border-radius: 6px;
+    color: var(--brand);
+    font-size: 0.88em;
+    padding: 0.1rem 0.25rem;
+}}
+[data-testid="stMetric"] {{
+    background: #fff;
+    border: 1px solid var(--clay-150);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 0.85rem 0.9rem;
+}}
+[data-testid="stMetricLabel"] p {{
+    color: var(--clay-600);
+    font-family: var(--font-mono);
+    font-size: 0.75rem !important;
+}}
+[data-testid="stMetricValue"] {{
+    color: var(--brand);
+    font-family: var(--font-display);
+}}
+[data-testid="stAlert"] {{
+    border-radius: var(--radius-md);
+    border-width: 1px;
+}}
+textarea, input, [data-baseweb="select"] > div {{
+    border-radius: 12px !important;
+}}
+hr {{
+    border-color: var(--clay-150);
+}}
+a {{
+    color: {BLUE};
+}}
+a:hover {{
+    color: var(--accent-dark);
 }}
 
-/* ---- Tables, code, metrics ---- */
-[data-testid="stTable"] td, [data-testid="stTable"] th,
-[data-testid="stDataFrame"] {{ font-size: 1.0rem; }}
-code {{ font-size: 0.95em; }}
-[data-testid="stMetricValue"] {{ color: {NAVY}; }}
-
-/* Hide Streamlit chrome for a cleaner institutional look */
+/* Hide Streamlit chrome for a cleaner product surface */
 #MainMenu {{ visibility: hidden; }}
 header[data-testid="stHeader"] {{ background: transparent; }}
 </style>
@@ -185,9 +432,11 @@ header[data-testid="stHeader"] {{ background: transparent; }}
 
 st.markdown(
     "<div class='pfdha-band'>"
-    "<div class='t'>oq-pfdha</div>"
-    "<div class='s'>Probabilistic Fault Displacement Hazard Analysis — "
-    "web interface</div>"
+    f"{LOGO_MARK}"
+    "<div><div class='t'>oq-pfdha</div>"
+    "<div class='s'>Probabilistic Fault Displacement Hazard Analysis - "
+    "web interface</div></div>"
+    "<div class='pfdha-badge'>Prototype interface</div>"
     "</div>",
     unsafe_allow_html=True,
 )
@@ -238,7 +487,7 @@ COUPLED_FD_TO_SR = {fd: sr for sr, fd in COUPLED_DISTRIBUTED}
 #   kind     : "warn"  -> advisory only, run still allowed
 #              "block" -> the engine cannot run this pairing, run prevented
 # NB: for Youngs2003 the `style` parameter is the WC1994 coefficient-dataset
-# selector ("all"/"normal"), NOT the source mechanism — the model is a
+# selector ("all"/"normal"), NOT the source mechanism - the model is a
 # normal-faulting model, so reverse/strike-slip sources get an advisory.
 STYLE_CONSTRAINTS = [
     {"prefix": "Youngs2003", "intended": {"normal"}, "kind": "warn",
@@ -247,7 +496,7 @@ STYLE_CONSTRAINTS = [
          "parameter only selects the coefficient dataset (`all` = "
          "Wells & Coppersmith 1994 all-styles, `normal` = normal-only) and "
          "does not extend the model to other mechanisms. This pairing is "
-         "outside the model's calibrated range — set `style = all` or "
+         "outside the model's calibrated range - set `style = all` or "
          "`style = normal` explicitly to run, and interpret the result with "
          "caution.")},
     {"prefix": "Chiou2025", "intended": {"strike-slip"}, "kind": "block",
@@ -265,8 +514,10 @@ def style_fig(fig, height: int = 560) -> None:
     power-of-ten tick labels)."""
     fig.update_layout(
         template="simple_white", height=height,
-        font=dict(family="Titillium Web, Helvetica, Arial, sans-serif",
-                  size=17, color="#1a1a1a"),
+        paper_bgcolor="#ffffff",
+        plot_bgcolor="#ffffff",
+        font=dict(family="Hanken Grotesk, Helvetica, Arial, sans-serif",
+                  size=17, color=CLAY_800),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0,
                     font=dict(size=16)),
         margin=dict(t=40, r=25, b=15, l=15),
@@ -274,11 +525,11 @@ def style_fig(fig, height: int = 560) -> None:
     )
     axis_kw = dict(
         title_font=dict(size=20), tickfont=dict(size=16),
-        showline=True, linewidth=1.6, linecolor="#1a1a1a", mirror=True,
+        showline=True, linewidth=1.6, linecolor=BRAND, mirror=True,
         ticks="outside", tickwidth=1.4, ticklen=7,
-        showgrid=True, gridcolor="rgba(0,0,0,0.13)",
+        showgrid=True, gridcolor="rgba(194,137,28,0.16)",
         exponentformat="power",
-        minor=dict(showgrid=True, gridcolor="rgba(0,0,0,0.05)",
+        minor=dict(showgrid=True, gridcolor="rgba(194,137,28,0.07)",
                    ticks="outside", ticklen=4),
     )
     fig.update_xaxes(**axis_kw)
@@ -293,7 +544,7 @@ def build_fdha_lt_xml(selections: dict) -> str:
     1-3 serialize as plain branch sets. At level 4, engine-coupled FD models
     (COUPLED_DISTRIBUTED) are chained to their SR partner with
     applyToBranches, and the remaining FD models are chained to the
-    remaining SR branches — applyToBranches matches by set intersection
+    remaining SR branches - applyToBranches matches by set intersection
     (enumerator.py:81-84), so one branch set serves many parents. With no
     coupled model selected the tree is fully flat.
     """
@@ -358,7 +609,7 @@ def build_fdha_lt_xml(selections: dict) -> str:
 def engine_validate(xml_text: str):
     """Validate the logic tree with the engine's own parser/validator.
 
-    Returns (errors, warnings, parse_error, spec)."""
+    Returns (errors, warnings, parse_error, environment_error, spec)."""
     import tempfile
     try:
         from openquake.fdha.logic_tree import nrml_reader, validators
@@ -366,13 +617,18 @@ def engine_validate(xml_text: str):
         p.write_text(xml_text)
         spec = nrml_reader.parse(p)
         report = validators.validate_spec(spec)
-        return list(report.errors), list(report.warnings), None, spec
+        return list(report.errors), list(report.warnings), None, None, spec
     except Exception as exc:  # parse failure
-        return [], [], str(exc), None
+        message = str(exc)
+        if "Numba needs NumPy" in message or (
+            "NumPy" in message and "Numba" in message
+        ):
+            return [], [], None, message, None
+        return [], [], message, None, None
 
 
 def build_sm_lt(rows: list[tuple[str, float]]) -> str:
-    """Source-model logic tree over (filename, weight) branches — same NRML
+    """Source-model logic tree over (filename, weight) branches - same NRML
     structure as the shipped trees (e.g. config_norcia_case3_iaea_
     source_model_logic_tree.xml)."""
     branches = "\n".join(
@@ -406,6 +662,109 @@ def parse_sm_lt(xml_text: str) -> list[tuple[str, float]]:
         if um is not None and uw is not None:
             out.append((um.text.strip(), float(uw.text)))
     return out
+
+
+def parse_fault_traces(xml_path: Path) -> list[dict]:
+    """Extract simple fault trace paths from an NRML source-model XML."""
+    root = ET.parse(xml_path).getroot()
+    traces = []
+    for elem in root.iter():
+        tag = elem.tag.split("}")[-1]
+        if not tag.endswith("FaultSource"):
+            continue
+        pos_text = None
+        for child in elem.iter():
+            if child.tag.split("}")[-1] == "posList" and child.text:
+                pos_text = child.text
+                break
+        if not pos_text:
+            continue
+        values = [float(value) for value in pos_text.split()]
+        path = [
+            [values[index], values[index + 1]]
+            for index in range(0, len(values) - 1, 2)
+        ]
+        if len(path) >= 2:
+            traces.append({
+                "source_id": elem.get("id") or "source",
+                "name": elem.get("name") or elem.get("id") or "source",
+                "path": path,
+            })
+    return traces
+
+
+def source_model_files_for_run(jobdir: Path) -> list[Path]:
+    """Resolve source-model XML files copied into a run directory."""
+    sm_lt = jobdir / "source_model_logic_tree.xml"
+    if sm_lt.exists():
+        try:
+            names = [name for name, _ in parse_sm_lt(sm_lt.read_text())]
+            files = [jobdir / name for name in names if (jobdir / name).exists()]
+            if files:
+                return files
+        except Exception:
+            pass
+    return [
+        path for path in sorted(jobdir.glob("*.xml"))
+        if path.name not in {"fdha_logic_tree.xml", "source_model_logic_tree.xml"}
+    ]
+
+
+def fault_traces_for_run(jobdir: Path) -> list[dict]:
+    """Return all fault traces from source models associated with a run."""
+    traces = []
+    for xml_path in source_model_files_for_run(jobdir):
+        try:
+            traces.extend(parse_fault_traces(xml_path))
+        except Exception:
+            continue
+    return traces
+
+
+def map_view_state(points: list[dict], traces: list[dict]):
+    """Create a stable PyDeck viewport from points and fault trace vertices."""
+    import pydeck as pdk
+
+    coords = [[point["lon"], point["lat"]] for point in points]
+    for trace in traces:
+        coords.extend(trace["path"])
+    if not coords:
+        return pdk.ViewState(latitude=0.0, longitude=0.0, zoom=1.0)
+
+    lons = [coord[0] for coord in coords]
+    lats = [coord[1] for coord in coords]
+    span = max(max(lons) - min(lons), max(lats) - min(lats), 0.001)
+    if span < 0.05:
+        zoom = 11.0
+    elif span < 0.2:
+        zoom = 9.5
+    elif span < 1.0:
+        zoom = 8.0
+    else:
+        zoom = 5.5
+    return pdk.ViewState(
+        latitude=sum(lats) / len(lats),
+        longitude=sum(lons) / len(lons),
+        zoom=zoom,
+        pitch=0,
+        bearing=0,
+    )
+
+
+def selected_pydeck_object(event, layer_id: str) -> dict | None:
+    """Read the first selected object from a Streamlit PyDeck event."""
+    if not event:
+        return None
+    selection = getattr(event, "selection", None)
+    if selection is None and isinstance(event, dict):
+        selection = event.get("selection")
+    if not selection:
+        return None
+    objects = getattr(selection, "objects", None)
+    if objects is None and isinstance(selection, dict):
+        objects = selection.get("objects", {})
+    selected = (objects or {}).get(layer_id) or []
+    return selected[0] if selected else None
 
 
 def build_job_ini(cfg: dict) -> str:
@@ -456,7 +815,7 @@ def build_job_ini(cfg: dict) -> str:
 
 
 # --------------------------------------------------------------------------
-# Page 1 — Configure
+# Page 1 - Configure
 # --------------------------------------------------------------------------
 def page_configure() -> None:
     st.header("Configure")
@@ -465,7 +824,7 @@ def page_configure() -> None:
     st.subheader("Seismic source model & source-model logic tree")
     sm_mode = st.radio(
         "Source-model input",
-        ["Built-in example", "Upload source model(s) — build the logic tree",
+        ["Built-in example", "Upload source model(s) - build the logic tree",
          "Upload a source-model logic-tree XML"],
         horizontal=True,
         help="The job always runs through a source-model logic tree "
@@ -499,21 +858,21 @@ def page_configure() -> None:
                 dest.write_bytes(up.getvalue())
                 sm_files.append(dest)
                 with cols[k % len(cols)]:
-                    w = st.number_input(f"weight — {up.name}", min_value=0.0,
+                    w = st.number_input(f"weight - {up.name}", min_value=0.0,
                                         max_value=1.0, value=eq[k], step=0.05,
                                         format="%.6f", key=f"smw_{up.name}")
                 rows.append((up.name, w))
             total = sum(w for _, w in rows)
             if abs(total - 1.0) <= WEIGHT_TOL:
-                st.success(f"✓ source-model weights sum to {total:.6f}")
+                st.success(f"OK: source-model weights sum to {total:.6f}")
                 sm_ok = True
             else:
-                st.error(f"✗ source-model weights sum to {total:.6f} — "
-                         "must be 1.0 ± 1e-6")
+                st.error(f"ERROR: source-model weights sum to {total:.6f} - "
+                         "must be 1.0 +/- 1e-6")
             sm_lt_text = build_sm_lt(rows)
             with st.expander("Preview: source_model_logic_tree.xml"):
                 st.code(sm_lt_text, language="xml")
-                st.download_button("⬇ source_model_logic_tree.xml",
+                st.download_button("Download source_model_logic_tree.xml",
                                    sm_lt_text,
                                    file_name="source_model_logic_tree.xml")
         else:
@@ -536,7 +895,7 @@ def page_configure() -> None:
                           for f, w in branches])
                 total = sum(w for _, w in branches)
                 if abs(total - 1.0) > WEIGHT_TOL:
-                    st.warning(f"Branch weights sum to {total:.6f} — the "
+                    st.warning(f"Branch weights sum to {total:.6f} - the "
                                "engine requires 1.0.")
                 updir.mkdir(exist_ok=True)
                 by_name = {}
@@ -560,7 +919,7 @@ def page_configure() -> None:
         try:
             ss = list_sources(f)
             if ss:
-                with st.expander(f"`{f.name}` — {len(ss)} fault source(s)",
+                with st.expander(f"`{f.name}` - {len(ss)} fault source(s)",
                                  expanded=len(sm_files) == 1):
                     st.table(ss)
                 sources.extend(ss)
@@ -594,7 +953,7 @@ def page_configure() -> None:
                                        value=float(geo_defaults["max_dist"]))
             sites = ""
         else:
-            sites = st.text_area("sites (lon lat, lon lat, …)",
+            sites = st.text_area("sites (lon lat, lon lat, ...)",
                                  geo_defaults["sites"], height=68)
             region, grid, max_dist = "", 0.0, 0.0
     with c2:
@@ -628,7 +987,7 @@ def page_configure() -> None:
                            help='Format: {"FD": [levels in metres]}')
         try:
             levels = json.loads(dml)["FD"]
-            st.caption(f"✓ {len(levels)} displacement levels")
+            st.caption(f"OK: {len(levels)} displacement levels")
             dml_ok = True
         except Exception as exc:
             st.error(f"Invalid JSON: {exc}")
@@ -645,7 +1004,7 @@ def page_configure() -> None:
     weights_ok = False
     if fdha_mode == "Build in the UI":
         st.caption(
-            "Edit model parameters as `key = value` lines — the engine's native "
+            "Edit model parameters as `key = value` lines - the engine's native "
             "<uncertaintyModel> syntax. Weights within each branch set must sum "
             "to 1.0 (FDLT-001, logic_tree/validators.py:133-143). The default "
             "selection is a light single-branch calculation suitable for a "
@@ -672,13 +1031,13 @@ def page_configure() -> None:
                            f"{r['allowed'][:60]} |\n")
                 st.markdown(md)
                 if any(r["name"] == "style" for r in dp):
-                    st.caption("ℹ `style` is assigned automatically from "
+                    st.caption("Info: `style` is assigned automatically from "
                                "the source rake when omitted "
                                "(calc/contexts.py, classify_style).")
                 st.caption("Full reference: docs/UserManual_Enhanced/models/"
                            f"{meta['doc_page']}")
             else:
-                st.caption("No documented parameters — the model runs with "
+                st.caption("No documented parameters - the model runs with "
                            "internal defaults.")
 
         weights_ok = True
@@ -705,21 +1064,21 @@ def page_configure() -> None:
                         wcol, pcol, dcol = st.columns([1, 2, 2])
                         with wcol:
                             if name in COUPLED_FD_TO_SR and utype == "fdhaSecondaryFDModel":
-                                st.markdown(f"**weight — {name}**")
+                                st.markdown(f"**weight - {name}**")
                                 st.caption(
-                                    f"chained to `{COUPLED_FD_TO_SR[name]}` — "
+                                    f"chained to `{COUPLED_FD_TO_SR[name]}` - "
                                     "weight 1.0 within its chain (the pair "
                                     "shares the SR branch weight)")
                                 w = 1.0
                             else:
-                                w = st.number_input(f"weight — {name}",
+                                w = st.number_input(f"weight - {name}",
                                                     min_value=0.0, max_value=1.0,
                                                     value=eq[free.index(name)],
                                                     step=0.05, format="%.6f",
                                                     key=f"w_{utype}_{name}")
                         with pcol:
                             params = param_editor(meta, f"p_{utype}_{name}",
-                                                  f"parameters — {name}")
+                                                  f"parameters - {name}")
                         with dcol:
                             doc_table(meta)
                         rows.append({"class_name": name, "weight": w,
@@ -728,25 +1087,25 @@ def page_configure() -> None:
                     if checked:
                         total = sum(r["weight"] for r in checked)
                         if abs(total - 1.0) <= WEIGHT_TOL:
-                            st.success(f"✓ weights sum to {total:.6f}")
+                            st.success(f"OK: weights sum to {total:.6f}")
                         else:
-                            st.error(f"✗ weights sum to {total:.6f} — must be "
-                                     "1.0 ± 1e-6 (FDLT-001)")
+                            st.error(f"ERROR: weights sum to {total:.6f} - must be "
+                                     "1.0 +/- 1e-6 (FDLT-001)")
                             weights_ok = False
                 else:
-                    st.error("✗ select at least one model")
+                    st.error("ERROR: select at least one model")
                     weights_ok = False
                 selections[utype] = rows
 
         # Cross-slot constraints for engine-coupled distributed families
-        # (Visini 2025 SR ⇔ FD: calc/hazard.py:241, calc/visini.py:247,320-329).
+        # (Visini 2025 SR <-> FD: calc/hazard.py:241, calc/visini.py:247,320-329).
         ssr_names = {r["class_name"] for r in selections["fdhaSecondarySRModel"]}
         sfd_names = {r["class_name"] for r in selections["fdhaSecondaryFDModel"]}
         coupling_ok = True
         for sr, fd in COUPLED_DISTRIBUTED:
             if (sr in ssr_names) != (fd in sfd_names):
                 missing, present = (fd, sr) if sr in ssr_names else (sr, fd)
-                st.error(f"`{present}` requires `{missing}` — the engine "
+                st.error(f"`{present}` requires `{missing}` - the engine "
                          "computes this model family on a dedicated calculator "
                          "that needs both (calc/hazard.py:241). Add the partner "
                          "model or remove this one.")
@@ -769,7 +1128,7 @@ def page_configure() -> None:
                                                    errors="replace")
             weights_ok = True
         else:
-            st.warning("Upload an FDHA logic-tree XML — it will be "
+            st.warning("Upload an FDHA logic-tree XML - it will be "
                        "validated by the engine below.")
 
 
@@ -781,23 +1140,33 @@ def page_configure() -> None:
 
     # Visini et al. (2025) job-level 'case' parameter ([calculation].case,
     # cf. job_norcia_case3_iaea_curve.ini:18 and the model docs, which mark
-    # it Required). case3 = Combination A only — the configuration used by
+    # it Required). case3 = Combination A only - the configuration used by
     # the shipped Norcia benchmark.
     visini_case = None
     if lt_xml and "Visini" in lt_xml:
         visini_case = st.selectbox(
             "Visini et al. (2025) combination case ([calculation].case)",
             ["case3", "case2", "case1"],
-            help="Case 3 → combination A only; Case 2 → A/B; Case 1 → "
+            help="Case 3 -> combination A only; Case 2 -> A/B; Case 1 -> "
                  "A/B/C. Note: the combination-C path (case1) currently "
                  "raises an error in the engine (visini.py:305 calls "
                  "get_prob without the required style/pixel_size "
-                 "arguments) — prefer case2/case3 until fixed upstream.")
+                 "arguments) - prefer case2/case3 until fixed upstream.")
     engine_ok = False
     spec = None
     if lt_xml:
-        errors, warnings, parse_err, spec = engine_validate(lt_xml)
-        if parse_err:
+        errors, warnings, parse_err, env_err, spec = engine_validate(lt_xml)
+        if env_err:
+            st.error(
+                "The oq-pfdha engine could not be imported because the Python "
+                f"environment has incompatible scientific packages: {env_err}"
+            )
+            st.code(
+                "python -m pip install -e . --upgrade --force-reinstall\n"
+                "python -m pip install -r webgui_demo/requirements.txt",
+                language="bash",
+            )
+        elif parse_err:
             st.error(f"Logic tree does not parse: {parse_err}")
         elif errors:
             for e in errors:
@@ -809,7 +1178,7 @@ def page_configure() -> None:
                 st.warning(msg + " with warnings:\n" +
                            "\n".join(f"- {w.code}: {w.message}" for w in warnings))
             else:
-                st.success("✓ " + msg)
+                st.success("OK: " + msg)
 
     # Enumerate end-branches with the engine's own enumerator so the
     # preview cannot drift from what actually runs.
@@ -822,7 +1191,7 @@ def page_configure() -> None:
         ebs = enumerate_end_branches(spec, infos)
         n_branches = len(ebs) // max(len(infos), 1)
         st.caption(f"Full enumeration: **{n_branches} end-branch(es) per "
-                   "source**. Runtime grows with branches × sites; keep it "
+                   "source**. Runtime grows with branches x sites; keep it "
                    "small for a live demonstration.")
 
         # Applicability check over the enumerated (model, source-style)
@@ -855,13 +1224,13 @@ def page_configure() -> None:
             st.dataframe(rows, width="stretch")
             for sid in sorted({r["source"] for r in rows}):
                 tot = sum(r["weight"] for r in rows if r["source"] == sid)
-                mark = "✓" if abs(tot - 1.0) <= 1e-6 else "✗"
+                mark = "OK" if abs(tot - 1.0) <= 1e-6 else "ERROR"
                 st.caption(f"{mark} source `{sid}`: weights sum to {tot:.6f}")
 
     with st.expander("Preview: fdha_logic_tree.xml"):
         if lt_xml:
             st.code(lt_xml, language="xml")
-            st.download_button("⬇ fdha_logic_tree.xml", lt_xml,
+            st.download_button("Download fdha_logic_tree.xml", lt_xml,
                                file_name="fdha_logic_tree.xml")
         else:
             st.warning("Fix the errors above to generate the XML.")
@@ -891,13 +1260,13 @@ def page_configure() -> None:
 
 
 # --------------------------------------------------------------------------
-# Page 2 — Run (real calculation)
+# Page 2 - Run (real calculation)
 # --------------------------------------------------------------------------
 def page_run() -> None:
     st.header("Run")
     cfg = st.session_state.get("config")
     if cfg is None:
-        st.warning("No configuration yet — visit **1 · Configure** first.")
+        st.warning("No configuration yet - visit **1. Configure** first.")
         return
 
     st.subheader("Job summary")
@@ -913,16 +1282,16 @@ def page_run() -> None:
         st.code(build_job_ini(cfg), language="ini")
 
     if not cfg["valid"]:
-        st.error("Configuration is incomplete or invalid — fix the issues "
-                 "flagged on **1 · Configure** before running.")
+        st.error("Configuration is incomplete or invalid - fix the issues "
+                 "flagged on **1. Configure** before running.")
         return
 
     est = cfg["n_branches"]
     if est > 8:
-        st.warning(f"{est} end-branches — this is a full calculation, not a "
+        st.warning(f"{est} end-branches - this is a full calculation, not a "
                    "quick demo; it may take many minutes.")
 
-    if st.button("▶ Run calculation", type="primary"):
+    if st.button("Run calculation", type="primary"):
         stamp = _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
         jobdir = RUNS / f"run_{stamp}"
         outdir = jobdir / "out"
@@ -940,7 +1309,7 @@ def page_run() -> None:
         logging.getLogger().addHandler(handler)
         t0 = _dt.datetime.now()
         try:
-            with st.status("Running the oq-pfdha engine…", expanded=True) as status:
+            with st.status("Running the oq-pfdha engine...", expanded=True) as status:
                 st.write(f"Job directory: `{jobdir}`")
                 from openquake.fdha.logic_tree.driver import FdhaLogicTree
                 result = FdhaLogicTree.from_ini(ini).run(outdir=outdir)
@@ -951,10 +1320,10 @@ def page_run() -> None:
                 "outdir": str(outdir), "jobdir": str(jobdir),
                 "mode": result.mode, "elapsed_s": dt,
             }
-            st.success(f"Calculation finished ({result.mode}, {dt:.1f} s) — "
-                       "see **3 · Results**.")
+            st.success(f"Calculation finished ({result.mode}, {dt:.1f} s) - "
+                       "see **3. Results**.")
         except Exception:
-            st.error("The engine raised an error — full traceback below.")
+            st.error("The engine raised an error - full traceback below.")
             st.exception(Exception("engine failure"))
             import traceback
             st.code(traceback.format_exc())
@@ -967,17 +1336,17 @@ def page_run() -> None:
 
 
 # --------------------------------------------------------------------------
-# Page 3 — Results (from the last real run)
+# Page 3 - Results (from the last real run)
 # --------------------------------------------------------------------------
 def page_results() -> None:
     st.header("Results")
     run = st.session_state.get("last_run")
     if not run:
-        st.warning("No completed run in this session — execute one on "
-                   "**2 · Run** first.")
+        st.warning("No completed run in this session - execute one on "
+                   "**2. Run** first.")
         return
     outdir = Path(run["outdir"])
-    st.caption(f"Run output: `{outdir}` — mode **{run['mode']}**, "
+    st.caption(f"Run output: `{outdir}` - mode **{run['mode']}**, "
                f"{run['elapsed_s']:.1f} s")
 
     import pandas as pd
@@ -988,10 +1357,97 @@ def page_results() -> None:
             st.error(f"Expected output not found: {agg}")
             return
         df = pd.read_csv(agg, comment="#")
+        jobdir = Path(run["jobdir"])
+        traces = fault_traces_for_run(jobdir)
+        ref_level = 0.1
+        site_rows = []
+        for site_id, site_df in df.groupby("site_id", sort=True):
+            ref_idx = (site_df["D0"] - ref_level).abs().idxmin()
+            ref_row = site_df.loc[ref_idx]
+            site_rows.append({
+                "site_id": int(site_id),
+                "label": f"site {int(site_id)}",
+                "lon": float(site_df["lon"].iloc[0]),
+                "lat": float(site_df["lat"].iloc[0]),
+                "mean_at_ref": float(ref_row["mean"]),
+                "ref_d0": float(ref_row["D0"]),
+                "max_mean": float(site_df["mean"].max()),
+            })
+
+        st.subheader("Geographic hazard context")
+        import pydeck as pdk
+
+        context_layers = []
+        if traces:
+            context_layers.append(pdk.Layer(
+                "PathLayer",
+                id="fault-traces",
+                data=traces,
+                get_path="path",
+                get_color=[242, 118, 43, 230],
+                get_width=6,
+                width_min_pixels=3,
+                rounded=True,
+                pickable=False,
+            ))
+        context_layers.append(pdk.Layer(
+            "ScatterplotLayer",
+            id="hazard-sites",
+            data=site_rows,
+            get_position=["lon", "lat"],
+            get_fill_color=[59, 130, 246, 220],
+            get_line_color=[14, 23, 39, 230],
+            get_line_width=2,
+            get_radius=260,
+            radius_min_pixels=7,
+            radius_max_pixels=18,
+            pickable=True,
+            auto_highlight=True,
+        ))
+        context_layers.append(pdk.Layer(
+            "TextLayer",
+            id="site-labels",
+            data=site_rows,
+            get_position=["lon", "lat"],
+            get_text="label",
+            get_color=[27, 44, 75, 230],
+            get_size=13,
+            get_pixel_offset=[0, -24],
+            pickable=False,
+        ))
+        context_event = st.pydeck_chart(
+            pdk.Deck(
+                layers=context_layers,
+                initial_view_state=map_view_state(site_rows, traces),
+                map_style="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+                tooltip={
+                    "html": (
+                        "<b>{label}</b><br/>"
+                        "lon {lon}<br/>lat {lat}<br/>"
+                        "mean rate at {ref_d0} m: {mean_at_ref}"
+                    ),
+                    "style": {"fontFamily": "Hanken Grotesk"},
+                },
+            ),
+            key="hazard_curve_context_map",
+            height=520,
+            on_select="rerun",
+            selection_mode="single-object",
+        )
+        selected_site = selected_pydeck_object(context_event, "hazard-sites")
+        selected_site_id = (
+            int(selected_site["site_id"]) if selected_site is not None else None
+        )
+
         st.subheader("Hazard curves (weighted mean + fractiles)")
         site_ids = sorted(df["site_id"].unique())
+        default_index = (
+            site_ids.index(selected_site_id)
+            if selected_site_id in site_ids else 0
+        )
         chosen = st.selectbox(
             "Site", site_ids,
+            index=default_index,
             format_func=lambda s: (
                 f"site {s} ({df[df.site_id == s].lon.iloc[0]:.3f}, "
                 f"{df[df.site_id == s].lat.iloc[0]:.3f})"))
@@ -1005,16 +1461,16 @@ def page_results() -> None:
                                      hoverinfo="skip"))
             fig.add_trace(go.Scatter(x=d["D0"], y=d["quantile-0.16"],
                                      fill="tonexty",
-                                     fillcolor="rgba(170,51,119,0.25)",
+                                     fillcolor="rgba(242,118,43,0.20)",
                                      line=dict(width=0),
-                                     name="16–84% fractiles"))
+                                     name="16-84% fractiles"))
         for q, dash, lbl in [("quantile-0.05", "dot", "5 / 95%"),
                              ("quantile-0.95", "dot", None),
                              ("quantile-0.5", "dash", "median")]:
             if q in d:
                 fig.add_trace(go.Scatter(
                     x=d["D0"], y=d[q], name=lbl, showlegend=lbl is not None,
-                    line=dict(color="#888888", dash=dash, width=1.2)))
+                    line=dict(color=CLAY_500, dash=dash, width=1.2)))
         # per-branch spaghetti
         branch_dir = outdir / "hazard_curves"
         branch_files = sorted(branch_dir.glob("branch_*.csv"))
@@ -1024,33 +1480,33 @@ def page_results() -> None:
                 b = pd.read_csv(bf, comment="#")
                 b = b[b["site_id"] == chosen]
                 fig.add_trace(go.Scatter(x=b["D0"], y=b["annual_rate"],
-                                         line=dict(color="#999999", width=0.8),
+                                         line=dict(color="#ab9b80", width=0.8),
                                          showlegend=False, hoverinfo="skip"))
         fig.add_trace(go.Scatter(x=d["D0"], y=d["mean"], name="weighted mean",
-                                 line=dict(color="#AA3377", width=3.5)))
+                                 line=dict(color=ACCENT, width=3.5)))
         style_fig(fig)
         fig.update_xaxes(type="log", title="Displacement (m)")
         fig.update_yaxes(type="log",
-                         title="Annual rate of exceedance (yr⁻¹)")
+                         title="Annual rate of exceedance (yr^-1)")
         st.plotly_chart(fig, width="stretch")
 
         # When the branch-to-branch spread is narrower than the plotted line
-        # width, say so explicitly — otherwise the band looks "missing".
+        # width, say so explicitly - otherwise the band looks "missing".
         if "quantile-0.84" in d and len(branch_files) > 1:
             with pd.option_context("mode.chained_assignment", None):
                 rel = ((d["quantile-0.84"] - d["quantile-0.16"])
                        / d["mean"].where(d["mean"] > 0)).max()
             if pd.notna(rel) and rel < 0.02:
                 st.info(
-                    f"The 16–84% fractile band spans at most "
-                    f"**{rel:.2%} of the mean** at this site — the branch "
+                    f"The 16-84% fractile band spans at most "
+                    f"**{rel:.2%} of the mean** at this site - the branch "
                     "curves nearly coincide, so the band and spaghetti are "
                     "hidden under the mean line. This typically happens "
                     "when all branches share the same principal models and "
                     "differ only in distributed models whose contribution "
                     "is small at this site. Use the relative-spread view "
                     "below to inspect the differences.")
-            if st.checkbox("Show relative spread (curves ÷ weighted mean)",
+            if st.checkbox("Show relative spread (curves / weighted mean)",
                            value=False):
                 rfig = go.Figure()
                 base = d["mean"].where(d["mean"] > 0)
@@ -1059,28 +1515,28 @@ def page_results() -> None:
                     line=dict(width=0), showlegend=False, hoverinfo="skip"))
                 rfig.add_trace(go.Scatter(
                     x=d["D0"], y=d["quantile-0.16"] / base, fill="tonexty",
-                    fillcolor="rgba(170,51,119,0.25)", line=dict(width=0),
-                    name="16–84% fractiles"))
+                    fillcolor="rgba(242,118,43,0.20)", line=dict(width=0),
+                    name="16-84% fractiles"))
                 for q, dash, lbl in [("quantile-0.05", "dot", "5 / 95%"),
                                      ("quantile-0.95", "dot", None),
                                      ("quantile-0.5", "dash", "median")]:
                     rfig.add_trace(go.Scatter(
                         x=d["D0"], y=d[q] / base, name=lbl,
                         showlegend=lbl is not None,
-                        line=dict(color="#888888", dash=dash, width=1.2)))
+                        line=dict(color=CLAY_500, dash=dash, width=1.2)))
                 for bf in branch_files:
                     b = pd.read_csv(bf, comment="#")
                     b = b[b["site_id"] == chosen]
                     rfig.add_trace(go.Scatter(
                         x=b["D0"], y=b["annual_rate"].to_numpy() / base.to_numpy(),
-                        line=dict(color="#999999", width=0.8),
+                        line=dict(color="#ab9b80", width=0.8),
                         showlegend=False, hoverinfo="skip"))
-                rfig.add_hline(y=1.0, line_color="#AA3377", line_width=2.5)
+                rfig.add_hline(y=1.0, line_color=ACCENT, line_width=2.5)
                 style_fig(rfig, height=440)
                 rfig.update_xaxes(type="log", title="Displacement (m)")
-                rfig.update_yaxes(title="Rate ÷ weighted mean (–)")
+                rfig.update_yaxes(title="Rate / weighted mean (-)")
                 st.plotly_chart(rfig, width="stretch")
-        st.download_button("⬇ aggregate_hazard.csv", agg.read_bytes(),
+        st.download_button("Download aggregate_hazard.csv", agg.read_bytes(),
                            file_name="aggregate_hazard.csv", mime="text/csv")
     else:
         st.subheader("Displacement hazard map")
@@ -1103,18 +1559,73 @@ def page_results() -> None:
             return
         lo, hi = np.log10(pos[col].min()), np.log10(pos[col].max())
         t = (np.log10(pos[col]) - lo) / max(hi - lo, 1e-12)
-        pos["color"] = [[int(40 + 215 * x), int(60 * (1 - x)),
-                         int(140 * (1 - x)), 200] for x in t]
-        view = pdk.ViewState(latitude=float(pos.lat.mean()),
-                             longitude=float(pos.lon.mean()), zoom=9.5)
-        st.pydeck_chart(pdk.Deck(
-            layers=[pdk.Layer("ScatterplotLayer", data=pos,
-                              get_position=["lon", "lat"],
-                              get_fill_color="color", get_radius=150,
-                              pickable=True)],
-            initial_view_state=view,
-            tooltip={"text": f"{col}: {{{col}}} m"}, map_style=None))
-        st.download_button(f"⬇ displacement_map_{which}.csv",
+        pos["color"] = [
+            [int(59 + 183 * x), int(130 - 12 * x), int(246 - 203 * x), 205]
+            for x in t
+        ]
+        grid_points = [
+            {
+                "site_id": int(row.site_id),
+                "lon": float(row.lon),
+                "lat": float(row.lat),
+                "displacement": float(getattr(row, col)),
+            }
+            for row in pos.itertuples(index=False)
+        ]
+        traces = fault_traces_for_run(Path(run["jobdir"]))
+        map_layers = []
+        if traces:
+            map_layers.append(pdk.Layer(
+                "PathLayer",
+                id="fault-traces",
+                data=traces,
+                get_path="path",
+                get_color=[242, 118, 43, 230],
+                get_width=6,
+                width_min_pixels=3,
+                rounded=True,
+                pickable=False,
+            ))
+        map_layers.append(pdk.Layer(
+            "ScatterplotLayer",
+            id="hazard-map-sites",
+            data=pos,
+            get_position=["lon", "lat"],
+            get_fill_color="color",
+            get_line_color=[14, 23, 39, 80],
+            get_line_width=1,
+            get_radius=150,
+            radius_min_pixels=3,
+            radius_max_pixels=10,
+            pickable=True,
+            auto_highlight=True,
+        ))
+        map_event = st.pydeck_chart(
+            pdk.Deck(
+                layers=map_layers,
+                initial_view_state=map_view_state(grid_points, traces),
+                map_style="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+                tooltip={
+                    "html": (
+                        "<b>grid site {site_id}</b><br/>"
+                        "lon {lon}<br/>lat {lat}<br/>"
+                        f"{col}: {{{col}}} m"
+                    ),
+                    "style": {"fontFamily": "Hanken Grotesk"},
+                },
+            ),
+            key=f"hazard_map_{which}",
+            height=560,
+            on_select="rerun",
+            selection_mode="single-object",
+        )
+        selected_cell = selected_pydeck_object(map_event, "hazard-map-sites")
+        if selected_cell:
+            st.metric(
+                f"Selected grid site {int(selected_cell['site_id'])}",
+                f"{float(selected_cell[col]):.6g} m",
+            )
+        st.download_button(f"Download displacement_map_{which}.csv",
                            (agg_dir / f"displacement_map_{which}.csv").read_bytes(),
                            file_name=f"displacement_map_{which}.csv",
                            mime="text/csv")
@@ -1122,7 +1633,7 @@ def page_results() -> None:
     # ---- Diagnostics & full download -----------------------------------------
     st.subheader("Diagnostics")
     for rep in sorted(outdir.glob("source_model_branches/*/validator_report.txt")):
-        with st.expander(f"Validator report — {rep.parent.name}"):
+        with st.expander(f"Validator report - {rep.parent.name}"):
             st.code(rep.read_text())
     manifest = outdir / "manifest.json"
     if manifest.exists():
@@ -1134,7 +1645,7 @@ def page_results() -> None:
         for f in outdir.rglob("*"):
             if f.is_file():
                 zf.write(f, f.relative_to(outdir.parent))
-    st.download_button("⬇ Download complete output directory (ZIP)",
+    st.download_button("Download complete output directory (ZIP)",
                        buf.getvalue(), file_name=f"{outdir.parent.name}.zip",
                        mime="application/zip")
 
@@ -1142,14 +1653,15 @@ def page_results() -> None:
 # --------------------------------------------------------------------------
 # Navigation + footer
 # --------------------------------------------------------------------------
-st.sidebar.title("oq-pfdha GUI")
-page = st.sidebar.radio("Navigation", ["1 · Configure", "2 · Run", "3 · Results"])
-st.sidebar.info(
-    "This interface assembles a real oq-pfdha job and runs the actual "
-    "engine. The default configuration is a **light single-branch "
-    "calculation** that completes in under a minute — ideal for live "
-    "demonstrations."
+st.sidebar.markdown(
+    "<div class='pfdha-side-brand'>"
+    f"{LOGO_MARK}"
+    "<div><div class='t'>oq-pfdha</div>"
+    "<div class='s'>Fault displacement hazard</div></div>"
+    "</div>",
+    unsafe_allow_html=True,
 )
+page = st.sidebar.radio("Workflow", ["1. Configure", "2. Run", "3. Results"])
 
 if page.startswith("1"):
     page_configure()
@@ -1160,17 +1672,17 @@ else:
 
 st.divider()
 st.markdown(
-    "<div style='text-align:center; color:#44586C; font-size:0.97em; "
+    "<div style='text-align:center; color:#655647; font-size:0.92em; "
     "line-height:1.8'>"
-    "<b style='color:#17324D'>oq-pfdha</b> — Probabilistic Fault "
-    "Displacement Hazard Analysis · GNU AGPL v3.0-or-later<br>"
+    "<b style='color:#1b2c4b'>oq-pfdha</b> - Probabilistic Fault "
+    "Displacement Hazard Analysis - GNU AGPL v3.0-or-later<br>"
     "Cite: Chen, Y.-S. (2025). <i>openquake.fdha: Python tools for "
     "probabilistic fault displacement hazard analysis</i> (v1.0.0) "
     "[Software]. OGS. "
     "<a href='https://github.com/vup1120/oq-pfdha' "
-    "style='color:#005B96'>github.com/vup1120/oq-pfdha</a>"
+    "style='color:#3b82f6'>github.com/vup1120/oq-pfdha</a>"
     " (CITATION.cff)<br>"
-    "<b>Prototype interface</b> — review configurations and verify results "
+    "<b>Prototype interface</b> - review configurations and verify results "
     "independently before use in production hazard assessment."
     "</div>",
     unsafe_allow_html=True,
