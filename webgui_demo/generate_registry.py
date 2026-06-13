@@ -94,6 +94,7 @@ PREFILL = {
     # the source is reverse/strike-slip (see STYLE_CONSTRAINTS in app.py).
     "Youngs2003PrimaryFD": "norm_disp_type = AD",       # [N]
     "Takao2013PrimaryFD": "norm_disp_type = AD",        # [T]
+    "MossRoss2011PrimaryFD": "norm_disp_type = AD",     # required (no default)
     "Moss2024PrimaryFD": "version = AD",                # [T]
     "Youngs2003SecondarySR": "version = 3",             # [N]
     "Youngs2003SecondaryFD": "percentile = 85",         # [N]
@@ -117,6 +118,17 @@ CLASS_PARAM_OVERRIDES = {
         "description": ('Model equation: "1" original formulation, "2" '
                         'average-site formulation, "3" 50/50 weighted '
                         'average of both (default).'),
+    }],
+    # MossRoss2011PrimaryFD shares Takao2013's signature
+    # get_prob(d, X_L_ratio, mag, norm_disp_type) but has no doc page, so the
+    # required norm_disp_type knob was undocumented (moss_ross2011.py:58).
+    "MossRoss2011PrimaryFD": [{
+        "name": "norm_disp_type", "type": "string", "units": "–",
+        "default": "–", "allowed": '`"AD"`, `"MD"`', "required": True,
+        "description": ('Normalization displacement type. `"AD"` uses average '
+                        'displacement normalization (Gamma distribution), '
+                        '`"MD"` uses maximum displacement normalization (Beta '
+                        'distribution).'),
     }],
 }
 

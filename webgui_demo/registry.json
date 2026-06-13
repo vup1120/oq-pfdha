@@ -288,8 +288,18 @@
           "class_name": "MossRoss2011PrimaryFD",
           "module": "openquake.fdha.primary_surf_displ.moss_ross2011",
           "doc_page": null,
-          "doc_params": [],
-          "prefill": "",
+          "doc_params": [
+            {
+              "name": "norm_disp_type",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\u2013",
+              "allowed": "`\"AD\"`, `\"MD\"`",
+              "required": true,
+              "description": "Normalization displacement type. `\"AD\"` uses average displacement normalization (Gamma distribution), `\"MD\"` uses maximum displacement normalization (Beta distribution)."
+            }
+          ],
+          "prefill": "norm_disp_type = AD",
           "ctor_defaults": {
             "n_sigma": 3.0
           }
@@ -437,8 +447,8 @@
               "units": "\u2013",
               "default": "`case1`",
               "allowed": "`case1`, `case2`, `case3`",
-              "required": true,
-              "description": "User-mandated combination set: Case 1 \u2192 A/B/C, Case 2 \u2192 A/B, Case 3 \u2192 A only."
+              "required": false,
+              "description": "User-mandated combination set: Case 1 \u2192 A/B/C, Case 2 \u2192 A/B, Case 3 \u2192 A only. Defaults to `case1` when omitted."
             },
             {
               "name": "near_far_threshold_km",
@@ -536,8 +546,8 @@
               "units": "\u2013",
               "default": "`case1`",
               "allowed": "`case1`, `case2`, `case3`",
-              "required": true,
-              "description": "User-mandated combination set: Case 1 \u2192 A/B/C, Case 2 \u2192 A/B, Case 3 \u2192 A only."
+              "required": false,
+              "description": "User-mandated combination set: Case 1 \u2192 A/B/C, Case 2 \u2192 A/B, Case 3 \u2192 A only. Defaults to `case1` when omitted."
             },
             {
               "name": "near_far_threshold_km",
