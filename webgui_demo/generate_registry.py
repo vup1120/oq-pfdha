@@ -51,15 +51,19 @@ EXCLUDED = {
     "FixedSecondarySR",                # utility constant, secondary_surf_rup/fixed.py:27
     "MammarellaEtAl2024PrimarySR",     # alias, primary_surf_rup/mammarella2024.py:395
     "Petersen2011SecondarySR_default", # alias, secondary_surf_rup/petersen2011.py:152
+    # Petersen2011PrimaryFD shape variants are convenience subclasses that only
+    # hardcode `version` (primary_surf_displ/petersen2011.py:190-222). The GUI
+    # exposes the base class with `version` as a selectable parameter instead,
+    # so these are excluded to avoid redundant duplicate entries.
+    "Petersen2011PrimaryFD_bilinear",
+    "Petersen2011PrimaryFD_elliptical",
+    "Petersen2011PrimaryFD_quadratic",
 }
 
 # Class -> User-Manual page holding its parameter table.
 DOC_MAP = {
     "Youngs2003PrimaryFD": "primary/Youngs2003.md",
     "Petersen2011PrimaryFD": "primary/Petersen2011.md",
-    "Petersen2011PrimaryFD_bilinear": "primary/Petersen2011.md",
-    "Petersen2011PrimaryFD_elliptical": "primary/Petersen2011.md",
-    "Petersen2011PrimaryFD_quadratic": "primary/Petersen2011.md",
     "Chiou2025PrimaryFD": "primary/Chiou2025.md",
     "Kuehn2024PrimaryFD": "primary/Kuehn2024.md",
     "Lavrentiadis2023PrimaryFD": "primary/Lavrentiadis2023.md",
