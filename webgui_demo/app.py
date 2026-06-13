@@ -1666,7 +1666,7 @@ st.markdown(
     "Displacement Hazard Analysis - GNU AGPL v3.0-or-later<br>"
     "Cite: Chen, Y.-S. (2025). <i>openquake.fdha: Python tools for "
     "probabilistic fault displacement hazard analysis</i> (v1.0.0) "
-    "[Software]. OGS. "
+    "[Software]. OGS/GEM. "
     "<a href='https://github.com/vup1120/oq-pfdha' "
     "style='color:#3b82f6'>github.com/vup1120/oq-pfdha</a>"
     " (CITATION.cff)<br>"
