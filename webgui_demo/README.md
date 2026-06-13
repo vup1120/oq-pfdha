@@ -93,3 +93,7 @@ configurations light.
   probabilistic fault displacement hazard analysis* (v1.0.0) [Software].
   Istituto Nazionale di Oceanografia e di Geofisica Sperimentale (OGS).
   https://github.com/vup1120/oq-pfdha (see `CITATION.cff`).
+- Built on the OpenQuake Engine — please also cite: Pagani, M., et al. (2014).
+  *OpenQuake Engine: An Open Hazard (and Risk) Software for the Global
+  Earthquake Model*. Seismological Research Letters, 85(3), 692–702.
+  doi:10.1785/0220130087 (Global Earthquake Model, GEM).
