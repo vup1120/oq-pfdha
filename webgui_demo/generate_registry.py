@@ -132,6 +132,96 @@ CLASS_PARAM_OVERRIDES = {
     }],
 }
 
+# Code-derived optional parameters that are absent from the User-Manual tables
+# (these classes either have no doc page, or the page documents only a subset).
+# Each list is APPENDED to whatever doc_params were parsed/overridden, so it
+# complements rather than replaces. All rows are optional (the model supplies a
+# working default); allowed values are taken verbatim from the get_prob
+# signatures and validation in the model source.
+CLASS_PARAM_EXTRA = {
+    # primary_surf_displ/moss2022.py:67-69
+    "Moss2022PrimaryFD": [
+        {"name": "version", "type": "string", "units": "–", "default": '"MD"',
+         "allowed": '`"AD"`, `"MD"`', "required": False,
+         "description": "Normalization: average (AD) or maximum (MD) displacement."},
+        {"name": "completeness", "type": "string", "units": "–",
+         "default": '"complete"', "allowed": '`"complete"`, `"incomplete"` (MD only), `"all"`',
+         "required": False, "description": "Measurement completeness subset."},
+        {"name": "gamma_mode", "type": "string", "units": "–",
+         "default": '"regression"', "allowed": '`"regression"`, `"global"`',
+         "required": False, "description": "Gamma shape source: x/L regression or global (Eqs 4.2-4.3)."},
+        {"name": "sigma_type", "type": "string", "units": "–",
+         "default": '"recommended"', "allowed": '`"recommended"`, `"regression"`',
+         "required": False, "description": "Sigma model: revised Table 4.4 or regression."},
+    ],
+    # secondary_surf_displ/moss2022.py:56-59
+    "Moss2022SecondaryFD": [
+        {"name": "version", "type": "string", "units": "–", "default": '"MD"',
+         "allowed": '`"AD"`, `"MD"`', "required": False,
+         "description": "Normalization: average (AD) or maximum (MD) displacement."},
+        {"name": "completeness", "type": "string", "units": "–",
+         "default": '"complete"', "allowed": '`"complete"`, `"incomplete"` (MD only), `"all"`',
+         "required": False, "description": "Measurement completeness subset."},
+        {"name": "sigma_type", "type": "string", "units": "–",
+         "default": '"recommended"', "allowed": '`"recommended"`, `"regression"`',
+         "required": False, "description": "Sigma model: revised or regression."},
+        {"name": "faulting", "type": "string", "units": "–", "default": '"simple"',
+         "allowed": '`"simple"`, `"complex"`', "required": False,
+         "description": "Faulting complexity branch."},
+        {"name": "percentile", "type": "string", "units": "–", "default": '"85"',
+         "allowed": '`"50"`, `"85"`', "required": False,
+         "description": "Percentile of the d/MD envelope."},
+        {"name": "method", "type": "string", "units": "–", "default": '"gamma"',
+         "allowed": '`"gamma"`, `"envelope"`', "required": False,
+         "description": "Distribution method for the displacement model."},
+        {"name": "gamma_a", "type": "float", "units": "–", "default": "global",
+         "allowed": ">0", "required": False,
+         "description": "Override the global gamma shape parameter (gamma method only)."},
+    ],
+    # secondary_surf_rup/petersen2011.py:53 (appended to documented cell_size)
+    "Petersen2011SecondarySR": [
+        {"name": "version", "type": "string", "units": "–", "default": '"default"',
+         "allowed": '`"default"`, `"near_field"`', "required": False,
+         "description": "Far-field power function (Table 4) or near-field interpolation (Table 5)."},
+    ],
+    # secondary_surf_rup/ferrario2021.py:53
+    "FerrarioLivio2021SecondarySR": [
+        {"name": "version", "type": "string", "units": "–", "default": '"regular"',
+         "allowed": '`"regular"`, `"conservative"`', "required": False,
+         "description": "Standard or conservative (higher-probability) coefficient set."},
+    ],
+    # secondary_surf_rup/moss2022.py:67
+    "Moss2022SecondarySR": [
+        {"name": "method", "type": "string", "units": "–", "default": '"simple"',
+         "allowed": '`"simple"`, `"biexp"`', "required": False,
+         "description": "Decay model: simple exponential or biexponential (needs mag)."},
+    ],
+    # secondary_surf_rup/rodriguez2023.py:45
+    "Rodriguez2023SecondarySR": [
+        {"name": "pixel_size", "type": "integer", "units": "meters", "default": "1",
+         "allowed": "1", "required": False,
+         "description": "Analysis pixel width; the model is calibrated for 1 m only."},
+    ],
+    # secondary_surf_rup/takao2013.py:46
+    "Takao2013SecondarySR": [
+        {"name": "pixel_size", "type": "integer", "units": "meters", "default": "500",
+         "allowed": "500", "required": False,
+         "description": "Analysis pixel width; the model is calibrated for 500 m only."},
+    ],
+    # secondary_surf_rup/takao2014.py:43
+    "Takao2014SecondarySR": [
+        {"name": "pixel_size", "type": "integer", "units": "meters", "default": "100",
+         "allowed": "500, 250, 100, 50", "required": False,
+         "description": "Analysis pixel width for the P(across) coefficient set."},
+    ],
+    # secondary_surf_displ/visini2025.py:105 (appended to the calculator table)
+    "Visini2025SecondaryFD": [
+        {"name": "scaling_model", "type": "string", "units": "–", "default": '"WC1994"',
+         "allowed": '`"WC1994"`, `"THINGBAIJAM2017"`, `"LEONARD2010"`', "required": False,
+         "description": "Scaling relation used to derive TPFm when not supplied explicitly."},
+    ],
+}
+
 
 def parse_doc_params(md_rel: str) -> list[dict]:
     """Extract the parameter table rows from a User-Manual model page."""
@@ -174,13 +264,15 @@ def snapshot() -> dict:
                 continue
             if name.startswith("Base") or name in EXCLUDED:
                 continue
+            doc_params = list(CLASS_PARAM_OVERRIDES.get(name)
+                              or (parse_doc_params(DOC_MAP[name])
+                                  if name in DOC_MAP else []))
+            doc_params += CLASS_PARAM_EXTRA.get(name, [])
             entry: dict = {
                 "class_name": name,
                 "module": obj.__module__,
                 "doc_page": DOC_MAP.get(name),
-                "doc_params": (CLASS_PARAM_OVERRIDES.get(name)
-                               or (parse_doc_params(DOC_MAP[name])
-                                   if name in DOC_MAP else [])),
+                "doc_params": doc_params,
                 "prefill": PREFILL.get(name, ""),
             }
             # Constructor params with explicit defaults (e.g. n_sigma)
