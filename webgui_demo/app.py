@@ -1025,28 +1025,40 @@ def page_configure() -> None:
         )
 
         def param_prefill(meta: dict) -> str:
-            prefill = meta.get("prefill", "")
-            ctor = meta.get("ctor_defaults") or {}
-            if ctor and not any(c in prefill for c in ctor):
-                extra = "\n".join(f"{k2} = {v2}" for k2, v2 in ctor.items())
-                prefill = (prefill + "\n" + extra).strip()
-            return prefill
+            # Only the curated example parameters are prefilled. Optional
+            # constructor knobs (e.g. n_sigma) are NOT auto-written: they have
+            # working defaults, so pre-filling them made optional tuning
+            # parameters look required. They remain documented in the parameter
+            # table and can be added by hand when needed.
+            return meta.get("prefill", "")
 
         def doc_table(meta: dict) -> None:
-            dp = meta.get("doc_params") or []
-            if dp:
+            dp = list(meta.get("doc_params") or [])
+            # Optional constructor knobs (e.g. n_sigma) are derived from the
+            # model's __init__ signature - they always have a default, so they
+            # are surfaced as explicitly NOT required rather than prefilled.
+            documented = {r["name"] for r in dp}
+            ctor_rows = [
+                {"name": k, "default": str(v), "required": False,
+                 "allowed": "numeric"}
+                for k, v in (meta.get("ctor_defaults") or {}).items()
+                if k not in documented
+            ]
+            rows = dp + ctor_rows
+            if rows:
                 md = "| param | default | required | allowed |\n|---|---|---|---|\n"
-                for r in dp:
-                    md += (f"| `{r['name']}` | {r['default']} | "
+                for r in rows:
+                    md += (f"| `{r['name']}` | {r.get('default', '')} | "
                            f"{'**yes**' if r['required'] else 'no'} | "
-                           f"{r['allowed'][:60]} |\n")
+                           f"{r.get('allowed', '')[:60]} |\n")
                 st.markdown(md)
                 if any(r["name"] == "style" for r in dp):
                     st.caption("Info: `style` is assigned automatically from "
                                "the source rake when omitted "
                                "(calc/contexts.py, classify_style).")
-                st.caption("Full reference: docs/UserManual_Enhanced/models/"
-                           f"{meta['doc_page']}")
+                if meta.get("doc_page"):
+                    st.caption("Full reference: docs/UserManual_Enhanced/models/"
+                               f"{meta['doc_page']}")
             else:
                 st.caption("No documented parameters - the model runs with "
                            "internal defaults.")

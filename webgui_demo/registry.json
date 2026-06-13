@@ -312,57 +312,6 @@
           "prefill": ""
         },
         {
-          "class_name": "Petersen2011PrimaryFD_bilinear",
-          "module": "openquake.fdha.primary_surf_displ.petersen2011",
-          "doc_page": "primary/Petersen2011.md",
-          "doc_params": [
-            {
-              "name": "version",
-              "type": "string",
-              "units": "\u2013",
-              "default": "`\"quadratic\"`",
-              "allowed": "`\"bilinear\"`, `\"elliptical\"`, `\"quadratic\"` (case-insensitive)",
-              "required": false,
-              "description": "Functional form for the along-strike displacement profile. `\"bilinear\"` uses piecewise linear (Eqns 7\u20139), `\"elliptical\"` uses elliptical profile (Eqn 13), `\"quadratic\"` uses quadratic profile with folding (Eqn 10)."
-            }
-          ],
-          "prefill": ""
-        },
-        {
-          "class_name": "Petersen2011PrimaryFD_elliptical",
-          "module": "openquake.fdha.primary_surf_displ.petersen2011",
-          "doc_page": "primary/Petersen2011.md",
-          "doc_params": [
-            {
-              "name": "version",
-              "type": "string",
-              "units": "\u2013",
-              "default": "`\"quadratic\"`",
-              "allowed": "`\"bilinear\"`, `\"elliptical\"`, `\"quadratic\"` (case-insensitive)",
-              "required": false,
-              "description": "Functional form for the along-strike displacement profile. `\"bilinear\"` uses piecewise linear (Eqns 7\u20139), `\"elliptical\"` uses elliptical profile (Eqn 13), `\"quadratic\"` uses quadratic profile with folding (Eqn 10)."
-            }
-          ],
-          "prefill": ""
-        },
-        {
-          "class_name": "Petersen2011PrimaryFD_quadratic",
-          "module": "openquake.fdha.primary_surf_displ.petersen2011",
-          "doc_page": "primary/Petersen2011.md",
-          "doc_params": [
-            {
-              "name": "version",
-              "type": "string",
-              "units": "\u2013",
-              "default": "`\"quadratic\"`",
-              "allowed": "`\"bilinear\"`, `\"elliptical\"`, `\"quadratic\"` (case-insensitive)",
-              "required": false,
-              "description": "Functional form for the along-strike displacement profile. `\"bilinear\"` uses piecewise linear (Eqns 7\u20139), `\"elliptical\"` uses elliptical profile (Eqn 13), `\"quadratic\"` uses quadratic profile with folding (Eqn 10)."
-            }
-          ],
-          "prefill": ""
-        },
-        {
           "class_name": "Takao2013PrimaryFD",
           "module": "openquake.fdha.primary_surf_displ.takao2013",
           "doc_page": "primary/Takao2013.md",
@@ -647,6 +596,9 @@
     "FixedPrimarySR",
     "FixedSecondarySR",
     "MammarellaEtAl2024PrimarySR",
+    "Petersen2011PrimaryFD_bilinear",
+    "Petersen2011PrimaryFD_elliptical",
+    "Petersen2011PrimaryFD_quadratic",
     "Petersen2011SecondarySR_default"
   ]
 }
