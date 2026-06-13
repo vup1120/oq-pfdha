@@ -1670,6 +1670,10 @@ st.markdown(
     "<a href='https://github.com/vup1120/oq-pfdha' "
     "style='color:#3b82f6'>github.com/vup1120/oq-pfdha</a>"
     " (CITATION.cff)<br>"
+    "Built on the OpenQuake Engine: Pagani, M., et al. (2014). "
+    "<i>OpenQuake Engine: An Open Hazard (and Risk) Software for the Global "
+    "Earthquake Model</i>. Seismological Research Letters, 85(3), 692-702 "
+    "(Global Earthquake Model, GEM).<br>"
     "<b>Prototype interface</b> - review configurations and verify results "
     "independently before use in production hazard assessment."
     "</div>",

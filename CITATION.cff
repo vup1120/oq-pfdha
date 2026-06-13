@@ -21,3 +21,40 @@ keywords:
   - fault displacement
   - PFDHA
   - OpenQuake
+  - GEM
+references:
+  - type: article
+    title: "OpenQuake Engine: An Open Hazard (and Risk) Software for the Global Earthquake Model"
+    authors:
+      - family-names: Pagani
+        given-names: Marco
+      - family-names: Monelli
+        given-names: Damiano
+      - family-names: Weatherill
+        given-names: Graeme
+      - family-names: Danciu
+        given-names: Laurentiu
+      - family-names: Crowley
+        given-names: Helen
+      - family-names: Silva
+        given-names: Vitor
+      - family-names: Henshaw
+        given-names: Paul
+      - family-names: Butler
+        given-names: Lars
+      - family-names: Nastasi
+        given-names: Matteo
+      - family-names: Panzeri
+        given-names: Luigi
+      - family-names: Simionato
+        given-names: Michele
+      - family-names: Vigano
+        given-names: Daniele
+    year: 2014
+    journal: "Seismological Research Letters"
+    volume: 85
+    issue: 3
+    start: 692
+    end: 702
+    doi: "10.1785/0220130087"
+    notes: "OpenQuake Engine, developed by the Global Earthquake Model (GEM) Foundation."
