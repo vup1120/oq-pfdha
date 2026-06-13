@@ -246,7 +246,44 @@
           "class_name": "Moss2022PrimaryFD",
           "module": "openquake.fdha.primary_surf_displ.moss2022",
           "doc_page": "primary/Moss2022.md",
-          "doc_params": [],
+          "doc_params": [
+            {
+              "name": "version",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\"MD\"",
+              "allowed": "`\"AD\"`, `\"MD\"`",
+              "required": false,
+              "description": "Normalization: average (AD) or maximum (MD) displacement."
+            },
+            {
+              "name": "completeness",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\"complete\"",
+              "allowed": "`\"complete\"`, `\"incomplete\"` (MD only), `\"all\"`",
+              "required": false,
+              "description": "Measurement completeness subset."
+            },
+            {
+              "name": "gamma_mode",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\"regression\"",
+              "allowed": "`\"regression\"`, `\"global\"`",
+              "required": false,
+              "description": "Gamma shape source: x/L regression or global (Eqs 4.2-4.3)."
+            },
+            {
+              "name": "sigma_type",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\"recommended\"",
+              "allowed": "`\"recommended\"`, `\"regression\"`",
+              "required": false,
+              "description": "Sigma model: revised Table 4.4 or regression."
+            }
+          ],
           "prefill": ""
         },
         {
@@ -288,65 +325,24 @@
           "class_name": "MossRoss2011PrimaryFD",
           "module": "openquake.fdha.primary_surf_displ.moss_ross2011",
           "doc_page": null,
-          "doc_params": [],
-          "prefill": "",
+          "doc_params": [
+            {
+              "name": "norm_disp_type",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\u2013",
+              "allowed": "`\"AD\"`, `\"MD\"`",
+              "required": true,
+              "description": "Normalization displacement type. `\"AD\"` uses average displacement normalization (Gamma distribution), `\"MD\"` uses maximum displacement normalization (Beta distribution)."
+            }
+          ],
+          "prefill": "norm_disp_type = AD",
           "ctor_defaults": {
             "n_sigma": 3.0
           }
         },
         {
           "class_name": "Petersen2011PrimaryFD",
-          "module": "openquake.fdha.primary_surf_displ.petersen2011",
-          "doc_page": "primary/Petersen2011.md",
-          "doc_params": [
-            {
-              "name": "version",
-              "type": "string",
-              "units": "\u2013",
-              "default": "`\"quadratic\"`",
-              "allowed": "`\"bilinear\"`, `\"elliptical\"`, `\"quadratic\"` (case-insensitive)",
-              "required": false,
-              "description": "Functional form for the along-strike displacement profile. `\"bilinear\"` uses piecewise linear (Eqns 7\u20139), `\"elliptical\"` uses elliptical profile (Eqn 13), `\"quadratic\"` uses quadratic profile with folding (Eqn 10)."
-            }
-          ],
-          "prefill": ""
-        },
-        {
-          "class_name": "Petersen2011PrimaryFD_bilinear",
-          "module": "openquake.fdha.primary_surf_displ.petersen2011",
-          "doc_page": "primary/Petersen2011.md",
-          "doc_params": [
-            {
-              "name": "version",
-              "type": "string",
-              "units": "\u2013",
-              "default": "`\"quadratic\"`",
-              "allowed": "`\"bilinear\"`, `\"elliptical\"`, `\"quadratic\"` (case-insensitive)",
-              "required": false,
-              "description": "Functional form for the along-strike displacement profile. `\"bilinear\"` uses piecewise linear (Eqns 7\u20139), `\"elliptical\"` uses elliptical profile (Eqn 13), `\"quadratic\"` uses quadratic profile with folding (Eqn 10)."
-            }
-          ],
-          "prefill": ""
-        },
-        {
-          "class_name": "Petersen2011PrimaryFD_elliptical",
-          "module": "openquake.fdha.primary_surf_displ.petersen2011",
-          "doc_page": "primary/Petersen2011.md",
-          "doc_params": [
-            {
-              "name": "version",
-              "type": "string",
-              "units": "\u2013",
-              "default": "`\"quadratic\"`",
-              "allowed": "`\"bilinear\"`, `\"elliptical\"`, `\"quadratic\"` (case-insensitive)",
-              "required": false,
-              "description": "Functional form for the along-strike displacement profile. `\"bilinear\"` uses piecewise linear (Eqns 7\u20139), `\"elliptical\"` uses elliptical profile (Eqn 13), `\"quadratic\"` uses quadratic profile with folding (Eqn 10)."
-            }
-          ],
-          "prefill": ""
-        },
-        {
-          "class_name": "Petersen2011PrimaryFD_quadratic",
           "module": "openquake.fdha.primary_surf_displ.petersen2011",
           "doc_page": "primary/Petersen2011.md",
           "doc_params": [
@@ -420,14 +416,34 @@
           "class_name": "FerrarioLivio2021SecondarySR",
           "module": "openquake.fdha.secondary_surf_rup.ferrario2021",
           "doc_page": null,
-          "doc_params": [],
+          "doc_params": [
+            {
+              "name": "version",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\"regular\"",
+              "allowed": "`\"regular\"`, `\"conservative\"`",
+              "required": false,
+              "description": "Standard or conservative (higher-probability) coefficient set."
+            }
+          ],
           "prefill": ""
         },
         {
           "class_name": "Moss2022SecondarySR",
           "module": "openquake.fdha.secondary_surf_rup.moss2022",
           "doc_page": null,
-          "doc_params": [],
+          "doc_params": [
+            {
+              "name": "method",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\"simple\"",
+              "allowed": "`\"simple\"`, `\"biexp\"`",
+              "required": false,
+              "description": "Decay model: simple exponential or biexponential (needs mag)."
+            }
+          ],
           "prefill": ""
         },
         {
@@ -443,6 +459,15 @@
               "allowed": "`25`, `50`, `100`, `150`, `200`",
               "required": false,
               "description": "Size of the cell/pixel for distributed rupture modeling. Different cell sizes have different regression coefficients."
+            },
+            {
+              "name": "version",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\"default\"",
+              "allowed": "`\"default\"`, `\"near_field\"`",
+              "required": false,
+              "description": "Far-field power function (Table 4) or near-field interpolation (Table 5)."
             }
           ],
           "prefill": ""
@@ -451,21 +476,51 @@
           "class_name": "Rodriguez2023SecondarySR",
           "module": "openquake.fdha.secondary_surf_rup.rodriguez2023",
           "doc_page": null,
-          "doc_params": [],
+          "doc_params": [
+            {
+              "name": "pixel_size",
+              "type": "integer",
+              "units": "meters",
+              "default": "1",
+              "allowed": "1",
+              "required": false,
+              "description": "Analysis pixel width; the model is calibrated for 1 m only."
+            }
+          ],
           "prefill": ""
         },
         {
           "class_name": "Takao2013SecondarySR",
           "module": "openquake.fdha.secondary_surf_rup.takao2013",
           "doc_page": null,
-          "doc_params": [],
+          "doc_params": [
+            {
+              "name": "pixel_size",
+              "type": "integer",
+              "units": "meters",
+              "default": "500",
+              "allowed": "500",
+              "required": false,
+              "description": "Analysis pixel width; the model is calibrated for 500 m only."
+            }
+          ],
           "prefill": ""
         },
         {
           "class_name": "Takao2014SecondarySR",
           "module": "openquake.fdha.secondary_surf_rup.takao2014",
           "doc_page": null,
-          "doc_params": [],
+          "doc_params": [
+            {
+              "name": "pixel_size",
+              "type": "integer",
+              "units": "meters",
+              "default": "100",
+              "allowed": "500, 250, 100, 50",
+              "required": false,
+              "description": "Analysis pixel width for the P(across) coefficient set."
+            }
+          ],
           "prefill": ""
         },
         {
@@ -488,8 +543,8 @@
               "units": "\u2013",
               "default": "`case1`",
               "allowed": "`case1`, `case2`, `case3`",
-              "required": true,
-              "description": "User-mandated combination set: Case 1 \u2192 A/B/C, Case 2 \u2192 A/B, Case 3 \u2192 A only."
+              "required": false,
+              "description": "User-mandated combination set: Case 1 \u2192 A/B/C, Case 2 \u2192 A/B, Case 3 \u2192 A only. Defaults to `case1` when omitted."
             },
             {
               "name": "near_far_threshold_km",
@@ -547,7 +602,71 @@
           "class_name": "Moss2022SecondaryFD",
           "module": "openquake.fdha.secondary_surf_displ.moss2022",
           "doc_page": null,
-          "doc_params": [],
+          "doc_params": [
+            {
+              "name": "version",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\"MD\"",
+              "allowed": "`\"AD\"`, `\"MD\"`",
+              "required": false,
+              "description": "Normalization: average (AD) or maximum (MD) displacement."
+            },
+            {
+              "name": "completeness",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\"complete\"",
+              "allowed": "`\"complete\"`, `\"incomplete\"` (MD only), `\"all\"`",
+              "required": false,
+              "description": "Measurement completeness subset."
+            },
+            {
+              "name": "sigma_type",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\"recommended\"",
+              "allowed": "`\"recommended\"`, `\"regression\"`",
+              "required": false,
+              "description": "Sigma model: revised or regression."
+            },
+            {
+              "name": "faulting",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\"simple\"",
+              "allowed": "`\"simple\"`, `\"complex\"`",
+              "required": false,
+              "description": "Faulting complexity branch."
+            },
+            {
+              "name": "percentile",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\"85\"",
+              "allowed": "`\"50\"`, `\"85\"`",
+              "required": false,
+              "description": "Percentile of the d/MD envelope."
+            },
+            {
+              "name": "method",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\"gamma\"",
+              "allowed": "`\"gamma\"`, `\"envelope\"`",
+              "required": false,
+              "description": "Distribution method for the displacement model."
+            },
+            {
+              "name": "gamma_a",
+              "type": "float",
+              "units": "\u2013",
+              "default": "global",
+              "allowed": ">0",
+              "required": false,
+              "description": "Override the global gamma shape parameter (gamma method only)."
+            }
+          ],
           "prefill": ""
         },
         {
@@ -587,8 +706,8 @@
               "units": "\u2013",
               "default": "`case1`",
               "allowed": "`case1`, `case2`, `case3`",
-              "required": true,
-              "description": "User-mandated combination set: Case 1 \u2192 A/B/C, Case 2 \u2192 A/B, Case 3 \u2192 A only."
+              "required": false,
+              "description": "User-mandated combination set: Case 1 \u2192 A/B/C, Case 2 \u2192 A/B, Case 3 \u2192 A only. Defaults to `case1` when omitted."
             },
             {
               "name": "near_far_threshold_km",
@@ -616,6 +735,15 @@
               "allowed": "method\u2208{`median`,`mean`,`percentile`}",
               "required": false,
               "description": "Reduction statistic for Monte Carlo arrays. Use JSON format: `{\"method\": \"median\", \"q\": 50}`."
+            },
+            {
+              "name": "scaling_model",
+              "type": "string",
+              "units": "\u2013",
+              "default": "\"WC1994\"",
+              "allowed": "`\"WC1994\"`, `\"THINGBAIJAM2017\"`, `\"LEONARD2010\"`",
+              "required": false,
+              "description": "Scaling relation used to derive TPFm when not supplied explicitly."
             }
           ],
           "prefill": "scaling_model = WC1994",
@@ -647,6 +775,9 @@
     "FixedPrimarySR",
     "FixedSecondarySR",
     "MammarellaEtAl2024PrimarySR",
+    "Petersen2011PrimaryFD_bilinear",
+    "Petersen2011PrimaryFD_elliptical",
+    "Petersen2011PrimaryFD_quadratic",
     "Petersen2011SecondarySR_default"
   ]
 }

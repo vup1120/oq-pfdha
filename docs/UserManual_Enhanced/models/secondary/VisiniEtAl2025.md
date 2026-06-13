@@ -18,7 +18,7 @@ These parameters are specified in the `[calculation]` section (INI format):
 | Name | Type | Units | Default | Allowed | Required? | Description | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `displacement_measure_levels` | JSON string | meters | – | positive numbers | Yes | Displacement thresholds for hazard curves. Used to size probability arrays. Use JSON format: `{"FD": [0.001, 0.01, ...]}`. | Needed for both primary and secondary displacement calls. |
-| `case` | string | – | `case1` | `case1`, `case2`, `case3` | Yes | User-mandated combination set: Case 1 → A/B/C, Case 2 → A/B, Case 3 → A only. | Drives which combinations feed the Visini probabilities. |
+| `case` | string | – | `case1` | `case1`, `case2`, `case3` | No | User-mandated combination set: Case 1 → A/B/C, Case 2 → A/B, Case 3 → A only. Defaults to `case1` when omitted. | Drives which combinations feed the Visini probabilities. |
 | `near_far_threshold_km` | float | kilometers | `0.2` | >0 | No | Distance cutoff between "near" and "far" regimes for along‑strike Monte Carlo (SR Rank 2). | Affects `calculate_rank2_total_probability` inputs. |
 | `r_threshold_km` | float | kilometers | `0.1` | >0 | No | Distance split between principal (≤ threshold) and distributed (> threshold) branches in the hazard curve. | Only used in hazard‑curve integration. |
 | `primary_sr_reduction` / `secondary_sr_reduction` | JSON string | – | median, 50th percentile | method∈{`median`,`mean`,`percentile`} | No | Reduction statistic for Monte Carlo arrays. Use JSON format: `{"method": "median", "q": 50}`. | `secondary_sr_reduction` defaults to `primary_sr_reduction`.

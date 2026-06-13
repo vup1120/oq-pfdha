@@ -565,6 +565,12 @@ def build_fdha_lt_xml(selections: dict) -> str:
         '<nrml xmlns="http://openquake.org/xmlns/nrml/0.4">',
         '  <logicTree logicTreeID="lt_fdha_webgui">',
     ]
+    # Branch IDs embed the row index so the same model can appear in several
+    # branches (with different parameters) without colliding.
+    def slot_bids(utype: str, level: int) -> list[str]:
+        return [f"{m['class_name'].upper()}_{level}_{j}"
+                for j, m in enumerate(selections[utype])]
+
     plain_levels = ["fdhaPrimarySRModel", "fdhaPrimaryFDModel",
                     "fdhaSecondarySRModel"]
     for i, utype in enumerate(plain_levels, 1):
@@ -572,17 +578,25 @@ def build_fdha_lt_xml(selections: dict) -> str:
         parts.append(f'    <logicTreeBranchingLevel branchingLevelID="bl_{i}_{slot}">')
         parts.append(f'      <logicTreeBranchSet branchSetID="bs_{i}_{slot}"'
                      f' uncertaintyType="{utype}">')
-        for m in selections[utype]:
-            parts += branch("        ", f"{m['class_name'].upper()}_{i}",
-                            m, m["weight"])
+        for bid, m in zip(slot_bids(utype, i), selections[utype]):
+            parts += branch("        ", bid, m, m["weight"])
         parts += ["      </logicTreeBranchSet>", "    </logicTreeBranchingLevel>"]
 
     ssr = selections["fdhaSecondarySRModel"]
     sfd = selections["fdhaSecondaryFDModel"]
-    free_fd = [m for m in sfd if m["class_name"] not in COUPLED_FD_TO_SR]
-    coupled_fd = [m for m in sfd if m["class_name"] in COUPLED_FD_TO_SR]
-    free_sr_ids = [f"{m['class_name'].upper()}_3" for m in ssr
+    ssr_bids = slot_bids("fdhaSecondarySRModel", 3)
+    fd_bids = slot_bids("fdhaSecondaryFDModel", 4)
+    free_fd = [(bid, m) for bid, m in zip(fd_bids, sfd)
+               if m["class_name"] not in COUPLED_FD_TO_SR]
+    coupled_fd = [(bid, m) for bid, m in zip(fd_bids, sfd)
+                  if m["class_name"] in COUPLED_FD_TO_SR]
+    free_sr_ids = [bid for bid, m in zip(ssr_bids, ssr)
                    if m["class_name"] not in COUPLED_SR_TO_FD]
+    # First branch id seen for each coupled SR class, used to chain its
+    # FD partner via applyToBranches.
+    sr_id_by_class: dict = {}
+    for bid, m in zip(ssr_bids, ssr):
+        sr_id_by_class.setdefault(m["class_name"], bid)
 
     parts.append('    <logicTreeBranchingLevel branchingLevelID="bl_4_secondary_surf_displ">')
     if free_fd:
@@ -590,16 +604,15 @@ def build_fdha_lt_xml(selections: dict) -> str:
                 if coupled_fd else "")
         parts.append('      <logicTreeBranchSet branchSetID="bs_4_secondary_surf_displ"'
                      f' uncertaintyType="fdhaSecondaryFDModel"{cond}>')
-        for m in free_fd:
-            parts += branch("        ", f"{m['class_name'].upper()}_4",
-                            m, m["weight"])
+        for bid, m in free_fd:
+            parts += branch("        ", bid, m, m["weight"])
         parts.append("      </logicTreeBranchSet>")
-    for m in coupled_fd:
-        sr_id = f"{COUPLED_FD_TO_SR[m['class_name']].upper()}_3"
-        parts.append(f'      <logicTreeBranchSet branchSetID="bs_4_{m["class_name"].lower()}"'
+    for j, (bid, m) in enumerate(coupled_fd):
+        sr_id = sr_id_by_class.get(COUPLED_FD_TO_SR[m["class_name"]], "")
+        parts.append(f'      <logicTreeBranchSet branchSetID="bs_4_{m["class_name"].lower()}_{j}"'
                      f' uncertaintyType="fdhaSecondaryFDModel"'
                      f' applyToBranches="{sr_id}">')
-        parts += branch("        ", f"{m['class_name'].upper()}_4", m, "1.0")
+        parts += branch("        ", bid, m, "1.0")
         parts.append("      </logicTreeBranchSet>")
     parts.append("    </logicTreeBranchingLevel>")
     parts += ["  </logicTree>", "</nrml>"]
@@ -1011,31 +1024,41 @@ def page_configure() -> None:
             "quick live demonstration."
         )
 
-        def param_editor(meta: dict, key: str, label: str) -> str:
-            prefill = meta.get("prefill", "")
-            ctor = meta.get("ctor_defaults") or {}
-            if ctor and not any(c in prefill for c in ctor):
-                extra = "\n".join(f"{k2} = {v2}" for k2, v2 in ctor.items())
-                prefill = (prefill + "\n" + extra).strip()
-            return st.text_area(label, prefill, height=100, key=key,
-                                help="One `key = value` per line; leave empty "
-                                     "to use model defaults.")
+        def param_prefill(meta: dict) -> str:
+            # Only the curated example parameters are prefilled. Optional
+            # constructor knobs (e.g. n_sigma) are NOT auto-written: they have
+            # working defaults, so pre-filling them made optional tuning
+            # parameters look required. They remain documented in the parameter
+            # table and can be added by hand when needed.
+            return meta.get("prefill", "")
 
         def doc_table(meta: dict) -> None:
-            dp = meta.get("doc_params") or []
-            if dp:
+            dp = list(meta.get("doc_params") or [])
+            # Optional constructor knobs (e.g. n_sigma) are derived from the
+            # model's __init__ signature - they always have a default, so they
+            # are surfaced as explicitly NOT required rather than prefilled.
+            documented = {r["name"] for r in dp}
+            ctor_rows = [
+                {"name": k, "default": str(v), "required": False,
+                 "allowed": "numeric"}
+                for k, v in (meta.get("ctor_defaults") or {}).items()
+                if k not in documented
+            ]
+            rows = dp + ctor_rows
+            if rows:
                 md = "| param | default | required | allowed |\n|---|---|---|---|\n"
-                for r in dp:
-                    md += (f"| `{r['name']}` | {r['default']} | "
+                for r in rows:
+                    md += (f"| `{r['name']}` | {r.get('default', '')} | "
                            f"{'**yes**' if r['required'] else 'no'} | "
-                           f"{r['allowed'][:60]} |\n")
+                           f"{r.get('allowed', '')[:60]} |\n")
                 st.markdown(md)
                 if any(r["name"] == "style" for r in dp):
                     st.caption("Info: `style` is assigned automatically from "
                                "the source rake when omitted "
                                "(calc/contexts.py, classify_style).")
-                st.caption("Full reference: docs/UserManual_Enhanced/models/"
-                           f"{meta['doc_page']}")
+                if meta.get("doc_page"):
+                    st.caption("Full reference: docs/UserManual_Enhanced/models/"
+                               f"{meta['doc_page']}")
             else:
                 st.caption("No documented parameters - the model runs with "
                            "internal defaults.")
@@ -1045,56 +1068,97 @@ def page_configure() -> None:
             models = REGISTRY["slots"][utype]["models"]
             names = [m["class_name"] for m in models]
             by_name = {m["class_name"]: m for m in models}
+            # Each slot holds an ordered list of *branch instances*. The same
+            # model may appear more than once (e.g. Youngs2003SecondaryFD with
+            # norm_disp_type = AD in one branch and = MD in another); every
+            # instance carries its own parameters and weight. A per-slot uid
+            # counter gives each instance stable widget keys across reruns.
+            rows_key = f"lt_rows_{utype}"
+            uid_key = f"lt_uid_{utype}"
+            if rows_key not in st.session_state:
+                st.session_state[uid_key] = 0
+                seeded = []
+                for nm in LIGHT_PRESET[utype]:
+                    seeded.append({"uid": st.session_state[uid_key],
+                                   "class_name": nm})
+                    st.session_state[uid_key] += 1
+                st.session_state[rows_key] = seeded
+
             with st.expander(label, expanded=True):
-                chosen = st.multiselect("Models", names,
-                                        default=LIGHT_PRESET[utype],
-                                        key=f"ms_{utype}",
-                                        label_visibility="collapsed")
+                addcol, btncol = st.columns([3, 1])
+                with addcol:
+                    to_add = st.selectbox("Add a model branch", names,
+                                          key=f"add_{utype}",
+                                          label_visibility="collapsed")
+                with btncol:
+                    if st.button("Add branch", key=f"addbtn_{utype}",
+                                 width="stretch"):
+                        st.session_state[rows_key].append(
+                            {"uid": st.session_state[uid_key],
+                             "class_name": to_add})
+                        st.session_state[uid_key] += 1
+                        st.rerun()
+
+                slot_rows = st.session_state[rows_key]
+                # "Free" instances share the user-weighted set; coupled FD
+                # instances each carry weight 1.0 inside their own chain.
+                def _is_coupled(nm: str) -> bool:
+                    return (utype == "fdhaSecondaryFDModel"
+                            and nm in COUPLED_FD_TO_SR)
+                n_free = sum(1 for r in slot_rows
+                             if not _is_coupled(r["class_name"]))
+                default_w = round(1.0 / n_free, 6) if n_free else 0.0
+
                 rows = []
-                # Coupled FD models carry weight 1.0 inside their own chained
-                # branch set; only "free" models share a user-weighted set.
-                free = [n for n in chosen if n not in COUPLED_FD_TO_SR] \
-                    if utype == "fdhaSecondaryFDModel" else chosen
-                if chosen:
-                    n = len(free)
-                    eq = ([round(1.0 / n, 6)] * (n - 1)
-                          + [round(1.0 - (n - 1) * round(1.0 / n, 6), 6)]) if n else []
-                    for name in chosen:
-                        meta = by_name[name]
-                        wcol, pcol, dcol = st.columns([1, 2, 2])
-                        with wcol:
-                            if name in COUPLED_FD_TO_SR and utype == "fdhaSecondaryFDModel":
-                                st.markdown(f"**weight - {name}**")
-                                st.caption(
-                                    f"chained to `{COUPLED_FD_TO_SR[name]}` - "
-                                    "weight 1.0 within its chain (the pair "
-                                    "shares the SR branch weight)")
-                                w = 1.0
-                            else:
-                                w = st.number_input(f"weight - {name}",
-                                                    min_value=0.0, max_value=1.0,
-                                                    value=eq[free.index(name)],
-                                                    step=0.05, format="%.6f",
-                                                    key=f"w_{utype}_{name}")
-                        with pcol:
-                            params = param_editor(meta, f"p_{utype}_{name}",
-                                                  f"parameters - {name}")
-                        with dcol:
-                            doc_table(meta)
-                        rows.append({"class_name": name, "weight": w,
-                                     "params": params})
-                    checked = [r for r in rows if r["class_name"] in free]
-                    if checked:
-                        total = sum(r["weight"] for r in checked)
-                        if abs(total - 1.0) <= WEIGHT_TOL:
-                            st.success(f"OK: weights sum to {total:.6f}")
-                        else:
-                            st.error(f"ERROR: weights sum to {total:.6f} - must be "
-                                     "1.0 +/- 1e-6 (FDLT-001)")
-                            weights_ok = False
-                else:
-                    st.error("ERROR: select at least one model")
+                if not slot_rows:
+                    st.error("ERROR: add at least one model branch")
                     weights_ok = False
+                for k, r in enumerate(slot_rows):
+                    name = r["class_name"]
+                    uid = r["uid"]
+                    meta = by_name.get(name)
+                    if meta is None:        # model no longer in the registry
+                        continue
+                    st.markdown(f"**Branch {k + 1} - `{name}`**")
+                    wcol, pcol, dcol = st.columns([1, 2, 2])
+                    with wcol:
+                        if _is_coupled(name):
+                            st.caption(
+                                f"chained to `{COUPLED_FD_TO_SR[name]}` - "
+                                "weight 1.0 within its chain (the pair "
+                                "shares the SR branch weight)")
+                            w = 1.0
+                        else:
+                            wkey = f"w_{utype}_{uid}"
+                            st.session_state.setdefault(wkey, default_w)
+                            w = st.number_input("weight", min_value=0.0,
+                                                max_value=1.0, step=0.05,
+                                                format="%.6f", key=wkey)
+                        if st.button("Remove", key=f"rm_{utype}_{uid}",
+                                     width="stretch"):
+                            del st.session_state[rows_key][k]
+                            st.rerun()
+                    with pcol:
+                        pkey = f"p_{utype}_{uid}"
+                        st.session_state.setdefault(pkey, param_prefill(meta))
+                        params = st.text_area(
+                            f"parameters - {name}", height=100, key=pkey,
+                            help="One `key = value` per line; leave empty to "
+                                 "use model defaults.")
+                    with dcol:
+                        doc_table(meta)
+                    rows.append({"class_name": name, "weight": w,
+                                 "params": params})
+
+                checked = [r for r in rows if not _is_coupled(r["class_name"])]
+                if checked:
+                    total = sum(r["weight"] for r in checked)
+                    if abs(total - 1.0) <= WEIGHT_TOL:
+                        st.success(f"OK: weights sum to {total:.6f}")
+                    else:
+                        st.error(f"ERROR: weights sum to {total:.6f} - must be "
+                                 "1.0 +/- 1e-6 (FDLT-001)")
+                        weights_ok = False
                 selections[utype] = rows
 
         # Cross-slot constraints for engine-coupled distributed families
@@ -1357,87 +1421,11 @@ def page_results() -> None:
             st.error(f"Expected output not found: {agg}")
             return
         df = pd.read_csv(agg, comment="#")
-        jobdir = Path(run["jobdir"])
-        traces = fault_traces_for_run(jobdir)
-        ref_level = 0.1
-        site_rows = []
-        for site_id, site_df in df.groupby("site_id", sort=True):
-            ref_idx = (site_df["D0"] - ref_level).abs().idxmin()
-            ref_row = site_df.loc[ref_idx]
-            site_rows.append({
-                "site_id": int(site_id),
-                "label": f"site {int(site_id)}",
-                "lon": float(site_df["lon"].iloc[0]),
-                "lat": float(site_df["lat"].iloc[0]),
-                "mean_at_ref": float(ref_row["mean"]),
-                "ref_d0": float(ref_row["D0"]),
-                "max_mean": float(site_df["mean"].max()),
-            })
-
-        st.subheader("Geographic hazard context")
-        import pydeck as pdk
-
-        context_layers = []
-        if traces:
-            context_layers.append(pdk.Layer(
-                "PathLayer",
-                id="fault-traces",
-                data=traces,
-                get_path="path",
-                get_color=[242, 118, 43, 230],
-                get_width=6,
-                width_min_pixels=3,
-                rounded=True,
-                pickable=False,
-            ))
-        context_layers.append(pdk.Layer(
-            "ScatterplotLayer",
-            id="hazard-sites",
-            data=site_rows,
-            get_position=["lon", "lat"],
-            get_fill_color=[59, 130, 246, 220],
-            get_line_color=[14, 23, 39, 230],
-            get_line_width=2,
-            get_radius=260,
-            radius_min_pixels=7,
-            radius_max_pixels=18,
-            pickable=True,
-            auto_highlight=True,
-        ))
-        context_layers.append(pdk.Layer(
-            "TextLayer",
-            id="site-labels",
-            data=site_rows,
-            get_position=["lon", "lat"],
-            get_text="label",
-            get_color=[27, 44, 75, 230],
-            get_size=13,
-            get_pixel_offset=[0, -24],
-            pickable=False,
-        ))
-        context_event = st.pydeck_chart(
-            pdk.Deck(
-                layers=context_layers,
-                initial_view_state=map_view_state(site_rows, traces),
-                map_style="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
-                tooltip={
-                    "html": (
-                        "<b>{label}</b><br/>"
-                        "lon {lon}<br/>lat {lat}<br/>"
-                        "mean rate at {ref_d0} m: {mean_at_ref}"
-                    ),
-                    "style": {"fontFamily": "Hanken Grotesk"},
-                },
-            ),
-            key="hazard_curve_context_map",
-            height=520,
-            on_select="rerun",
-            selection_mode="single-object",
-        )
-        selected_site = selected_pydeck_object(context_event, "hazard-sites")
-        selected_site_id = (
-            int(selected_site["site_id"]) if selected_site is not None else None
-        )
+        # Geographic hazard context map removed: the interactive PyDeck basemap
+        # made the Results page slow (tile downloads + on_select="rerun" reran
+        # the whole page on every map click). Site selection is handled by the
+        # selectbox below instead.
+        selected_site_id = None
 
         st.subheader("Hazard curves (weighted mean + fractiles)")
         site_ids = sorted(df["site_id"].unique())
