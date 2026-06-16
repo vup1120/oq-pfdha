@@ -1425,21 +1425,26 @@ def page_results() -> None:
         # made the Results page slow (tile downloads + on_select="rerun" reran
         # the whole page on every map click). Site selection is handled by the
         # selectbox below instead.
+        multi_site = "site_id" in df.columns
         selected_site_id = None
 
         st.subheader("Hazard curves (weighted mean + fractiles)")
-        site_ids = sorted(df["site_id"].unique())
-        default_index = (
-            site_ids.index(selected_site_id)
-            if selected_site_id in site_ids else 0
-        )
-        chosen = st.selectbox(
-            "Site", site_ids,
-            index=default_index,
-            format_func=lambda s: (
-                f"site {s} ({df[df.site_id == s].lon.iloc[0]:.3f}, "
-                f"{df[df.site_id == s].lat.iloc[0]:.3f})"))
-        d = df[df["site_id"] == chosen]
+        if multi_site:
+            site_ids = sorted(df["site_id"].unique())
+            default_index = (
+                site_ids.index(selected_site_id)
+                if selected_site_id in site_ids else 0
+            )
+            chosen = st.selectbox(
+                "Site", site_ids,
+                index=default_index,
+                format_func=lambda s: (
+                    f"site {s} ({df[df.site_id == s].lon.iloc[0]:.3f}, "
+                    f"{df[df.site_id == s].lat.iloc[0]:.3f})"))
+            d = df[df["site_id"] == chosen]
+        else:
+            chosen = None
+            d = df
 
         import plotly.graph_objects as go
         fig = go.Figure()
@@ -1466,7 +1471,8 @@ def page_results() -> None:
                 f"Show all {len(branch_files)} branch curves", value=True):
             for bf in branch_files:
                 b = pd.read_csv(bf, comment="#")
-                b = b[b["site_id"] == chosen]
+                if "site_id" in b.columns:
+                    b = b[b["site_id"] == chosen]
                 fig.add_trace(go.Scatter(x=b["D0"], y=b["annual_rate"],
                                          line=dict(color="#ab9b80", width=0.8),
                                          showlegend=False, hoverinfo="skip"))
@@ -1514,7 +1520,8 @@ def page_results() -> None:
                         line=dict(color=CLAY_500, dash=dash, width=1.2)))
                 for bf in branch_files:
                     b = pd.read_csv(bf, comment="#")
-                    b = b[b["site_id"] == chosen]
+                    if "site_id" in b.columns:
+                        b = b[b["site_id"] == chosen]
                     rfig.add_trace(go.Scatter(
                         x=b["D0"], y=b["annual_rate"].to_numpy() / base.to_numpy(),
                         line=dict(color="#ab9b80", width=0.8),
