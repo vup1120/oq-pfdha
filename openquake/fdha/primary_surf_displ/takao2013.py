@@ -86,7 +86,17 @@ class Takao2013PrimaryFD(BasePrimarySurfDispl):
         # Convert inputs to numpy arrays
         d = np.atleast_1d(d)  # Shape (n_displacements,)
         X_L_ratio = np.atleast_1d(X_L_ratio)  # Shape (n_sites,)
-        
+
+        # Fold the raw along-strike position x/L in [0, 1] to the normalized
+        # distance from the *closest* rupture end in [0, 0.5], which is what the
+        # Takao et al. (2013) regression coefficients in get_prob_D_AD /
+        # get_prob_D_MD are defined against (see the X_L_ratio docstring). Without
+        # this fold the gamma mean would grow monotonically toward x/L = 1,
+        # producing an unphysical along-strike ramp instead of a symmetric,
+        # centre-peaked displacement profile. Mirrors Youngs2003PrimaryFD.
+        r = X_L_ratio - np.floor(X_L_ratio)
+        X_L_ratio = 0.5 - np.abs(r - 0.5)
+
         # Following the approach in Youngs2003, we need to establish truncation bounds
         if norm_disp_type == "AD":
             # Based on Wells and Coppersmith (1994) for average displacement
