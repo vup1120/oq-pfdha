@@ -10,6 +10,32 @@ except Exception:  # pragma: no cover - optional dependency for distance-only ut
     Point = None  # type: ignore[assignment]
 
 
+# -------- Multi-section (ECS) detection --------
+def _section_traces(surface: Any):
+    """Return per-section top-edge ``(lon, lat)`` traces for a multi-section
+    rupture surface, or ``None`` if the surface is single-strand.
+
+    Multi-section ruptures (e.g. ``multiFaultSource``) arrive as a MultiSurface
+    whose ``.surfaces`` each expose a top-of-rupture line (``.tor``). For these
+    the single-trace ``_extract_fault_trace_from_mesh`` is invalid (it picks one
+    mesh row across disjoint sections), so x/L is computed via the ECS instead.
+    """
+    subs = getattr(surface, "surfaces", None)
+    if not subs or len(subs) <= 1:
+        return None
+    traces = []
+    for s in subs:
+        tor = getattr(s, "tor", None)
+        try:
+            coo = np.asarray(tor.coo if tor is not None else s._get_tor(),
+                             dtype=float)
+        except Exception:
+            return None
+        if coo.ndim == 2 and coo.shape[0] >= 2 and coo.shape[1] >= 2:
+            traces.append((coo[:, 0], coo[:, 1]))
+    return traces if len(traces) >= 2 else None
+
+
 # -------- Trace extraction from surface.mesh (no get_fault_trace dependency) --------
 def _extract_fault_trace_from_mesh(surface: Any) -> np.ndarray:
     """
@@ -143,7 +169,21 @@ class RuptureDistanceCalculator:
     def __init__(self, sitecol, rup_surface):
         self.sitecol = sitecol
         self.rup_surface = rup_surface
-        self.trace_points = _extract_fault_trace_from_mesh(self.rup_surface)
+        # Multi-section ruptures: build the ECS representative reference line and
+        # use it as the trace for both r and x/L. Single-strand falls back to the
+        # existing single-trace extraction.
+        self._ecs = None
+        traces = _section_traces(rup_surface)
+        if traces is not None:
+            try:
+                from openquake.fdha.calc.utils import ecs as _ecs_mod
+                self._ecs = _ecs_mod.ecs_from_traces(traces)
+                self.trace_points = np.column_stack(
+                    [self._ecs.lon, self._ecs.lat])
+            except Exception:
+                self._ecs = None
+        if self._ecs is None:
+            self.trace_points = _extract_fault_trace_from_mesh(self.rup_surface)
 
     def calculate_site_to_trace_distance(self) -> float:
         """Return r (km) = horizontal distance from site to surface trace polyline.
@@ -234,7 +274,17 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
 
         Uses a local equirectangular projection centered at the mean trace
         latitude; robust to IDL crossing.
+
+        Multi-section ruptures route through the ECS reference line (GC2 along
+        the representative principal-rupture trace); single-strand uses the
+        orthogonal-projection path below.
         """
+        if self._ecs is not None:
+            lons = np.array([s.longitude for s in self.sites], dtype=float)
+            lats = np.array([s.latitude for s in self.sites], dtype=float)
+            xl, L_m = self._ecs.x_l(lons, lats)
+            return np.asarray(xl, dtype=float), L_m / 1000.0  # km, like the trace path
+
         tr = np.asarray(self.trace_points, dtype=float)
         if tr.shape[0] < 2:
             return np.zeros(len(self.sites)), 0.0
