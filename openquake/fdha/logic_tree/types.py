@@ -9,6 +9,7 @@ FDHA_UNCERTAINTY_TYPES = {
     "fdhaPrimaryFDModel",
     "fdhaSecondarySRModel",
     "fdhaSecondaryFDModel",
+    "fdhaCalcRThreshold",
 }
 
 FDHA_SLOTS_BY_UTYPE = {
@@ -17,6 +18,32 @@ FDHA_SLOTS_BY_UTYPE = {
     "fdhaSecondarySRModel": "secondary_surf_rup",
     "fdhaSecondaryFDModel": "secondary_surf_displ",
 }
+
+# Calculation-parameter uncertainty types: their <uncertaintyModel> carries a
+# scalar calculation parameter (epistemic alternative), not an FDHA model
+# class. They are validated by a type-specific grammar and must never fall
+# through the model-class checks (FDLT-006) or the [models.*] materialisation.
+#
+# fdhaCalcRThreshold: alternative values of [calculation].r_threshold_km, the
+# hard-step simplification of the rupture-location term fr(r) of Petersen et
+# al. (2011, BSSA 101, 805-825, doi:10.1785/0120100035). Treating the
+# threshold choice as weighted logic-tree branches follows Petersen et al.
+# (2011, p. 810) and IAEA-TECDOC-2092 (2025, Section 3.3).
+FDHA_CALC_PARAM_UTYPES = {
+    "fdhaCalcRThreshold",
+}
+
+# Pseudo-slot names used for calc-param uncertainty types inside
+# ``EndBranch.selections``. Keeping them in ``selections`` (rather than a
+# parallel structure) means fingerprinting, dedup, weight multiplication and
+# manifest branch paths treat threshold branches as ordinary realizations.
+# ``build_config`` materialises these into the branch INI's ``[calculation]``
+# section instead of ``[models.*]``.
+CALC_SLOTS_BY_UTYPE = {
+    "fdhaCalcRThreshold": "calc_r_threshold",
+}
+
+CALC_R_THRESHOLD_SLOT = CALC_SLOTS_BY_UTYPE["fdhaCalcRThreshold"]
 
 ALLOWED_STYLES = {"strike-slip", "reverse", "normal"}
 

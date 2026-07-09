@@ -6,13 +6,23 @@ from configparser import RawConfigParser
 from io import StringIO
 from typing import Any
 
-from openquake.fdha.logic_tree.types import EndBranch
+from openquake.fdha.logic_tree.types import CALC_SLOTS_BY_UTYPE, EndBranch
+
+# Pseudo-slots holding calculation parameters rather than model choices.
+CALC_SLOTS = frozenset(CALC_SLOTS_BY_UTYPE.values())
 
 
 def build_config(base_config: dict[str, Any], end_branch: EndBranch) -> dict[str, Any]:
     cfg = copy.deepcopy(base_config)
     cfg.setdefault("models", {})
     for slot, choice in end_branch.selections.items():
+        if slot in CALC_SLOTS:
+            # Calc-param branch: write into [calculation] so the branch INI
+            # feeds the exact same runtime read as a MODE A scalar job
+            # (calculators.BaseFaultRuptureCalculator._initialize_calculation_params).
+            # The conflict rule guarantees the job INI did not set the key.
+            cfg.setdefault("calculation", {}).update(choice.params)
+            continue
         cfg["models"][slot] = {"type": choice.class_name, "parameters": choice.params}
     # Logic tree NRML pointers are driver-level concepts, not branch calculators.
     if "calculation" in cfg and isinstance(cfg["calculation"], dict):
