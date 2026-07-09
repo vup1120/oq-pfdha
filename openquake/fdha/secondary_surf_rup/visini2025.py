@@ -63,6 +63,12 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
     https://doi.org/10.1177/87552930241308860
     """
 
+    # The Visini regressions are calibrated on distances to the ACTUAL
+    # segmented principal rupture, so on multi-fault ruptures r must be the
+    # distance to the nearest surface-reaching section (gaps not bridged) —
+    # no smoothed ECS/LCP reference line applies.
+    MULTIFAULT_REFERENCE_LINE = "segments"
+
     def __init__(self):
         super().__init__()
         

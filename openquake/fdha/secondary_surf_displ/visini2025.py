@@ -65,6 +65,12 @@ class Visini2025SecondaryFD(BaseSecondarySurfDispl):
     - n_sigma: half-width of ln(Y) truncation in σ units (MATLAB scripts use 3).
     """
 
+    # The Visini regressions are calibrated on distances to the ACTUAL
+    # segmented principal rupture, so on multi-fault ruptures s must be the
+    # distance to the nearest surface-reaching section (gaps not bridged) —
+    # no smoothed ECS/LCP reference line applies.
+    MULTIFAULT_REFERENCE_LINE = "segments"
+
     def __init__(self, n_sigma: float = 3.0, truncation_eps: float = None) -> None:
         super().__init__()
         # ``truncation_eps`` is the deprecated former name for ``n_sigma``; it is
