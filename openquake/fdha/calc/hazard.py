@@ -101,6 +101,12 @@ def calculate_fdha_hazard(
     p_sr_red_cfg = calculator.p_sr_red_cfg
     s_sr_red_cfg = calculator.s_sr_red_cfg
     r_threshold_km = calculator.r_threshold_km
+
+    # PMF time span for non-parametric (multiFaultSource) ruptures:
+    # get_ctx converts their probs_occur into a Poisson-equivalent annual
+    # rate over this investigation time. Parametric ruptures ignore it.
+    investigation_time = float(
+        calculator.config.get('calculation', {}).get('investigation_time', 1.0))
     
     # Process each fault source
     # Convert to list immediately to avoid iterator exhaustion issues
@@ -127,7 +133,7 @@ def calculate_fdha_hazard(
             n_surface_rupturing += 1
             
             # Create context (returns None if all sites too far)
-            ctx = cmaker.get_ctx(rup)
+            ctx = cmaker.get_ctx(rup, investigation_time=investigation_time)
             if ctx is None:
                 continue
             
@@ -359,12 +365,20 @@ def _compute_rupture_contribution(
             logger.warning("Site coordinates not available in context for Visini model")
             P_dist_combined = np.zeros((N_ctx, n_displ), dtype=np.float64)
         else:
+            # r/x_L/L follow the Visini models' declared multi-fault
+            # reference line ('segments': distance to the nearest
+            # surface-reaching section, raw GC2 x/L). Single-strand
+            # ruptures fall back to the canonical trace-based metrics.
+            _sec_model = (calculator.secondary_surf_rup_model
+                          or calculator.secondary_surf_displ_model)
+            _method = getattr(_sec_model, 'MULTIFAULT_REFERENCE_LINE', 'lcp')
+            r_sel, x_L_sel, L_sel = ctx.metrics_for(_method)
             P_dist_combined = visini_calc.compute(
                 mag=float(ctx.mag[0]),
-                r=ctx.r,
+                r=r_sel,
                 rx=ctx.rx,
-                L=ctx.L,
-                x_L=ctx.x_L,
+                L=L_sel,
+                x_L=x_L_sel,
                 dip=ctx.dip,
                 target_displacements=target_displacements,
                 sr_model=calculator.secondary_surf_rup_model,
