@@ -4,11 +4,16 @@ from dataclasses import dataclass
 from typing import Any, Iterable
 
 from openquake.fdha.calc.contexts import classify_style
-from openquake.fdha.logic_tree.param_parser import parse_uncertainty_model
+from openquake.fdha.logic_tree.param_parser import (
+    R_THRESHOLD_KM_KEY,
+    parse_r_threshold_model,
+    parse_uncertainty_model,
+)
 from openquake.fdha.logic_tree.types import (
     EndBranch,
     LogicTreeSpec,
     ModelChoice,
+    CALC_SLOTS_BY_UTYPE,
     FDHA_SLOTS_BY_UTYPE,
 )
 
@@ -37,12 +42,22 @@ def enumerate_end_branches(spec: LogicTreeSpec, sources: Iterable[SourceInfo]) -
                         continue
 
                     slot = FDHA_SLOTS_BY_UTYPE.get(bs.uncertainty_type)
-                    if slot is None:
+                    calc_slot = CALC_SLOTS_BY_UTYPE.get(bs.uncertainty_type)
+                    if slot is None and calc_slot is None:
                         next_partials.append((sel, sel_ids, sel_w))
                         continue
 
                     for br in bs.branches:
-                        class_name, params = parse_uncertainty_model(br.uncertainty_model)
+                        if calc_slot is not None:
+                            # Calc-param branch (engine-style bare scalar):
+                            # Cartesian-combines like any model branch but
+                            # materialises into [calculation], not [models.*].
+                            slot = calc_slot
+                            value = parse_r_threshold_model(br.uncertainty_model)
+                            class_name = R_THRESHOLD_KM_KEY
+                            params = {R_THRESHOLD_KM_KEY: value}
+                        else:
+                            class_name, params = parse_uncertainty_model(br.uncertainty_model)
                         try:
                             w = float(br.uncertainty_weight)
                         except Exception:
