@@ -124,8 +124,16 @@ class BaseFaultRuptureCalculator:
             self.config.get('parameters', {}).get('near_far_threshold_km', 0.2)
         )
         
-        # Case label for Visini models
-        self.case_label = self.config.get('parameters', {}).get('case', 'case1')
+        # Case label for Visini models. The logic-tree branch typically sets
+        # 'case' as a parameter of the secondary-model uncertaintyModel (it
+        # travels with the Visini2025SecondarySR/FD branch, not [parameters]),
+        # so fall back to those sections before defaulting.
+        self.case_label = (
+            self.config.get('parameters', {}).get('case')
+            or self.get_model_parameters('secondary_surf_displ').get('case')
+            or self.get_model_parameters('secondary_surf_rup').get('case')
+            or 'case1'
+        )
         
         # Initialize model adapters
         from openquake.fdha.calc.model_adapter import LegacyModelAdapter

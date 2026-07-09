@@ -10,6 +10,32 @@ except Exception:  # pragma: no cover - optional dependency for distance-only ut
     Point = None  # type: ignore[assignment]
 
 
+# -------- Multi-section (ECS) detection --------
+def _section_traces(surface: Any):
+    """Return per-section top-edge ``(lon, lat)`` traces for a multi-section
+    rupture surface, or ``None`` if the surface is single-strand.
+
+    Multi-section ruptures (e.g. ``multiFaultSource``) arrive as a MultiSurface
+    whose ``.surfaces`` each expose a top-of-rupture line (``.tor``). For these
+    the single-trace ``_extract_fault_trace_from_mesh`` is invalid (it picks one
+    mesh row across disjoint sections), so x/L is computed via the ECS instead.
+    """
+    subs = getattr(surface, "surfaces", None)
+    if not subs or len(subs) <= 1:
+        return None
+    traces = []
+    for s in subs:
+        tor = getattr(s, "tor", None)
+        try:
+            coo = np.asarray(tor.coo if tor is not None else s._get_tor(),
+                             dtype=float)
+        except Exception:
+            return None
+        if coo.ndim == 2 and coo.shape[0] >= 2 and coo.shape[1] >= 2:
+            traces.append((coo[:, 0], coo[:, 1]))
+    return traces if len(traces) >= 2 else None
+
+
 # -------- Trace extraction from surface.mesh (no get_fault_trace dependency) --------
 def _extract_fault_trace_from_mesh(surface: Any) -> np.ndarray:
     """
@@ -143,7 +169,35 @@ class RuptureDistanceCalculator:
     def __init__(self, sitecol, rup_surface):
         self.sitecol = sitecol
         self.rup_surface = rup_surface
-        self.trace_points = _extract_fault_trace_from_mesh(self.rup_surface)
+        # Multi-section ruptures: build the ECS representative reference line and
+        # use it as the trace for both r and x/L. Single-strand falls back to the
+        # existing single-trace extraction.
+        self._ecs = None
+        self.trace_is_original = False
+        traces = _section_traces(rup_surface)
+        if traces is not None:
+            try:
+                from openquake.fdha.calc.utils import ecs as _ecs_mod
+                self._ecs = _ecs_mod.ecs_from_traces(traces)
+                self.trace_points = np.column_stack(
+                    [self._ecs.lon, self._ecs.lat])
+            except Exception:
+                self._ecs = None
+        if self._ecs is None:
+            # Prefer the exact NRML trace attached at parse time (see
+            # parsing._attach_original_traces): the mesh top edge is a
+            # spacing-dependent resampling that corner-cuts wiggly traces
+            # by up to hundreds of meters, which distorts the near-fault
+            # FDHA distances. The original trace makes r/x/L independent
+            # of rupture_mesh_spacing.
+            orig = getattr(rup_surface, 'original_trace', None)
+            if orig is not None:
+                arr = np.asarray(orig, dtype=float)
+                if arr.ndim == 2 and arr.shape[0] >= 2 and arr.shape[1] >= 2:
+                    self.trace_points = arr[:, :2]
+                    self.trace_is_original = True
+            if not self.trace_is_original:
+                self.trace_points = _extract_fault_trace_from_mesh(self.rup_surface)
 
     def calculate_site_to_trace_distance(self) -> float:
         """Return r (km) = horizontal distance from site to surface trace polyline.
@@ -227,6 +281,56 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
             )
         return dists
 
+    def calculate_signed_site_to_trace_distances(self) -> np.ndarray:
+        """Return the signed trace distance (km) for all sites: |value| is the
+        distance to the trace polyline, the sign follows the hazardlib ``Rx``
+        convention (positive on the hanging wall, negative on the footwall).
+
+        The hanging wall is the right-hand side of the trace walked in vertex
+        order, per the NRML right-hand rule (dip direction is 90° clockwise
+        from the strike implied by the trace order). The sign comes from the
+        cross product against the nearest trace segment, so — unlike hazardlib
+        ``get_rx_distance``, which uses the resampled mesh top edge — it stays
+        consistent with the trace geometry used for ``r`` and does not depend
+        on ``rupture_mesh_spacing``.
+        """
+        tr = np.asarray(self.trace_points, dtype=float)
+        n = len(self.sites)
+        if tr.shape[0] < 2:
+            return np.zeros(n)
+
+        tr_lons = unwrap_longitudes(tr[:, 0])
+        tr_lats = tr[:, 1]
+        lon0 = float(tr_lons[0])
+        lat0 = float(np.mean(tr_lats))
+        tx, ty = to_local_equirectangular_km(tr_lons, tr_lats, lon0=lon0, lat0=lat0)
+        txy = np.column_stack([tx, ty])
+
+        out = np.empty(n)
+        for idx, site in enumerate(self.sites):
+            sx, sy = to_local_equirectangular_km(
+                site.longitude, site.latitude, lon0=lon0, lat0=lat0
+            )
+            pxy = np.array([float(sx), float(sy)])
+            d_min, cross = float("inf"), 0.0
+            for i in range(len(txy) - 1):
+                seg = txy[i + 1] - txy[i]
+                seg_len2 = float(np.dot(seg, seg))
+                if seg_len2 == 0.0:
+                    continue
+                t = float(np.clip(np.dot(pxy - txy[i], seg) / seg_len2, 0.0, 1.0))
+                off = pxy - (txy[i] + t * seg)
+                d = float(np.linalg.norm(off))
+                if d < d_min:
+                    d_min = d
+                    cross = float(seg[0] * off[1] - seg[1] * off[0])
+            if not np.isfinite(d_min):
+                out[idx] = 0.0
+            else:
+                # right of walking direction (cross < 0) -> hanging wall -> +
+                out[idx] = d_min if cross <= 0.0 else -d_min
+        return out
+
     def calculate_x_l_ratios(self) -> Tuple[np.ndarray, float]:
         """
         Return (x_over_L for each site, L_km) using orthogonal projection
@@ -234,7 +338,35 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
 
         Uses a local equirectangular projection centered at the mean trace
         latitude; robust to IDL crossing.
+
+        Multi-section ruptures route through the ECS reference line (GC2 along
+        the representative principal-rupture trace); single-strand uses the
+        orthogonal-projection path below.
         """
+        if self._ecs is not None:
+            lons = np.array([s.longitude for s in self.sites], dtype=float)
+            lats = np.array([s.latitude for s in self.sites], dtype=float)
+            xl, L_m = self._ecs.x_l(lons, lats)
+            xl_arr = np.asarray(xl, dtype=float)
+            # Defense-in-depth: EcsResult/LcpResult/SegmentsResult.x_l() each
+            # already clip internally, but ``self._ecs`` is a duck-typed slot
+            # (any of the three reference-line implementations can sit behind
+            # it), so re-clip at this shared seam too — the same invariant
+            # the single-strand path below enforces explicitly. GC2 'u' can
+            # land a hair outside [umin, umax] at/near a rupture tip from
+            # floating-point roundoff in the along-strike projection, which
+            # would otherwise propagate as x/L slightly < 0 or > 1.
+            out_of_range = (xl_arr < 0.0) | (xl_arr > 1.0)
+            if np.any(out_of_range):
+                import warnings
+                warnings.warn(
+                    f"VectorizedRuptureDistanceCalculator.calculate_x_l_ratios "
+                    f"(multi-section/ECS path): {int(np.sum(out_of_range))} "
+                    f"ratio(s) outside [0, 1]: {xl_arr[out_of_range][:5]}...",
+                    RuntimeWarning,
+                )
+            return np.clip(xl_arr, 0.0, 1.0), L_m / 1000.0  # km, like the trace path
+
         tr = np.asarray(self.trace_points, dtype=float)
         if tr.shape[0] < 2:
             return np.zeros(len(self.sites)), 0.0
