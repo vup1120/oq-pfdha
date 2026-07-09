@@ -347,7 +347,25 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
             lons = np.array([s.longitude for s in self.sites], dtype=float)
             lats = np.array([s.latitude for s in self.sites], dtype=float)
             xl, L_m = self._ecs.x_l(lons, lats)
-            return np.asarray(xl, dtype=float), L_m / 1000.0  # km, like the trace path
+            xl_arr = np.asarray(xl, dtype=float)
+            # Defense-in-depth: EcsResult/LcpResult/SegmentsResult.x_l() each
+            # already clip internally, but ``self._ecs`` is a duck-typed slot
+            # (any of the three reference-line implementations can sit behind
+            # it), so re-clip at this shared seam too — the same invariant
+            # the single-strand path below enforces explicitly. GC2 'u' can
+            # land a hair outside [umin, umax] at/near a rupture tip from
+            # floating-point roundoff in the along-strike projection, which
+            # would otherwise propagate as x/L slightly < 0 or > 1.
+            out_of_range = (xl_arr < 0.0) | (xl_arr > 1.0)
+            if np.any(out_of_range):
+                import warnings
+                warnings.warn(
+                    f"VectorizedRuptureDistanceCalculator.calculate_x_l_ratios "
+                    f"(multi-section/ECS path): {int(np.sum(out_of_range))} "
+                    f"ratio(s) outside [0, 1]: {xl_arr[out_of_range][:5]}...",
+                    RuntimeWarning,
+                )
+            return np.clip(xl_arr, 0.0, 1.0), L_m / 1000.0  # km, like the trace path
 
         tr = np.asarray(self.trace_points, dtype=float)
         if tr.shape[0] < 2:
