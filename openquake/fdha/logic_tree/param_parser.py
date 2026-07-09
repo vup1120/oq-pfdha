@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import ast
 import configparser
+import math
 from typing import Any
+
+R_THRESHOLD_KM_KEY = "r_threshold_km"
 
 
 def parse_uncertainty_model(text: str) -> tuple[str, dict[str, Any]]:
@@ -55,6 +58,40 @@ def _parse_ini_block(raw: str) -> tuple[str, dict[str, Any]]:
         for k, v in cp.items(class_name):
             params[k] = _parse_value(v)
     return class_name, params
+
+
+def parse_r_threshold_model(text: str) -> float:
+    """
+    Parse the <uncertaintyModel> of a ``fdhaCalcRThreshold`` branch.
+
+    Follows the OpenQuake engine convention for scalar uncertainty types
+    (:func:`openquake.hazardlib.lt.parse_uncertainty` fallback): the element
+    text is a single bare float, and the parameter is identified by the
+    ``uncertaintyType`` itself. Here the value is the principal/distributed
+    distance threshold in kilometres and must be a positive finite float.
+
+    The branch value is one epistemic alternative for the hard-step
+    simplification of the rupture-location term fr(r) of Petersen et al.
+    (2011, BSSA 101, 805-825, doi:10.1785/0120100035); representing the
+    choice as weighted branches follows Petersen et al. (2011, p. 810) and
+    IAEA-TECDOC-2092 (2025, Section 3.3).
+
+    Raises ValueError for anything else (empty text, several tokens, a
+    ``key = value`` line, a non-numeric / non-finite / non-positive value).
+    """
+    raw = (text or "").strip()
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        raise ValueError(
+            "fdhaCalcRThreshold: expected single positive float value (km) "
+            f"in <uncertaintyModel>, got {raw!r}"
+        )
+    if not math.isfinite(value) or value <= 0.0:
+        raise ValueError(
+            f"fdhaCalcRThreshold value must be a positive finite float (km); got {raw!r}"
+        )
+    return value
 
 
 def _parse_value(v: str) -> Any:

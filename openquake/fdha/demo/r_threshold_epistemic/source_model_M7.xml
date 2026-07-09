@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<nrml
+xmlns="http://openquake.org/xmlns/nrml/0.5"
+xmlns:gml="http://www.opengis.net/gml"
+>
+    <!-- Demo-only source: single M7.0 characteristic event at a low annual
+         rate, so the hazard curves plateau near ~1e-4/yr (comparable to a
+         published single-scenario figure). Same fault geometry/site as
+         examples/source_model.xml; only the MFD is changed from
+         Gutenberg-Richter to a single-magnitude characteristic rupture.
+         Rate and magnitude are illustrative demo inputs, not recommendations. -->
+    <sourceModel
+    name="Demo single M7.0 characteristic scenario"
+    >
+        <sourceGroup
+        name="group 1"
+        tectonicRegion="Active Shallow Crust"
+        >
+            <characteristicFaultSource
+            id="3"
+            name="Single M7.0 characteristic event"
+            tectonicRegion="Active Shallow Crust"
+            >
+                <incrementalMFD minMag="7.0000000E+00" binWidth="1.0000000E-01">
+                    <occurRates>1.0000000E-04</occurRates>
+                </incrementalMFD>
+                <rake>
+                    -9.0000000E+01
+                </rake>
+                <surface>
+                    <simpleFaultGeometry>
+                        <gml:LineString>
+                    <gml:posList>
+                        16.1870362931   39.6974567774
+                        16.1505303713   39.6274955882
+                        16.1455213236   39.6196231258
+                        16.1408996159   39.5840858442
+                    </gml:posList>
+                        </gml:LineString>
+                        <dip>
+                            3.0000000E+01
+                        </dip>
+                        <upperSeismoDepth>
+                            0.0000000E+00
+                        </upperSeismoDepth>
+                        <lowerSeismoDepth>
+                            1.5000000E+01
+                        </lowerSeismoDepth>
+                    </simpleFaultGeometry>
+                </surface>
+            </characteristicFaultSource>
+        </sourceGroup>
+    </sourceModel>
+</nrml>

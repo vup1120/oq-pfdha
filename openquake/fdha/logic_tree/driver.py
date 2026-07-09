@@ -41,7 +41,10 @@ from openquake.fdha.logic_tree.source_model_lt import (
     expand_branch_paths,
     load_source_model_branches,
 )
-from openquake.fdha.logic_tree.validators import validate_spec
+from openquake.fdha.logic_tree.validators import (
+    check_r_threshold_conflict,
+    validate_spec,
+)
 
 
 @dataclass(frozen=True)
@@ -145,6 +148,11 @@ class FdhaLogicTree:
 
         specs = [parse_nrml(Path(self.config_dir) / f) for f in self.logic_tree_files]
         merged = _merge_specs(specs)
+        # Conflict rule: the INI scalar r_threshold_km and a
+        # fdhaCalcRThreshold branch set are mutually exclusive.
+        check_r_threshold_conflict(
+            merged, self.base_config, self.ini_path, self.logic_tree_files
+        )
         merged_report = validate_spec(merged, source_ids=source_ids)
         all_reports = [(merged, merged_report)]
         _write_validator_files(outdir_path, all_reports)
@@ -566,36 +574,35 @@ class FdhaLogicTree:
                 combined_weights.append(combined_w)
 
                 global_idx = len(combined_records)
-                combined_records.append(
-                    {
-                        "global_index": global_idx,
-                        "source_model_branch_id": sm_branch.branch_id,
-                        "source_model_file": sm_branch.source_model_file,
-                        "source_model_weight": float(sm_branch.weight),
-                        "source_model_uncertainties": [
-                            {
-                                "uncertainty_type": u.uncertainty_type,
-                                "value": _safe_jsonable(u.value),
-                                "branch_set_id": u.branch_set_id,
-                                "branch_id": u.branch_id,
-                                "apply_to_sources": list(u.apply_to_sources)
-                                if u.apply_to_sources else None,
-                                "apply_to_branches": list(u.apply_to_branches)
-                                if u.apply_to_branches else None,
-                            }
-                            for u in sm_branch.uncertainties
-                        ],
-                        "fdha_branch_id": _fdha_branch_path(eb),
-                        "fdha_branch_weight": float(eb.weight),
-                        "combined_branch_weight": combined_w,
-                        "fdha_source_id": eb.source_id,
-                        "fdha_style": eb.style,
-                        "fdha_models": {
-                            slot: eb.selections[slot].class_name
-                            for slot in eb.selections
-                        },
-                    }
-                )
+                record = {
+                    "global_index": global_idx,
+                    "source_model_branch_id": sm_branch.branch_id,
+                    "source_model_file": sm_branch.source_model_file,
+                    "source_model_weight": float(sm_branch.weight),
+                    "source_model_uncertainties": [
+                        {
+                            "uncertainty_type": u.uncertainty_type,
+                            "value": _safe_jsonable(u.value),
+                            "branch_set_id": u.branch_set_id,
+                            "branch_id": u.branch_id,
+                            "apply_to_sources": list(u.apply_to_sources)
+                            if u.apply_to_sources else None,
+                            "apply_to_branches": list(u.apply_to_branches)
+                            if u.apply_to_branches else None,
+                        }
+                        for u in sm_branch.uncertainties
+                    ],
+                    "fdha_branch_id": _fdha_branch_path(eb),
+                    "fdha_branch_weight": float(eb.weight),
+                    "combined_branch_weight": combined_w,
+                    "fdha_source_id": eb.source_id,
+                    "fdha_style": eb.style,
+                    "fdha_models": _manifest_models(eb),
+                }
+                calc_params = _manifest_calc_params(eb)
+                if calc_params:
+                    record["fdha_calc_params"] = calc_params
+                combined_records.append(record)
 
                 if mode == "hazard_curve":
                     write_branch_rates_csv(
@@ -739,45 +746,44 @@ class FdhaLogicTree:
                     )
 
                 for fdha_idx, eb in enumerate(end_branches):
-                    combined_records.append(
-                        {
-                            "global_index": len(combined_records),
-                            "source_model_branch_id": sm_branch.branch_id,
-                            "source_model_file": sm_branch.source_model_file,
-                            "source_model_weight": float(sm_branch.weight),
-                            "source_model_uncertainties": [
-                                {
-                                    "uncertainty_type": u.uncertainty_type,
-                                    "value": _safe_jsonable(u.value),
-                                    "branch_set_id": u.branch_set_id,
-                                    "branch_id": u.branch_id,
-                                    "apply_to_sources": list(u.apply_to_sources)
-                                    if u.apply_to_sources else None,
-                                    "apply_to_branches": list(u.apply_to_branches)
-                                    if u.apply_to_branches else None,
-                                }
-                                for u in sm_branch.uncertainties
-                            ],
-                            "fdha_branch_id": _fdha_branch_path(eb),
-                            "fdha_branch_weight": float(eb.weight),
-                            "combined_branch_weight": (
-                                float(sm_branch.weight) * float(eb.weight)
-                            ),
-                            "fdha_source_id": eb.source_id,
-                            "fdha_style": eb.style,
-                            "fdha_models": {
-                                slot: eb.selections[slot].class_name
-                                for slot in eb.selections
-                            },
-                            "branch_subdir": str(
-                                sub_outdir.relative_to(outdir_path)
-                            ),
-                            "branch_h5": (
-                                f"{sub_outdir.relative_to(outdir_path)}/"
-                                f"branches/branch_{fdha_idx:04d}.h5"
-                            ),
-                        }
-                    )
+                    record = {
+                        "global_index": len(combined_records),
+                        "source_model_branch_id": sm_branch.branch_id,
+                        "source_model_file": sm_branch.source_model_file,
+                        "source_model_weight": float(sm_branch.weight),
+                        "source_model_uncertainties": [
+                            {
+                                "uncertainty_type": u.uncertainty_type,
+                                "value": _safe_jsonable(u.value),
+                                "branch_set_id": u.branch_set_id,
+                                "branch_id": u.branch_id,
+                                "apply_to_sources": list(u.apply_to_sources)
+                                if u.apply_to_sources else None,
+                                "apply_to_branches": list(u.apply_to_branches)
+                                if u.apply_to_branches else None,
+                            }
+                            for u in sm_branch.uncertainties
+                        ],
+                        "fdha_branch_id": _fdha_branch_path(eb),
+                        "fdha_branch_weight": float(eb.weight),
+                        "combined_branch_weight": (
+                            float(sm_branch.weight) * float(eb.weight)
+                        ),
+                        "fdha_source_id": eb.source_id,
+                        "fdha_style": eb.style,
+                        "fdha_models": _manifest_models(eb),
+                        "branch_subdir": str(
+                            sub_outdir.relative_to(outdir_path)
+                        ),
+                        "branch_h5": (
+                            f"{sub_outdir.relative_to(outdir_path)}/"
+                            f"branches/branch_{fdha_idx:04d}.h5"
+                        ),
+                    }
+                    calc_params = _manifest_calc_params(eb)
+                    if calc_params:
+                        record["fdha_calc_params"] = calc_params
+                    combined_records.append(record)
         finally:
             self.source_model_paths = original_paths
 
@@ -996,6 +1002,11 @@ class FdhaLogicTree:
                     "fdha_source_id": rec["fdha_source_id"],
                     "fdha_style": rec["fdha_style"],
                     "fdha_models": rec["fdha_models"],
+                    **(
+                        {"fdha_calc_params": rec["fdha_calc_params"]}
+                        if "fdha_calc_params" in rec
+                        else {}
+                    ),
                     "curve_file": (
                         f"hazard_curves/branch_{rec['global_index']:04d}.csv"
                         if mode == "hazard_curve"
@@ -1183,6 +1194,32 @@ def _sanitize_for_path(name: str) -> str:
     return "".join(safe) or "branch"
 
 
+def _manifest_models(eb) -> dict[str, str]:
+    """Model class per slot, excluding calc-param pseudo-slots."""
+    from openquake.fdha.logic_tree.config_builder import CALC_SLOTS
+
+    return {
+        slot: eb.selections[slot].class_name
+        for slot in eb.selections
+        if slot not in CALC_SLOTS
+    }
+
+
+def _manifest_calc_params(eb) -> dict[str, Any]:
+    """Calculation parameters chosen by calc-param branches (may be empty).
+
+    Empty for jobs without a fdhaCalcRThreshold branch set, in which case the
+    manifest key is omitted entirely so MODE A manifests stay unchanged.
+    """
+    from openquake.fdha.logic_tree.config_builder import CALC_SLOTS
+
+    out: dict[str, Any] = {}
+    for slot in eb.selections:
+        if slot in CALC_SLOTS:
+            out.update(eb.selections[slot].params)
+    return out
+
+
 def _fdha_branch_path(eb) -> str:
     """Compose a stable path identifier for an FDHA end-branch.
 
@@ -1262,21 +1299,23 @@ def _build_manifest(
 ) -> dict[str, Any]:
     branches = []
     for idx, eb in enumerate(end_branches):
-        branches.append(
-            {
-                "index": idx,
-                "fingerprint": _fingerprint_end_branch(eb),
-                "weight": float(branch_weights[idx]),
-                "source_id": eb.source_id,
-                "style": eb.style,
-                "models": {slot: eb.selections[slot].class_name for slot in eb.selections},
-                "curve_file": (
-                    f"hazard_curves/branch_{idx:04d}.csv"
-                    if mode == "hazard_curve"
-                    else f"branches/branch_{idx:04d}.h5"
-                ),
-            }
-        )
+        entry = {
+            "index": idx,
+            "fingerprint": _fingerprint_end_branch(eb),
+            "weight": float(branch_weights[idx]),
+            "source_id": eb.source_id,
+            "style": eb.style,
+            "models": _manifest_models(eb),
+            "curve_file": (
+                f"hazard_curves/branch_{idx:04d}.csv"
+                if mode == "hazard_curve"
+                else f"branches/branch_{idx:04d}.h5"
+            ),
+        }
+        calc_params = _manifest_calc_params(eb)
+        if calc_params:
+            entry["calc_params"] = calc_params
+        branches.append(entry)
     advisory = []
     for _, report in all_reports:
         for iss in report.warnings:

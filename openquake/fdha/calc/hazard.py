@@ -274,8 +274,8 @@ def _setup_visini_calculator(
     
     
     visini_calc = VisiniSecondaryCalculator(
-        base_sec_rup_params={k: v for k, v in sec_rup_params.items() if k != 'combination'},
-        base_sec_displ_params={k: v for k, v in sec_displ_params.items() if k != 'combination'},
+        base_sec_rup_params={k: v for k, v in sec_rup_params.items() if k not in ('combination', 'case')},
+        base_sec_displ_params={k: v for k, v in sec_displ_params.items() if k not in ('combination', 'case')},
         case_label=calculator.case_label,
         pixel_size=sec_rup_params.get('pixel_size', 100),
         along_strike_width=sec_rup_params.get('along_strike_width', None),
@@ -402,18 +402,18 @@ def _compute_rupture_contribution(
         rate * P_sr[:, np.newaxis] * P_fd_primary * mask_principal[:, np.newaxis]
     )
     
-    # Distributed zone: uses secondary (distributed) models
-    if use_visini:
-        # Visini already includes SR in combined probability
-        distributed_contrib = (
-            rate * P_dist_combined * mask_distributed[:, np.newaxis]
-        )
-    else:
-        # Standard: Rate × P(SR_primary) × P(SR_sec) × P(FD_sec)
-        # Note: Some implementations use P_sr (primary) as a gate
-        distributed_contrib = (
-            rate * P_sr[:, np.newaxis] * P_dist_combined * mask_distributed[:, np.newaxis]
-        )
+    # Distributed zone: uses secondary (distributed) models.
+    # Visini's DR occurrence regressions are fit on the SURE database, which
+    # contains only earthquakes with a mapped Rank-1 (principal) surface
+    # rupture (Visini et al. 2025, Table 1) — i.e. P_dist_combined is already
+    # conditional on the principal fault having reached the surface. It must
+    # still be gated by P(SR_primary) here, same as the non-Visini branch,
+    # to turn that conditional probability into a per-rupture rate
+    # contribution (Visini et al. 2025 explicitly excludes both P_sr and the
+    # earthquake rate from their worked example for this reason).
+    distributed_contrib = (
+        rate * P_sr[:, np.newaxis] * P_dist_combined * mask_distributed[:, np.newaxis]
+    )
     
     return principal_contrib, distributed_contrib
 
