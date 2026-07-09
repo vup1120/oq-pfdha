@@ -424,7 +424,15 @@ class FDHAContextMaker:
         # Calculate distances
         r = dist_calc.calculate_site_to_trace_distances()
         x_L, L = dist_calc.calculate_x_l_ratios()
-        rx = rupture.surface.get_rx_distance(self.sitecol)
+        if dist_calc.trace_is_original:
+            # Signed distance from the exact NRML trace: keeps |rx| == r and
+            # the HW/FW sign independent of rupture_mesh_spacing. hazardlib's
+            # get_rx_distance uses the resampled mesh top edge, which drifts
+            # off the true trace at coarse spacing and can flip the side for
+            # near-fault sites.
+            rx = dist_calc.calculate_signed_site_to_trace_distances()
+        else:
+            rx = rupture.surface.get_rx_distance(self.sitecol)
         
         # Early exit if all sites too far
         if np.all(r > self.maximum_distance):

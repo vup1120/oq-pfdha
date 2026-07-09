@@ -173,6 +173,7 @@ class RuptureDistanceCalculator:
         # use it as the trace for both r and x/L. Single-strand falls back to the
         # existing single-trace extraction.
         self._ecs = None
+        self.trace_is_original = False
         traces = _section_traces(rup_surface)
         if traces is not None:
             try:
@@ -183,7 +184,20 @@ class RuptureDistanceCalculator:
             except Exception:
                 self._ecs = None
         if self._ecs is None:
-            self.trace_points = _extract_fault_trace_from_mesh(self.rup_surface)
+            # Prefer the exact NRML trace attached at parse time (see
+            # parsing._attach_original_traces): the mesh top edge is a
+            # spacing-dependent resampling that corner-cuts wiggly traces
+            # by up to hundreds of meters, which distorts the near-fault
+            # FDHA distances. The original trace makes r/x/L independent
+            # of rupture_mesh_spacing.
+            orig = getattr(rup_surface, 'original_trace', None)
+            if orig is not None:
+                arr = np.asarray(orig, dtype=float)
+                if arr.ndim == 2 and arr.shape[0] >= 2 and arr.shape[1] >= 2:
+                    self.trace_points = arr[:, :2]
+                    self.trace_is_original = True
+            if not self.trace_is_original:
+                self.trace_points = _extract_fault_trace_from_mesh(self.rup_surface)
 
     def calculate_site_to_trace_distance(self) -> float:
         """Return r (km) = horizontal distance from site to surface trace polyline.
@@ -266,6 +280,56 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
                 np.array([float(sx), float(sy)]), txy
             )
         return dists
+
+    def calculate_signed_site_to_trace_distances(self) -> np.ndarray:
+        """Return the signed trace distance (km) for all sites: |value| is the
+        distance to the trace polyline, the sign follows the hazardlib ``Rx``
+        convention (positive on the hanging wall, negative on the footwall).
+
+        The hanging wall is the right-hand side of the trace walked in vertex
+        order, per the NRML right-hand rule (dip direction is 90° clockwise
+        from the strike implied by the trace order). The sign comes from the
+        cross product against the nearest trace segment, so — unlike hazardlib
+        ``get_rx_distance``, which uses the resampled mesh top edge — it stays
+        consistent with the trace geometry used for ``r`` and does not depend
+        on ``rupture_mesh_spacing``.
+        """
+        tr = np.asarray(self.trace_points, dtype=float)
+        n = len(self.sites)
+        if tr.shape[0] < 2:
+            return np.zeros(n)
+
+        tr_lons = unwrap_longitudes(tr[:, 0])
+        tr_lats = tr[:, 1]
+        lon0 = float(tr_lons[0])
+        lat0 = float(np.mean(tr_lats))
+        tx, ty = to_local_equirectangular_km(tr_lons, tr_lats, lon0=lon0, lat0=lat0)
+        txy = np.column_stack([tx, ty])
+
+        out = np.empty(n)
+        for idx, site in enumerate(self.sites):
+            sx, sy = to_local_equirectangular_km(
+                site.longitude, site.latitude, lon0=lon0, lat0=lat0
+            )
+            pxy = np.array([float(sx), float(sy)])
+            d_min, cross = float("inf"), 0.0
+            for i in range(len(txy) - 1):
+                seg = txy[i + 1] - txy[i]
+                seg_len2 = float(np.dot(seg, seg))
+                if seg_len2 == 0.0:
+                    continue
+                t = float(np.clip(np.dot(pxy - txy[i], seg) / seg_len2, 0.0, 1.0))
+                off = pxy - (txy[i] + t * seg)
+                d = float(np.linalg.norm(off))
+                if d < d_min:
+                    d_min = d
+                    cross = float(seg[0] * off[1] - seg[1] * off[0])
+            if not np.isfinite(d_min):
+                out[idx] = 0.0
+            else:
+                # right of walking direction (cross < 0) -> hanging wall -> +
+                out[idx] = d_min if cross <= 0.0 else -d_min
+        return out
 
     def calculate_x_l_ratios(self) -> Tuple[np.ndarray, float]:
         """
