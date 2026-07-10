@@ -22,7 +22,7 @@ version = bilinear]]></uncertaintyModel>
       <logicTreeBranchSet branchSetID="bs_3" uncertaintyType="fdhaSecondarySRModel" applyToBranches="B2_PFD">
         <logicTreeBranch branchID="B3_SSR">
           <uncertaintyModel><![CDATA[[Petersen2011SecondarySR]
-cell_size = 100
+pixel_size = 100
 version = default]]></uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
@@ -32,7 +32,7 @@ version = default]]></uncertaintyModel>
       <logicTreeBranchSet branchSetID="bs_4" uncertaintyType="fdhaSecondaryFDModel" applyToBranches="B3_SSR">
         <logicTreeBranch branchID="B4_SFD">
           <uncertaintyModel><![CDATA[[Petersen2011SecondaryFD]
-cell_size = 100]]></uncertaintyModel>
+pixel_size = 100]]></uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>

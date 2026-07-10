@@ -31,8 +31,8 @@ class Petersen2011SecondarySR(BaseSecondarySurfRup):
     """
     
     # Define coefficients for different pixel sizes
-    # Cell size parameters from Table 4 (Page 812, Petersen et al., 2011)
-    CELL_SIZES = {
+    # Pixel ("cell") size parameters from Table 4 (Page 812, Petersen et al., 2011)
+    PIXEL_SIZES = {
         25: {"a": -1.1470, "b": 2.1046, "sigma": 1.2508},  # 25 x 25 m
         50: {"a": -0.9000, "b": 0.9866, "sigma": 1.1470},  # 50 x 50 m
         100: {"a": -1.0114, "b": 2.5572, "sigma": 1.0917},  # 100 x 100 m
@@ -50,22 +50,26 @@ class Petersen2011SecondarySR(BaseSecondarySurfRup):
         200: {"p0": 0.92483, "p1": 0.18975, "p2": 0.074709, "r1": 200, "r2": 400},  # 200 x 200 m
     }
 
-    def get_prob(self, r, cell_size=25, version="default"):
+    def get_prob(self, r, pixel_size=25, version="default", cell_size=None):
         """
         Calculate the probability of distributed-fault surface rupture as a function of distance,
-        cell size, and version, per Petersen et al. (2011).
+        pixel size, and version, per Petersen et al. (2011).
 
         :param r:
             Distance from the principal fault trace in kilometers (up to 2 km recommended).
-        :param cell_size:
-            Size of the cell in meters (25, 50, 100, 150, or 200 m; default: 25 m).
+        :param pixel_size:
+            Size of the pixel ("cell" in the paper) in meters
+            (25, 50, 100, 150, or 200 m; default: 25 m).
         :param version:
             Model version (case-insensitive). Options: 'default' (power function, Page 812, Table 4),
             'near_field' (interpolated near-field, Table 5, page 812). Default: 'default'.
+        :param cell_size:
+            Deprecated alias of ``pixel_size`` (the historical parameter name);
+            when given it overrides ``pixel_size``.
         :returns:
-            Probability of rupture (float or array, 0–1) for the given distance, cell_size, and version.
+            Probability of rupture (float or array, 0–1) for the given distance, pixel_size, and version.
         :raises ValueError:
-            If r is negative or exceeds 2000 m, cell_size is invalid, or version is invalid.
+            If r is negative or exceeds 2000 m, pixel_size is invalid, or version is invalid.
         :notes:
             - Uses power function from Table 4 (Page 812) for 'default' (far-field probabilities).
             - Uses near-field interpolation points from Table 5 (page 812) for 'near_field' (r < r1),
@@ -74,6 +78,8 @@ class Petersen2011SecondarySR(BaseSecondarySurfRup):
             - Limited to 2 km distance from principal fault; no triggered ruptures included.
         """
         # Validate inputs
+        if cell_size is not None:  # deprecated alias kept for old logic trees
+            pixel_size = cell_size
         version = version.lower()
         valid_versions = ["default", "near_field"]
         if version not in valid_versions:
@@ -94,18 +100,18 @@ class Petersen2011SecondarySR(BaseSecondarySurfRup):
         #if not (r >= 0).all() or (r > 2000).any():
         #    raise ValueError("Distance r must be non-negative and ≤ 2000 m")
             
-        if isinstance(cell_size, str):
+        if isinstance(pixel_size, str):
             try:
-                cell_size = int(cell_size)
+                pixel_size = int(pixel_size)
             except ValueError:
-                raise ValueError(f"Cell size must be convertible to an integer")
-        if cell_size not in self.CELL_SIZES:
-            raise ValueError(f"Cell size must be one of {list(self.CELL_SIZES.keys())} m")
+                raise ValueError(f"Pixel size must be convertible to an integer")
+        if pixel_size not in self.PIXEL_SIZES:
+            raise ValueError(f"Pixel size must be one of {list(self.PIXEL_SIZES.keys())} m")
 
-        # Get cell size parameters
-        params = self.CELL_SIZES[cell_size]
+        # Get pixel size parameters
+        params = self.PIXEL_SIZES[pixel_size]
         a, b, _ = params["a"], params["b"], params["sigma"]
-        near_params = self.NEAR_FIELD_POINTS[cell_size]
+        near_params = self.NEAR_FIELD_POINTS[pixel_size]
         
         if version == "default":
             # Far-field power function (Page 819, Eqn 20, Table 4)
@@ -152,6 +158,7 @@ class Petersen2011SecondarySR(BaseSecondarySurfRup):
 class Petersen2011SecondarySR_default(Petersen2011SecondarySR):
     """Petersen et al. (2011) distributed-rupture model fixed to the 'default' variant."""
 
-    def get_prob(self, r, cell_size=25, version="default"):
+    def get_prob(self, r, pixel_size=25, version="default", cell_size=None):
         """Return distributed surface-rupture probability using the 'default' variant."""
-        return super().get_prob(r=r, cell_size=cell_size, version="default")
+        return super().get_prob(r=r, pixel_size=pixel_size,
+                                cell_size=cell_size, version="default")

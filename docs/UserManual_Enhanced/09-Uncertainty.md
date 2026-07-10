@@ -193,7 +193,7 @@ choice.
 
 ### `Petersen2011SecondarySR` — [petersen2011.py](../../openquake/fdha/secondary_surf_rup/petersen2011.py)
 - Far-field power law `ln(P) = a·ln(r) + b` ([line 112](../../openquake/fdha/secondary_surf_rup/petersen2011.py#L112)); near-field linear interpolation between `p₀, p₁, p₂` ([lines 121–133](../../openquake/fdha/secondary_surf_rup/petersen2011.py#L121-L133)).
-- **Epistemic branches:** cell-size-dependent coefficient tables (25, 50, 100, 150, 200 m, [lines 35–41](../../openquake/fdha/secondary_surf_rup/petersen2011.py#L35-L41)); default-vs-near-field method.
+- **Epistemic branches:** pixel-size-dependent coefficient tables (25, 50, 100, 150, 200 m, [lines 35–41](../../openquake/fdha/secondary_surf_rup/petersen2011.py#L35-L41)); default-vs-near-field method.
 
 ### `Takao2013SecondarySR` — [takao2013.py:87](../../openquake/fdha/secondary_surf_rup/takao2013.py#L87) and `Takao2014SecondarySR` — [takao2014.py:54](../../openquake/fdha/secondary_surf_rup/takao2014.py#L54)
 - Takao 2013: logistic with `fx = C₁ + (C₂ + C₃·M)·log(r + C₄)`.
@@ -298,7 +298,7 @@ models (rupture models are uniformly logistic with no aleatory σ on `P`).
   Kuehn 2024's posterior-sample ensemble, every model presents one curve per
   parameter setting. Logic trees should enumerate the named alternatives
   documented above (style, dataset version, completeness, σ source, method,
-  cell/pixel size, HW/FW), each with an explicit weight.
+  pixel size, HW/FW), each with an explicit weight.
 - **The principal/distributed distance threshold can itself be an epistemic
   branch.** The hard-step split at `r_threshold_km` is a simplification of the
   rupture-location term fr(r) of Petersen et al. (2011, p. 810); the toolkit

@@ -178,7 +178,7 @@ CLASS_PARAM_EXTRA = {
          "allowed": ">0", "required": False,
          "description": "Override the global gamma shape parameter (gamma method only)."},
     ],
-    # secondary_surf_rup/petersen2011.py:53 (appended to documented cell_size)
+    # secondary_surf_rup/petersen2011.py:53 (appended to documented pixel_size)
     "Petersen2011SecondarySR": [
         {"name": "version", "type": "string", "units": "–", "default": '"default"',
          "allowed": '`"default"`, `"near_field"`', "required": False,
