@@ -32,12 +32,11 @@ def parse_uncertainty_model(text: str) -> tuple[str, dict[str, Any]]:
 
 
 def _parse_ini_block(raw: str) -> tuple[str, dict[str, Any]]:
-    lines = [ln.rstrip() for ln in raw.splitlines()]
-    # drop leading/trailing empty
-    while lines and not lines[0].strip():
-        lines.pop(0)
-    while lines and not lines[-1].strip():
-        lines.pop()
+    # NRML files indent the block to the XML nesting depth (oq-engine GMPE
+    # logic-tree style) and values are single-line, so strip every line:
+    # otherwise configparser would treat a deeper-indented "key = value" as
+    # a continuation of the previous value.
+    lines = [ln.strip() for ln in raw.splitlines() if ln.strip()]
     if not lines:
         raise ValueError("Empty INI block")
 
