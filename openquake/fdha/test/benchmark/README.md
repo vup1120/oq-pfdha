@@ -6,6 +6,10 @@ This directory contains benchmark tests that compare our implementation against:
 
 ## Structure
 
+- **`IAEA/`** - Full IAEA PFDHA exercise (TECDOC-2092 / Valentini et al.): Kumamoto,
+  Le Teil and Norcia principal + distributed cases vs the published team curves
+- **`moss_ross_2011/`** - Moss & Ross (2011) Los Osos worked example (their Figs 7/10):
+  validates the MossRoss2011 SR/FD implementation against the source paper's anchors
 - **`valentini_et_al_2025/`** - Tests against Valentini et al. (2025) paper results
 - **`visini_et_al_2025/`** - Tests against Visini et al. (2025) paper results
 - **`mammarella_et_al_2024/`** - Tests against Mammarella et al. (2024) paper results
