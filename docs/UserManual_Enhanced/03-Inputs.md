@@ -50,6 +50,7 @@ Each supported fault source must provide:
 -   **Rupture Sampling**
     -   `SimpleFaultSource` / `ComplexFaultSource`: Magnitudes are drawn from the MFD; rupture dimensions are derived via the selected mag–area relation and aspect ratio; rupture planes are positioned along the trace/width (or the interpolated edge surface) per OQ conventions.
     -   `CharacteristicFaultSource`: Ruptures span the full mapped surface; the characteristic magnitude is used directly.
+    -   Ruptures whose top edge lies deeper than 0.5 km are treated as non-surface-rupturing and are skipped: they contribute no fault-displacement hazard (applies to floating ruptures of all typologies, in both hazard-curve and hazard-map calculations).
 -   **Distance Metrics for Displacement Models**
     -   The rupture surfaces/planes feed vectorized rupture–site distance calculators (e.g., to trace, to surface projection, to rupture plane).
     -   These distances, along with rake/dip, are routed through the PFDHA decision tree to select the appropriate principal and distributed displacement modelling and geometry-dependent combinations.
