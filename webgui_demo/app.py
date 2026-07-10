@@ -1054,12 +1054,19 @@ def page_configure() -> None:
             ]
             rows = dp + ctor_rows
             if rows:
-                md = "| param | default | required | allowed |\n|---|---|---|---|\n"
+                md = ("| param | default | must be specified | allowed |\n"
+                      "|---|---|---|---|\n")
                 for r in rows:
                     md += (f"| `{r['name']}` | {r.get('default', '')} | "
                            f"{'**yes**' if r['required'] else 'no'} | "
                            f"{r.get('allowed', '')[:60]} |\n")
                 st.markdown(md)
+                st.caption(
+                    "All listed parameters are used by the calculation. "
+                    "'must be specified: no' means the parameter may be "
+                    "omitted from the box above - the default value is then "
+                    "applied automatically."
+                )
                 if any(r["name"] == "style" for r in dp):
                     st.caption("Info: `style` is assigned automatically from "
                                "the source rake when omitted "
