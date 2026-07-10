@@ -39,6 +39,31 @@ via `FixedPrimarySR`. (An earlier revision of these configs used
 introduced it scaled all three curves by P_sr(Mw 7) ≈ 0.39 — a uniform
 ×0.4 offset against the figure.)
 
+## Reading the truncation cliff in the comparison figures
+
+Each case's computed curve ends in a sharp, smooth roll-off to exactly zero
+rather than an extended power-law tail. This is by design:
+`Visini2025SecondaryFD` implements the along-strike displacement as a
+**truncated** log-normal (`n_sigma = 3`, matching the FDHLab MATLAB
+reference's `eps = 3`), and a truncated distribution has zero density beyond
+its truncation bound. The bound scales with each case's TPFm/combination and
+falls at different displacements: ≈ 2.5 m for cases 2 and 3 (combination
+A/A+B), ≈ 8-9 m for case 1 (A+B+C, a larger combined median). Evaluated at
+the reference's own last digitized point (case 3, d = 2.2175 m, published
+P ≈ 1.00e-5) the model gives ≈ 8.8e-6 — matching to within the same ~5-10%
+agreement seen everywhere else on the curve.
+
+`job_case*.ini`'s `displacement_measure_levels` jumps straight across each
+of these gaps (`..., 1.0, 3.0, ...` and `..., 3.0, 5.0, 7.5, 10.0`), so a
+naive plot of the raw calculation grid draws a straight line from the last
+nonzero point to the hard zero — which on a log-y axis looks like a
+near-vertical cliff and can read as a modelling error. It isn't: it's a
+sampling artifact of the coarse grid, not a divergence from the reference.
+`plot_fig13_cases_vs_reference.py` fixes this by densifying the
+*plotted* curve across both gaps (see its module docstring) while leaving
+the coarse grid used by `test_fig13_reproduction.py` and the `agreement`
+stats below untouched.
+
 ## Two findings worth knowing about (established while reconstructing this benchmark)
 
 1. **The Case 2 distance in the paper text (200 m) does not match the
@@ -65,21 +90,33 @@ introduced it scaled all three curves by P_sr(Mw 7) ≈ 0.39 — a uniform
 ## Running
 
 ```bash
-# the three cases + comparison plot
+# the three cases + comparison figures + ratio stats
+# (writes ../Figures/visini2025_fig13_*.png and fig13_agreement.json)
+PYTHONPATH=. python plot_fig13_cases_vs_reference.py
+
+# legacy runner (three cases + single combined plot, results JSONs)
 python run_all_cases_and_plot.py
 
 # pytest benchmark (slow; runs the CLI three times)
 pytest test_fig13_reproduction.py -m slow
 ```
 
+The headline comparison figure is
+`../Figures/visini2025_fig13_all_cases_ref_vs_impl.png` (published Fig. 13
+curves dashed, oq-pfdha solid); per-case overlay and relative-error panels
+sit next to it, and `fig13_agreement.json` records the computed/reference
+ratio statistics of the latest run.
+
 Current agreement against the digitized curves (model/reference ratio at the
 calculation displacement levels, within the digitized range and below the
-+3σ truncation cliff at ~2.5 m):
++3σ truncation cliff, d ≤ 2 m; run of 2026-07-10, see
+`fig13_agreement.json` — the unseeded Monte Carlo along-strike factor moves
+individual points by ≈ ±5% between runs):
 
 | Case | min | median | max |
 | --- | --- | --- | --- |
-| 1 (A+B+C) | 0.97 | 1.02 | 1.07 |
-| 2 (A+B) | 0.89 | 0.95 | 1.06 |
-| 3 (A) | 0.94 | 0.97 | 1.04 |
+| 1 (A+B+C) | 0.97 | 1.03 | 1.07 |
+| 2 (A+B) | 0.79 | 0.85 | 0.94 |
+| 3 (A) | 0.89 | 0.91 | 0.99 |
 
-`case{1,2,3}_results.json` are snapshots of these runs (`imls` / `poes`).
+`case{1,2,3}_results.json` are snapshots of earlier runs (`imls` / `poes`).

@@ -35,8 +35,8 @@ class Petersen2011SecondaryFD(BaseSecondarySurfDispl):
     faults. Bulletin of the Seismological Society of America, 101(2), 805-825.
     """
 
-    # Cell size parameters from Table 4 (Page 812, Petersen et al., 2011)
-    CELL_SIZES = {
+    # Pixel ("cell") size parameters from Table 4 (Page 812, Petersen et al., 2011)
+    PIXEL_SIZES = {
         25: {"a": -1.1470, "b": 2.1046, "sigma": 1.2508},  # 25 x 25 m
         50: {"a": -0.9000, "b": 0.9866, "sigma": 1.1470},  # 50 x 50 m
         100: {"a": -1.0114, "b": 2.5572, "sigma": 1.0917},  # 100 x 100 m
@@ -54,7 +54,7 @@ class Petersen2011SecondaryFD(BaseSecondarySurfDispl):
         200: {"p0": 0.92483, "p1": 0.18975, "p2": 0.074709, "r1": 200, "r2": 400},
     }
 
-    def get_prob(self, d, mag, r, cell_size=25):
+    def get_prob(self, d, mag, r, pixel_size=25, cell_size=None):
         """
         Calculate the probability of exceeding displacement thresholds [m] for distributed
         strike-slip faults, per Petersen et al. (2011).
@@ -65,12 +65,17 @@ class Petersen2011SecondaryFD(BaseSecondarySurfDispl):
             Earthquake moment magnitude (scalar, recommended range: 6–8 for strike-slip faults)
         :param r:
             Distance from the principal fault trace in kilometers (array of shape (n_sites,))
+        :param pixel_size:
+            Size of the pixel ("cell" in the paper) in meters (25, 50, 100, 150,
+            or 200 m; default: 25 m). Accepted for interface uniformity with the
+            companion rupture model; the displacement regression (Page 818,
+            Eqn 18) itself carries no pixel-size term.
         :param cell_size:
-            Size of the cell in meters (25, 50, 100, 150, or 200 m; default: 25 m)
+            Deprecated alias of ``pixel_size`` (the historical parameter name).
         :returns:
             Probability of exceeding the target displacement (shape (n_sites, n_displacements))
         :raises ValueError:
-            If mag is outside [6, 8], r is negative, or cell_size is invalid.
+            If mag is outside [6, 8] or r is negative.
         :notes:
             - Applies to distributed (off-fault) surface fault displacement on strike-slip faults,
               per Petersen et al. (2011, doi:10.1785/0120100035).

@@ -73,7 +73,7 @@ Engine's statistics.
 | `investigation_time` | float | `1.0` | No | Investigation time in years. |
 | `return_period` | float | `100000.0` | Hazard map only | Return period used to invert each site hazard curve into map displacement. |
 | `max_distance_km` | float | `10.0` | Hazard map optional | Maximum distance from fault traces used when building hazard-map sites. The loader also accepts this in `[geometry]`. |
-| `r_threshold_km` | float | implementation default | No | Distance threshold used by hazard calculations to separate principal/near-trace behavior where applicable. |
+| `r_threshold_km` | float | implementation default | No | Distance threshold used by hazard calculations to separate principal/near-trace behavior where applicable. Mutually exclusive with an `fdhaCalcRThreshold` branch set in the FDHA logic tree (see below): defining both is a configuration error. |
 | `near_far_threshold_km` | float | implementation default | No | Copied into runtime parameters when supplied. |
 | `rank1p5_traces_file` | string | none | No | Optional XML file of rank-1.5 traces. If the file exists and parses, traces are added to runtime configuration. |
 
@@ -148,6 +148,7 @@ region_grid_spacing = 0.01
 | :--- | :--- | :--- | :--- |
 | `rupture_mesh_spacing` | float | `0.5` in the config dataclass; examples use `2.0` | Fault-surface rupture mesh spacing in kilometers. |
 | `width_of_mfd_bin` | float | `0.1` | MFD bin width in magnitude units. |
+| `complex_fault_mesh_spacing` | float | none | Mesh spacing (km) for `complexFaultGeometry` surfaces. Required by the OpenQuake source converter whenever the source model contains a `complexFaultGeometry` — whether inside a `characteristicFaultSource` or as a standalone `complexFaultSource`. |
 
 ```ini
 [erf]
@@ -185,8 +186,9 @@ The FDHA logic tree selects the four model categories:
 | `fdhaPrimaryFDModel` | `primary_surf_displ` |
 | `fdhaSecondarySRModel` | `secondary_surf_rup` |
 | `fdhaSecondaryFDModel` | `secondary_surf_displ` |
+| `fdhaCalcRThreshold` | `calc_r_threshold` (calculation parameter) |
 
-Each branch's `<uncertaintyModel>` text is an INI-like block. The first bracketed name is the model class; following lines are model parameters.
+For the four model uncertainty types, each branch's `<uncertaintyModel>` text is an INI-like block. The first bracketed name is the model class; following lines are model parameters.
 
 ```xml
 <logicTreeBranchSet branchSetID="bs_1_primary_surf_rup"
@@ -198,6 +200,42 @@ style = all]]></uncertaintyModel>
   </logicTreeBranch>
 </logicTreeBranchSet>
 ```
+
+### Calculation-parameter branches: `fdhaCalcRThreshold`
+
+`fdhaCalcRThreshold` branch sets express **epistemic uncertainty on the
+`r_threshold_km` calculation parameter** instead of on a model class.
+Following the OpenQuake convention for scalar uncertainty types, each
+`<uncertaintyModel>` contains a single bare positive float — the
+principal/distributed distance threshold in kilometers:
+
+```xml
+<logicTreeBranchSet branchSetID="bs_r_threshold"
+                    uncertaintyType="fdhaCalcRThreshold">
+  <logicTreeBranch branchID="RT_0p1">
+    <uncertaintyModel>0.1</uncertaintyModel>
+    <uncertaintyWeight>0.6</uncertaintyWeight>
+  </logicTreeBranch>
+  <logicTreeBranch branchID="RT_0p2">
+    <uncertaintyModel>0.2</uncertaintyModel>
+    <uncertaintyWeight>0.4</uncertaintyWeight>
+  </logicTreeBranch>
+</logicTreeBranchSet>
+```
+
+Treating the threshold choice as weighted branches follows Petersen et al.
+(2011, p. 810) and IAEA-TECDOC-2092 (2025, Section 3.3). Threshold branches
+multiply into the realization count like any other branch set and appear in
+the manifest branch paths.
+
+!!! warning "Conflict rule: INI scalar vs. logic-tree branches"
+    A job must choose **one** mechanism: either the scalar
+    `[calculation].r_threshold_km` in the job INI **or** an
+    `fdhaCalcRThreshold` branch set in the FDHA logic tree. Defining both
+    raises a configuration error naming both locations — there is no silent
+    precedence.
+
+### Branch-set filters
 
 Supported FDHA branch-set filters in the parser/validator are:
 
@@ -255,6 +293,10 @@ displacement_measure_levels = {"FD": [0.0001, 0.001, 0.005, 0.01, 0.015, 0.03, 0
 r_threshold_km = 0.1
 fdha_logic_tree_file = hazard_curve_minimal_fdha_logic_tree.xml
 source_model_logic_tree_file = hazard_curve_minimal_source_model_logic_tree.xml
+
+[output]
+mean = true
+quantiles = 0.05 0.16 0.5 0.84 0.95
 ```
 
 ### Minimal Hazard Map
@@ -279,6 +321,10 @@ return_period = 100000.0
 max_distance_km = 10.0
 fdha_logic_tree_file = hazard_map_minimal_fdha_logic_tree.xml
 source_model_logic_tree_file = hazard_map_minimal_source_model_logic_tree.xml
+
+[output]
+mean = true
+quantiles = 0.05 0.16 0.5 0.84 0.95
 ```
 
 ## See Also

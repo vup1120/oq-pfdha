@@ -64,7 +64,7 @@
         <logicTreeBranch branchID="SS_SSR_TAKAO2014">
           <uncertaintyModel>
             [Takao2014SecondarySR]
-            cell_size = 25
+            pixel_size = 25
           </uncertaintyModel>
           <uncertaintyWeight>0.5</uncertaintyWeight>
         </logicTreeBranch>
