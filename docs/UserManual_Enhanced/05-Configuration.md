@@ -292,6 +292,10 @@ displacement_measure_levels = {"FD": [0.0001, 0.001, 0.005, 0.01, 0.015, 0.03, 0
 r_threshold_km = 0.1
 fdha_logic_tree_file = hazard_curve_minimal_fdha_logic_tree.xml
 source_model_logic_tree_file = hazard_curve_minimal_source_model_logic_tree.xml
+
+[output]
+mean = true
+quantiles = 0.05 0.16 0.5 0.84 0.95
 ```
 
 ### Minimal Hazard Map
@@ -316,6 +320,10 @@ return_period = 100000.0
 max_distance_km = 10.0
 fdha_logic_tree_file = hazard_map_minimal_fdha_logic_tree.xml
 source_model_logic_tree_file = hazard_map_minimal_source_model_logic_tree.xml
+
+[output]
+mean = true
+quantiles = 0.05 0.16 0.5 0.84 0.95
 ```
 
 ## See Also
