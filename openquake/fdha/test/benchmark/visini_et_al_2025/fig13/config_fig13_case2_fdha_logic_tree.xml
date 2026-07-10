@@ -4,9 +4,8 @@
     <logicTreeBranchingLevel branchingLevelID="bl_1_primary_surf_rup">
       <logicTreeBranchSet branchSetID="bs_1_primary_surf_rup" uncertaintyType="fdhaPrimarySRModel">
         <logicTreeBranch branchID="B1_PRIMARY_SURF_RUP">
-          <uncertaintyModel><![CDATA[[Moss2013PrimarySR]
-style = reverse
-vs30 = 600]]></uncertaintyModel>
+          <uncertaintyModel><![CDATA[[FixedPrimarySR]
+value = 1.0]]></uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>

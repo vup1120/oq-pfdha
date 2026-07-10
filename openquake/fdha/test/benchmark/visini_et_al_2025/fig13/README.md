@@ -19,9 +19,25 @@ digitized into `reference_data/visini2025_case{1,2,3}.csv`.
 | Case 1 | Combinations A + B + C (Rank 1.5 fault beneath the site, plus nearby fault) | `case = case1`, traces `R1p5_local_A`, `R1p5_local_B` |
 | Case 2 | Combinations A + B (nearby Rank 1.5 fault only) | `case = case2`, trace `R1p5_500m` |
 | Case 3 | Combination A only (no Rank 1.5 fault within 1 km) | `case = case3`, trace `R1p5_far1` (~2.6 km) |
+| P(SR_primary) | **1.0 (pinned)** — Fig 13 shows *conditional* probabilities | `[FixedPrimarySR] value = 1.0` in the SR logic-tree branches |
 
 The geometry was verified against the calculator: the site context resolves to
 r = 1.9995 km, x/L = 0.498, rx > 0 (hanging wall), L = 40.0 km.
+
+**Why P(SR_primary) is pinned to 1.** The paper's Figure 13 curves are
+conditional probabilities of exceedance: Visini et al. (2025) explicitly
+exclude both the earthquake rate and the primary surface-rupture probability
+from the worked example. The hazard pipeline, however, deliberately gates the
+distributed contribution with P(SR_primary) — the DR occurrence regressions
+are fit on the SURE database, which contains only earthquakes with a mapped
+Rank-1 surface rupture, so P_dist is conditional on the principal fault
+reaching the surface and the gate converts it into a per-rupture rate
+contribution (see `calc/hazard.py`). To compare like-with-like against the
+published conditional curves, this benchmark therefore fixes the gate to 1
+via `FixedPrimarySR`. (An earlier revision of these configs used
+`Moss2013PrimarySR`, chosen before the gate existed; once the gate was
+introduced it scaled all three curves by P_sr(Mw 7) ≈ 0.39 — a uniform
+×0.4 offset against the figure.)
 
 ## Two findings worth knowing about (established while reconstructing this benchmark)
 
@@ -63,7 +79,7 @@ calculation displacement levels, within the digitized range and below the
 | Case | min | median | max |
 | --- | --- | --- | --- |
 | 1 (A+B+C) | 0.97 | 1.02 | 1.07 |
-| 2 (A+B) | 0.81 | 0.87 | 0.97 |
-| 3 (A) | 0.94 | 0.96 | 1.03 |
+| 2 (A+B) | 0.89 | 0.95 | 1.06 |
+| 3 (A) | 0.94 | 0.97 | 1.04 |
 
 `case{1,2,3}_results.json` are snapshots of these runs (`imls` / `poes`).
