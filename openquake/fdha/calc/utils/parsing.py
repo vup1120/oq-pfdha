@@ -2,8 +2,11 @@
 Module for parsing OpenQuake NRML source models.
 """
 
+import os
+import tempfile
+
 import numpy as np
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from openquake.commonlib.readinput import read_source_models
 from openquake.hazardlib import nrml
 from openquake.hazardlib.nrml import SourceModel
@@ -20,6 +23,14 @@ def parse_source_model_faults(
     Internally calls OQ‑Engine's read_source_models, which handles
     multifault HDF5, geometry fixing, etc.
 
+    multiFaultSource conveniences: when the caller does not pass an
+    ``investigation_time``, it is sniffed from the ``<sourceModel>`` /
+    ``<geometryModel>`` NRML headers (the engine SourceConverter default of
+    50 yr would collide with the declared value and be rejected by the nrml
+    consistency check); when ``hdf5path`` is empty but a multi-fault /
+    geometry-model input is present, a temporary auxiliary .hdf5 is created
+    automatically (the engine needs it to store the sections).
+
     :param fnames: Single filename or list of filenames of NRML XML source models.
     :param hdf5path: Path to auxiliary .hdf5 file for multifault sources.
     :param converterparams: Params passed to the converter (e.g. rupture_mesh_spacing).
@@ -30,6 +41,17 @@ def parse_source_model_faults(
         files = [fnames]
     else:
         files = list(fnames)
+
+    if 'investigation_time' not in converterparams:
+        sniffed = _sniff_investigation_time(files)
+        if sniffed is not None:
+            converterparams['investigation_time'] = sniffed
+    if not hdf5path and _has_multifault(files):
+        # Fresh non-existing path inside a temp dir: the engine creates the
+        # file itself (an empty pre-created file would fail h5py signature
+        # checks).
+        hdf5path = os.path.join(
+            tempfile.mkdtemp(prefix='fdha_sections_'), 'sections.hdf5')
 
     # Read models via OQ‑Engine
     smodels = read_source_models(files, hdf5path=hdf5path, **converterparams)
@@ -94,6 +116,46 @@ def _walk(node):
     yield node
     for child in node:
         yield from _walk(child)
+
+
+def _sniff_investigation_time(files: List[str]) -> Optional[float]:
+    """Return the investigation_time declared in the NRML headers, if any.
+
+    multiFaultSource / geometryModel files carry the PMF time span as an
+    attribute of their root <sourceModel>/<geometryModel> node; the engine
+    validates it against the converter setting, so it must be forwarded
+    when the caller did not choose one explicitly.
+    """
+    for fname in files:
+        try:
+            root = nrml.read(fname)
+        except Exception:
+            continue
+        for node in _walk(root):
+            tag = node.tag.rsplit('}', 1)[-1]
+            if tag in ('sourceModel', 'geometryModel'):
+                value = node.attrib.get('investigation_time')
+                if value is not None:
+                    try:
+                        return float(value)
+                    except (TypeError, ValueError):
+                        continue
+    return None
+
+
+def _has_multifault(files: List[str]) -> bool:
+    """True when any input declares a multiFaultSource or geometryModel
+    (both need the auxiliary sections .hdf5)."""
+    for fname in files:
+        try:
+            root = nrml.read(fname)
+        except Exception:
+            continue
+        for node in _walk(root):
+            tag = node.tag.rsplit('}', 1)[-1]
+            if tag in ('multiFaultSource', 'geometryModel'):
+                return True
+    return False
 
 
 def _extract_trace_coords(src_node) -> 'np.ndarray | None':

@@ -98,6 +98,18 @@ class LegacyModelAdapter:
             logger.error(f"Error calling {self.model.__class__.__name__}.{method_name}: {e}")
             return None
     
+    def _ctx_metrics(self, ctx: 'FDHAContext'):
+        """(r, x_L, L) arrays for this model's declared reference-line method.
+
+        Each FDHA model declares how multi-section (multiFaultSource)
+        rupture distances must be measured via its MULTIFAULT_REFERENCE_LINE
+        class attribute (ecs | lcp | segments); the context carries one
+        metric set per method required by the configured models. For
+        single-strand ruptures this is simply the canonical trace-based set.
+        """
+        method = getattr(self.model, 'MULTIFAULT_REFERENCE_LINE', 'lcp')
+        return ctx.metrics_for(method)
+
     def compute_primary_sr(
         self,
         ctx: 'FDHAContext',
@@ -203,16 +215,18 @@ class LegacyModelAdapter:
                 f"  style = all"
             )
         
-        # Build kwargs with vectorized arrays
+        # Build kwargs with vectorized arrays; x_L follows the model's
+        # declared multi-fault reference line (e.g. Chiou2025 -> ECS).
+        _r_sel, x_L_sel, _L_sel = self._ctx_metrics(ctx)
         kwargs = {
             'mag': float(ctx.mag[0]),
             'd': displacements,
-            'X_L_ratio': ctx.x_L,
-            'x_L': ctx.x_L,
+            'X_L_ratio': x_L_sel,
+            'x_L': x_L_sel,
             'style': style,
             **{k: v for k, v in self.model_params.items() if k != 'style'},
         }
-        
+
         # Vectorized call - no fallback loops
         result = self._call_safely('get_prob', **kwargs)
         
@@ -280,16 +294,18 @@ class LegacyModelAdapter:
                 f"  style = all"
             )
         
-        # Build kwargs with vectorized arrays
+        # Build kwargs with vectorized arrays; r follows the model's declared
+        # multi-fault reference line (e.g. Visini2025 -> nearest segment).
+        r_sel, _x_L_sel, _L_sel = self._ctx_metrics(ctx)
         kwargs = {
             'mag': float(ctx.mag[0]),
-            'r': ctx.r,
+            'r': r_sel,
             'rx': ctx.rx,
-            's': ctx.r_m,
+            's': r_sel * 1000.0,
             'style': style,
             **{k: v for k, v in self.model_params.items() if k != 'style'},
         }
-        
+
         # Ensure version is string if present (Youngs2003SecondarySR expects string)
         if 'version' in kwargs:
             kwargs['version'] = str(kwargs['version'])
@@ -403,17 +419,19 @@ class LegacyModelAdapter:
                 f"  style = all"
             )
         
-        # Build kwargs
+        # Build kwargs; r/x_L/L follow the model's declared multi-fault
+        # reference line (e.g. Visini2025 -> nearest segment, raw GC2 x/L).
+        r_sel, x_L_sel, L_sel = self._ctx_metrics(ctx)
         kwargs = {
             'mag': float(ctx.mag[0]),
             'd': displacements,
-            'r': ctx.r,
+            'r': r_sel,
             'rx': ctx.rx,
-            's': ctx.r_m,
-            'X_L_ratio': ctx.x_L,
-            'x_L': ctx.x_L,
+            's': r_sel * 1000.0,
+            'X_L_ratio': x_L_sel,
+            'x_L': x_L_sel,
             'dip': ctx.dip,
-            'L': ctx.L,
+            'L': L_sel,
             'style': style,
             **{k: v for k, v in self.model_params.items() if k != 'style'},
         }

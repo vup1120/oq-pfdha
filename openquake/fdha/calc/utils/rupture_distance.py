@@ -10,7 +10,20 @@ except Exception:  # pragma: no cover - optional dependency for distance-only ut
     Point = None  # type: ignore[assignment]
 
 
-# -------- Multi-section (ECS) detection --------
+# Valid reference-line treatments for multi-section ruptures. Which one a
+# job needs is declared per FDHA model via the MULTIFAULT_REFERENCE_LINE
+# class attribute (mirroring hazardlib's REQUIRES_DISTANCES pattern); this
+# module only provides the dispatch mechanics.
+REFERENCE_LINE_METHODS = ("ecs", "lcp", "segments")
+
+# Sections whose top edge is deeper than this do not break the surface and
+# are excluded from the 'segments' surface-rupture distance (same value as
+# FDHAContextMaker.SURFACE_DEPTH_TOLERANCE_KM; kept literal here to avoid a
+# circular import with contexts.py).
+SURFACE_DEPTH_TOLERANCE_KM = 0.5
+
+
+# -------- Multi-section detection --------
 def _section_traces(surface: Any):
     """Return per-section top-edge ``(lon, lat)`` traces for a multi-section
     rupture surface, or ``None`` if the surface is single-strand.
@@ -18,12 +31,29 @@ def _section_traces(surface: Any):
     Multi-section ruptures (e.g. ``multiFaultSource``) arrive as a MultiSurface
     whose ``.surfaces`` each expose a top-of-rupture line (``.tor``). For these
     the single-trace ``_extract_fault_trace_from_mesh`` is invalid (it picks one
-    mesh row across disjoint sections), so x/L is computed via the ECS instead.
+    mesh row across disjoint sections), so x/L is computed via a reference line
+    instead.
+    """
+    info = _sections_info(surface)
+    if info is None or len(info) < 2:
+        return None
+    return [(lons, lats) for lons, lats, _dep in info]
+
+
+def _sections_info(surface: Any):
+    """Return ``[(lons, lats, top_depth_km), ...]`` per section of a
+    MultiSurface-like object (one entry per valid section, any count >= 1),
+    or ``None`` when the surface has no ``.surfaces`` or a section lacks a
+    usable top-of-rupture line.
+
+    The top depth comes from the third ``tor.coo`` column when present, else
+    from the section mesh minimum depth, else 0 (hazardlib kite ``tor`` lines
+    carry lon/lat only and their sections always expose a mesh).
     """
     subs = getattr(surface, "surfaces", None)
-    if not subs or len(subs) <= 1:
+    if not subs:
         return None
-    traces = []
+    info = []
     for s in subs:
         tor = getattr(s, "tor", None)
         try:
@@ -31,9 +61,42 @@ def _section_traces(surface: Any):
                              dtype=float)
         except Exception:
             return None
-        if coo.ndim == 2 and coo.shape[0] >= 2 and coo.shape[1] >= 2:
-            traces.append((coo[:, 0], coo[:, 1]))
-    return traces if len(traces) >= 2 else None
+        if coo.ndim != 2 or coo.shape[0] < 2 or coo.shape[1] < 2:
+            return None
+        if coo.shape[1] >= 3:
+            top_depth = float(np.nanmin(coo[:, 2]))
+        else:
+            mesh = getattr(s, "mesh", None)
+            deps = getattr(mesh, "depths", None) if mesh is not None else None
+            if deps is not None and np.asarray(deps).size:
+                top_depth = float(np.nanmin(deps))
+            else:
+                top_depth = 0.0
+        info.append((coo[:, 0], coo[:, 1], top_depth))
+    return info if info else None
+
+
+def _build_reference_line(method: str, sections_info):
+    """Build the reference-line result object for a >=2-section rupture.
+
+    - 'ecs' / 'lcp': smoothed representative line over ALL section traces
+      (buried sections included — their geometry still shapes the line).
+    - 'segments': raw segmentation over the surface-reaching sections only
+      (top depth <= SURFACE_DEPTH_TOLERANCE_KM): r must not be attracted to
+      buried top edges, which produce no surface displacement.
+    """
+    traces = [(lons, lats) for lons, lats, _dep in sections_info]
+    if method == "ecs":
+        from openquake.fdha.calc.utils import ecs as _ecs_mod
+        return _ecs_mod.ecs_from_traces(traces)
+    if method == "lcp":
+        from openquake.fdha.calc.utils import lcp as _lcp_mod
+        return _lcp_mod.lcp_from_traces(traces)
+    # segments
+    from openquake.fdha.calc.utils import segments as _seg_mod
+    surface_traces = [(lons, lats) for lons, lats, dep in sections_info
+                      if dep <= SURFACE_DEPTH_TOLERANCE_KM]
+    return _seg_mod.segments_from_traces(surface_traces or traces)
 
 
 # -------- Trace extraction from surface.mesh (no get_fault_trace dependency) --------
@@ -166,24 +229,41 @@ class RuptureDistanceCalculator:
       unwrapping/wrapping in the projection step.
     - Returns a tuple (x_over_L, L_km) where x_over_L ∈ [0,1] and L_km ≥ 0.
     """
-    def __init__(self, sitecol, rup_surface):
+    def __init__(self, sitecol, rup_surface, reference_line_method: str = "ecs"):
+        if reference_line_method not in REFERENCE_LINE_METHODS:
+            raise ValueError(
+                f"reference_line_method must be one of "
+                f"{REFERENCE_LINE_METHODS}; got {reference_line_method!r}")
         self.sitecol = sitecol
         self.rup_surface = rup_surface
-        # Multi-section ruptures: build the ECS representative reference line and
-        # use it as the trace for both r and x/L. Single-strand falls back to the
-        # existing single-trace extraction.
-        self._ecs = None
+        self.reference_line_method = reference_line_method
+        # Multi-section ruptures: build the requested reference line and use
+        # it for x/L (and, for 'segments', for r as well). Which method a
+        # model requires is declared via MULTIFAULT_REFERENCE_LINE; the
+        # context maker constructs one calculator per required method.
+        # Single-strand surfaces ignore the method entirely.
+        self._refline = None
         self.trace_is_original = False
-        traces = _section_traces(rup_surface)
-        if traces is not None:
+        trace_points = None
+        sections = _sections_info(rup_surface)
+        if sections is not None and len(sections) == 1:
+            # Single-section rupture: the section top trace IS the principal
+            # trace — no reference line needed for any method.
+            lons, lats, _dep = sections[0]
+            trace_points = np.column_stack([lons, lats])
+        elif sections is not None:
             try:
-                from openquake.fdha.calc.utils import ecs as _ecs_mod
-                self._ecs = _ecs_mod.ecs_from_traces(traces)
-                self.trace_points = np.column_stack(
-                    [self._ecs.lon, self._ecs.lat])
+                self._refline = _build_reference_line(
+                    reference_line_method, sections)
+                trace_points = np.column_stack(
+                    [self._refline.lon, self._refline.lat])
             except Exception:
-                self._ecs = None
-        if self._ecs is None:
+                self._refline = None
+        # Back-compat alias (pre-dispatch code and tests use ``_ecs``).
+        self._ecs = self._refline
+        if trace_points is not None:
+            self.trace_points = trace_points
+        else:
             # Prefer the exact NRML trace attached at parse time (see
             # parsing._attach_original_traces): the mesh top edge is a
             # spacing-dependent resampling that corner-cuts wiggly traces
@@ -247,9 +327,11 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
     def __init__(
         self,
         sitecol: SiteCollection,
-        rup_surface: Any
+        rup_surface: Any,
+        reference_line_method: str = "ecs"
     ) -> None:
-        super().__init__(sitecol, rup_surface)
+        super().__init__(sitecol, rup_surface,
+                         reference_line_method=reference_line_method)
         self.sites = [site.location for site in sitecol]
 
     def calculate_site_to_trace_distances(self) -> np.ndarray:
@@ -258,7 +340,18 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
         Uses a local equirectangular projection (same frame as
         ``calculate_x_l_ratios``) instead of OQ ``get_min_distance`` (Rrup),
         avoiding the O(n_mesh_nodes × n_sites) ``cdist`` allocation.
+
+        'segments' reference line: r is the distance to the nearest actual
+        surface-reaching section trace (inter-section gaps are NOT bridged),
+        via ``SegmentsResult.r_km`` — the treatment required by
+        segmentation-calibrated models (Visini et al. 2025). The smoothed
+        ecs/lcp lines keep the single-polyline projection below.
         """
+        if self._refline is not None and hasattr(self._refline, "r_km"):
+            lons = np.array([s.longitude for s in self.sites], dtype=float)
+            lats = np.array([s.latitude for s in self.sites], dtype=float)
+            return np.asarray(self._refline.r_km(lons, lats), dtype=float)
+
         tr = np.asarray(self.trace_points, dtype=float)
         if tr.shape[0] < 2:
             return np.zeros(len(self.sites))
@@ -339,29 +432,31 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
         Uses a local equirectangular projection centered at the mean trace
         latitude; robust to IDL crossing.
 
-        Multi-section ruptures route through the ECS reference line (GC2 along
-        the representative principal-rupture trace); single-strand uses the
-        orthogonal-projection path below.
+        Multi-section ruptures route through the reference line built for
+        this calculator's method (ECS/LCP GC2 along the representative
+        principal-rupture trace, or raw-segmentation GC2 for 'segments');
+        single-strand uses the orthogonal-projection path below.
         """
-        if self._ecs is not None:
+        if self._refline is not None:
             lons = np.array([s.longitude for s in self.sites], dtype=float)
             lats = np.array([s.latitude for s in self.sites], dtype=float)
-            xl, L_m = self._ecs.x_l(lons, lats)
+            xl, L_m = self._refline.x_l(lons, lats)
             xl_arr = np.asarray(xl, dtype=float)
             # Defense-in-depth: EcsResult/LcpResult/SegmentsResult.x_l() each
-            # already clip internally, but ``self._ecs`` is a duck-typed slot
-            # (any of the three reference-line implementations can sit behind
-            # it), so re-clip at this shared seam too — the same invariant
-            # the single-strand path below enforces explicitly. GC2 'u' can
-            # land a hair outside [umin, umax] at/near a rupture tip from
-            # floating-point roundoff in the along-strike projection, which
-            # would otherwise propagate as x/L slightly < 0 or > 1.
+            # already clip internally, but ``self._refline`` is a duck-typed
+            # slot (any of the three reference-line implementations can sit
+            # behind it), so re-clip at this shared seam too — the same
+            # invariant the single-strand path below enforces explicitly.
+            # GC2 'u' can land a hair outside [umin, umax] at/near a rupture
+            # tip from floating-point roundoff in the along-strike
+            # projection, which would otherwise propagate as x/L slightly
+            # < 0 or > 1.
             out_of_range = (xl_arr < 0.0) | (xl_arr > 1.0)
             if np.any(out_of_range):
                 import warnings
                 warnings.warn(
                     f"VectorizedRuptureDistanceCalculator.calculate_x_l_ratios "
-                    f"(multi-section/ECS path): {int(np.sum(out_of_range))} "
+                    f"(multi-section reference-line path): {int(np.sum(out_of_range))} "
                     f"ratio(s) outside [0, 1]: {xl_arr[out_of_range][:5]}...",
                     RuntimeWarning,
                 )

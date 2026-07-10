@@ -31,6 +31,12 @@ class BaseSecondarySurfRup(metaclass=abc.ABCMeta):
     distributed (off-fault) surface rupture at a site.
     """
 
+    #: Reference-line treatment this model needs when the source has no
+    #: continuous fault trace (multiFaultSource / kite sections); one of
+    #: 'lcp', 'ecs', 'segments'. Mirrors hazardlib's REQUIRES_DISTANCES
+    #: declarative pattern. Irrelevant for single-strand sources.
+    MULTIFAULT_REFERENCE_LINE = "lcp"
+
     @abc.abstractmethod
     def get_prob(self):
         """
@@ -56,6 +62,9 @@ class BaseSecondarySurfDispl(metaclass=abc.ABCMeta):
     Subclasses implement :meth:`get_prob`, returning the probability that the
     distributed displacement exceeds a given value (in metres).
     """
+
+    #: See BaseSecondarySurfRup.MULTIFAULT_REFERENCE_LINE.
+    MULTIFAULT_REFERENCE_LINE = "lcp"
 
     @abc.abstractmethod
     def get_prob(self):

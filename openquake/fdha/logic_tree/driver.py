@@ -516,6 +516,12 @@ class FdhaLogicTree:
         combined_rates: list[np.ndarray] = []
         combined_weights: list[float] = []
         combined_records: list[dict[str, Any]] = []
+        # Aggregation keys: which SMLT realisation and which source group
+        # (eb.source_id) each realisation belongs to. Independent sources add
+        # hazard, so multi-group jobs must be aggregated per group and summed
+        # — never pooled into one weighted mean (see _aggregate_grouped_curves).
+        combined_sm_ordinals: list[int] = []
+        combined_group_ids: list[str] = []
         d0_ref = None
         site_lons_ref = None
         site_lats_ref = None
@@ -557,12 +563,30 @@ class FdhaLogicTree:
             modified_sources = apply_realization_to_sources(sm_branch, base)
 
             for fdha_idx, eb in enumerate(end_branches):
+                # Restrict the run to the end-branch's own source group so
+                # its model selections are only applied to the sources they
+                # were enumerated for (same rule as map mode). Running every
+                # branch against ALL sources both applies wrong-style models
+                # to the other sources and turns the final aggregation into
+                # an average of totals instead of a sum of per-source means.
+                sid_list = [s for s in eb.source_id.split(",") if s]
+                sub_sources = {
+                    sid: modified_sources[sid]
+                    for sid in sid_list if sid in modified_sources
+                }
+                if not sub_sources:
+                    raise ValueError(
+                        f"End-branch {fdha_idx} references sources "
+                        f"{sid_list!r} but none of them are present in the "
+                        f"realisation's sources "
+                        f"(available: {sorted(modified_sources)})."
+                    )
                 rates, d0_vals, lons, lats = self._compute_branch_rates(
                     eb,
                     sub_outdir,
                     fdha_idx,
                     mode=mode,
-                    fault_sources=modified_sources,
+                    fault_sources=sub_sources,
                 )
                 if d0_ref is None:
                     d0_ref = d0_vals
@@ -572,6 +596,8 @@ class FdhaLogicTree:
                 combined_w = float(sm_branch.weight) * float(eb.weight)
                 combined_rates.append(np.asarray(rates, dtype=float))
                 combined_weights.append(combined_w)
+                combined_sm_ordinals.append(sm_idx)
+                combined_group_ids.append(eb.source_id)
 
                 global_idx = len(combined_records)
                 record = {
@@ -618,10 +644,28 @@ class FdhaLogicTree:
         total_weight = float(w.sum())
         if total_weight <= 0:
             raise ValueError("Combined branch weights sum to zero")
-        w_norm = w / total_weight
 
-        mean = weighted_mean(rates_arr, w_norm)
-        fr = weighted_fractiles(rates_arr, w_norm, qs=self._quantiles)
+        groups_per_sm: dict[int, set[str]] = {}
+        for smi, gid in zip(combined_sm_ordinals, combined_group_ids):
+            groups_per_sm.setdefault(smi, set()).add(gid)
+        multi_group = any(len(g) > 1 for g in groups_per_sm.values())
+
+        if not multi_group:
+            # Every realisation is a total-hazard curve (one source group per
+            # SMLT realisation, possibly holding several same-selection
+            # sources collapsed by dedup): the pooled weighted ensemble is
+            # exact for both the mean and the fractiles.
+            w_norm = w / total_weight
+            mean = weighted_mean(rates_arr, w_norm)
+            fr = weighted_fractiles(rates_arr, w_norm, qs=self._quantiles)
+        else:
+            # Per-source-group LT statistics summed across groups within each
+            # SMLT realisation, then SMLT-weighted across realisations —
+            # the same physically-correct aggregation map mode uses.
+            mean, fr = self._aggregate_grouped_curves(
+                rates_arr, combined_weights,
+                combined_sm_ordinals, combined_group_ids,
+            )
 
         if mode == "hazard_curve":
             write_aggregate_csv(
@@ -639,6 +683,14 @@ class FdhaLogicTree:
             mode=mode,
             total_weight=total_weight,
         )
+        if multi_group:
+            manifest["curve_aggregation_strategy"] = (
+                "per-source-group LT statistics (weights normalised within "
+                "each group) summed across groups within each SMLT "
+                "realisation, then SMLT-weighted across realisations; the "
+                "fractile sum across groups is an approximation, matching "
+                "map mode."
+            )
         write_manifest(outdir_path / "manifest.json", manifest)
 
         return LogicTreeResult(
@@ -954,6 +1006,51 @@ class FdhaLogicTree:
             tmp_ini, fault_sources=fault_sources,
         )
         return rates, d0_vals, lons, lats
+
+    def _aggregate_grouped_curves(
+        self,
+        rates_arr: np.ndarray,
+        weights: list[float],
+        sm_ordinals: list[int],
+        group_ids: list[str],
+    ):
+        """Aggregate curve realisations when an SMLT realisation contains
+        more than one source group (per-source / per-style model selections).
+
+        Independent sources ADD hazard: within each SMLT realisation the
+        logic-tree mean and fractiles are computed per source group (weights
+        normalised within the group) and summed across groups; the per-SMLT
+        results are then combined with the normalised SMLT weights. This is
+        the same aggregation :meth:`_run_map` uses, including the documented
+        sum-of-fractiles approximation for multi-group jobs.
+        """
+        sm_ids = sorted(set(sm_ordinals))
+        sm_w = np.asarray(
+            [float(self.source_model_branches[i].weight) for i in sm_ids],
+            dtype=float,
+        )
+        if sm_w.sum() <= 0:
+            raise ValueError("Source-model branch weights sum to zero")
+        sm_w = sm_w / sm_w.sum()
+
+        qs = list(self._quantiles)
+        mean = np.zeros(rates_arr.shape[1:], dtype=float)
+        fr: dict[float, np.ndarray] = {
+            q: np.zeros(rates_arr.shape[1:], dtype=float) for q in qs}
+        for wi, smi in zip(sm_w, sm_ids):
+            idx = [k for k, s in enumerate(sm_ordinals) if s == smi]
+            sub_rates = rates_arr[idx]
+            sub_w = [weights[k] for k in idx]
+            sub_groups = [group_ids[k] for k in idx]
+            m_sm, _ = _aggregate_multi_source_mean(
+                sub_rates, sub_w, sub_groups)
+            mean += wi * m_sm
+            if qs:
+                f_sm = _aggregate_multi_source_fractiles(
+                    sub_rates, sub_w, sub_groups, qs=qs)
+                for q in qs:
+                    fr[q] += wi * np.asarray(f_sm[q])
+        return mean, fr
 
     def _build_multi_source_manifest(
         self,

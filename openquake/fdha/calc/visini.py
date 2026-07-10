@@ -159,10 +159,18 @@ class VisiniSecondaryCalculator:
         fd_model,
         s_sr_red_cfg,
         site_coords=None,
+        style=None,
     ):
         """
         OPTIMIZED: Return secondary (distributed) contribution matrix of shape (n_sites, n_displ).
-        
+
+        ``style`` ('normal' | 'reverse') selects the Visini coefficient set
+        for both the SR and FD models. The hazard pipeline always passes the
+        resolved value (explicit model parameter, else derived from the
+        rupture rake); when omitted (direct callers), the 'style' entry of
+        ``base_sec_rup_params`` is used, else 'normal' for backward
+        compatibility.
+
         Key optimizations:
         - Sites grouped by (HW/FW, near/far) for batched MC
         - P_slice vectorized over all sites
@@ -189,7 +197,8 @@ class VisiniSecondaryCalculator:
 
         # Extract model kwargs
         rup_kwargs = {k: v for k, v in self.base_sec_rup_params.items() if k in {"style", "pixel_size"}}
-        style = rup_kwargs.get("style", "normal")
+        if style is None:
+            style = rup_kwargs.get("style", "normal")
         pixel_size = rup_kwargs.get("pixel_size", self.pixel_size)
 
         combo_probs = []
@@ -302,8 +311,11 @@ class VisiniSecondaryCalculator:
                     sr_prob_arr = np.full(n_sites, float(sr_prob_arr[0]))
             else:
                 # Combination C: direct call (already vectorized in model)
+                c_kwargs = dict(rup_kwargs)
+                c_kwargs["style"] = style
+                c_kwargs.setdefault("pixel_size", pixel_size)
                 sr_prob = sr_model.get_prob(
-                    mag=mag, rx=rx_m, r=r_m, combination=comb, **rup_kwargs
+                    mag=mag, rx=rx_m, r=r_m, combination=comb, **c_kwargs
                 )
                 sr_prob_arr = np.atleast_1d(sr_prob)
                 if sr_prob_arr.size == 1:
@@ -316,7 +328,11 @@ class VisiniSecondaryCalculator:
             else:
                 s_for_fd = r_m
             
-            # Call FD model vectorized over sites
+            # Call FD model vectorized over sites. The FD coefficients are
+            # style-specific too: pass the resolved style unless the FD
+            # parameters already pin one explicitly.
+            fd_kwargs = dict(self.base_sec_displ_params)
+            fd_kwargs.setdefault("style", style)
             fd_prob = fd_model.get_prob(
                 d=target_displacements,
                 mag=mag,
@@ -325,7 +341,7 @@ class VisiniSecondaryCalculator:
                 X_L_ratio=x_L_arr,
                 dip=dip_arr,
                 combination=comb,
-                **self.base_sec_displ_params,
+                **fd_kwargs,
             )
             
             # Reshape SR probabilities: sr_prob_arr is already (n_sites,) per-site values

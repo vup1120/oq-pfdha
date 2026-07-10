@@ -56,6 +56,22 @@ class BaseFaultRuptureCalculator:
         self.primary_surf_displ_model = self._instantiate_model(models_cfg.get('primary_surf_displ'))
         self.secondary_surf_rup_model = self._instantiate_model(models_cfg.get('secondary_surf_rup'))
         self.secondary_surf_displ_model = self._instantiate_model(models_cfg.get('secondary_surf_displ'))
+        # Multi-fault reference-line consistency: the principal FD model sets
+        # the convention for the whole branch — the other models' distances
+        # are measured against the same reference line so principal and
+        # distributed hazard share one geometry (e.g. Chiou 2025 [ecs] pulls
+        # a Petersen 2011 secondary onto the ECS line). The only exemption is
+        # 'segments' (Visini 2025): its regression measured r to the nearest
+        # rupturing section, which no smoothed line can represent.
+        if self.primary_surf_displ_model is not None:
+            _principal_line = getattr(self.primary_surf_displ_model,
+                                      'MULTIFAULT_REFERENCE_LINE', 'lcp')
+            for _m in (self.primary_surf_rup_model,
+                       self.secondary_surf_rup_model,
+                       self.secondary_surf_displ_model):
+                if _m is not None and getattr(
+                        _m, 'MULTIFAULT_REFERENCE_LINE', 'lcp') != 'segments':
+                    _m.MULTIFAULT_REFERENCE_LINE = _principal_line
         logger.debug(f"Models: primary_surf_rup={self.primary_surf_rup_model}, primary_surf_displ={self.primary_surf_displ_model}, "
                      f"secondary_surf_rup={self.secondary_surf_rup_model}, secondary_surf_displ={self.secondary_surf_displ_model}")
 
@@ -134,6 +150,18 @@ class BaseFaultRuptureCalculator:
             or self.get_model_parameters('secondary_surf_rup').get('case')
             or 'case1'
         )
+
+        # Union of the reference-line treatments the configured models
+        # declare for multi-section (multiFaultSource) ruptures, via their
+        # MULTIFAULT_REFERENCE_LINE class attribute — the FDHA analogue of
+        # hazardlib collecting the union of the GMPEs' REQUIRES_DISTANCES.
+        # The context maker computes one metric set per method in this union.
+        _models = (self.primary_surf_rup_model, self.primary_surf_displ_model,
+                   self.secondary_surf_rup_model, self.secondary_surf_displ_model)
+        self.multifault_reference_lines = tuple(sorted(
+            {getattr(m, 'MULTIFAULT_REFERENCE_LINE', 'lcp')
+             for m in _models if m is not None} or {'lcp'}
+        ))
         
         # Initialize model adapters
         from openquake.fdha.calc.model_adapter import LegacyModelAdapter
@@ -178,6 +206,7 @@ class BaseFaultRuptureCalculator:
         return {
             'r_threshold_km': self.r_threshold_km,
             'near_far_threshold_km': self.near_far_threshold_km,
+            'multifault_reference_lines': self.multifault_reference_lines,
         }
 
 

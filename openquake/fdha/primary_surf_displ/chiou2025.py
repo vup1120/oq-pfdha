@@ -71,6 +71,11 @@ class Chiou2025PrimaryFD(BasePrimarySurfDispl):
         when X_L_ratio is a vector and d is a vector; otherwise reduced appropriately.
     """
 
+    # Chiou et al. (2025) define displacement position along their ECS
+    # (equivalent continuous surface-rupture) line, so multi-fault ruptures
+    # must build the ECS reference line for this model, not the LCP default.
+    MULTIFAULT_REFERENCE_LINE = "ecs"
+
     # cache coefficients at class-level
     _COEFFS = _load_coefficients()
 
