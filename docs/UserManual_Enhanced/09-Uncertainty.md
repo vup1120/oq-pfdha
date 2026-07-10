@@ -273,8 +273,10 @@ models (rupture models are uniformly logistic with no aleatory σ on `P`).
   half-width as an `n_sigma` constructor parameter (defaults: 3 for Moss & Ross /
   Takao / Visini, 6 for Youngs PSD). Set it from a logic-tree branch, e.g.:
   ```xml
-  <uncertaintyModel><![CDATA[[MossRoss2011PrimaryFD]
-  n_sigma = 4]]></uncertaintyModel>
+  <uncertaintyModel>
+    [MossRoss2011PrimaryFD]
+    n_sigma = 4
+  </uncertaintyModel>
   ```
   (For backward compatibility, Visini 2025 SSD also accepts the former name
   `truncation_eps`.)

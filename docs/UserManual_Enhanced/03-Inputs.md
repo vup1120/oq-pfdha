@@ -181,14 +181,20 @@ The FDHA model logic tree selects the scientific models. The supported FDHA unce
     [Scientific Models](06-Models.md) for the relationship to the
     principal/distributed terminology used by Valentini et al. (2025).
 
-Each `<uncertaintyModel>` is an INI-like block. The bracketed line is the model class name; following lines are parameters passed to that model.
+Each `<uncertaintyModel>` is an INI-like block, written as plain element text
+in the same style as the OpenQuake engine's GMPE logic trees. The bracketed
+line is the model class name; following lines are parameters passed to that
+model. Line indentation is ignored, and wrapping the block in `<![CDATA[...]]>`
+is also accepted (it parses identically).
 
 ```xml
 <logicTreeBranchSet branchSetID="bs_1_primary_surf_rup"
                     uncertaintyType="fdhaPrimarySRModel">
   <logicTreeBranch branchID="B1_PRIMARY_SURF_RUP">
-    <uncertaintyModel><![CDATA[[Youngs2003PrimarySR]
-style = all]]></uncertaintyModel>
+    <uncertaintyModel>
+      [Youngs2003PrimarySR]
+      style = all
+    </uncertaintyModel>
     <uncertaintyWeight>1.0</uncertaintyWeight>
   </logicTreeBranch>
 </logicTreeBranchSet>
