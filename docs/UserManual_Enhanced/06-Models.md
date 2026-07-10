@@ -119,7 +119,7 @@ These models answer the question: *Given an earthquake, what is the probability 
 | Model Class Name | Reference | Faulting style | Mw range¹ | r range¹ | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `Youngs2003SecondarySR` | Youngs et al. (2003) | Normal | 5.5–7.4 | 0–15 km | A logistic regression model based on magnitude, distance, and hanging wall location. |
-| `Petersen2011SecondarySR` | Petersen et al. (2011) | Strike-slip | 6.5–7.5 | 0–2.5 km | A model for strike-slip faults where probability depends on distance and grid cell size. |
+| `Petersen2011SecondarySR` | Petersen et al. (2011) | Strike-slip | 6.5–7.5 | 0–2.5 km | A model for strike-slip faults where probability depends on distance and pixel size. |
 | `Takao2014SecondarySR` | Takao et al. (2014) | Reverse, strike-slip | 5.8–7.4 | 0–25 km | A model for reverse and strike-slip faults based on distance and pixel size. |
 | `Visini2025SecondarySR` | Visini et al. (2025) | Normal, reverse | 5.5–7.9 (N); 4.9–7.9 (R) | 0–10 km (HW); 0–8 km (FW) | A logistic regression for normal/reverse faults depending on magnitude, distance, and pixel size. |
 | `FerrarioLivio2021SecondarySR` | Ferrario & Livio (2021) | Normal | 6.0–7.5 | 0–15.5 km (HW); 0–12.5 km (FW) | A model for distributed surface rupture probability. |

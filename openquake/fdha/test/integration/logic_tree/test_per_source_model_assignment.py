@@ -60,7 +60,7 @@ _MODEL_TEMPLATE = """<?xml version="1.0" encoding="utf-8"?>
 
 _SFD_YOUNGS_85 = "[Youngs2003SecondaryFD]\npercentile = 85"
 _SFD_YOUNGS_95 = "[Youngs2003SecondaryFD]\npercentile = 95"
-_SFD_PETERSEN = "[Petersen2011SecondaryFD]\ncell_size = 25"
+_SFD_PETERSEN = "[Petersen2011SecondaryFD]\npixel_size = 25"
 
 _COMMON_LEVELS = """\
     <logicTreeBranchingLevel branchingLevelID="bl1">
