@@ -148,6 +148,7 @@ region_grid_spacing = 0.01
 | :--- | :--- | :--- | :--- |
 | `rupture_mesh_spacing` | float | `0.5` in the config dataclass; examples use `2.0` | Fault-surface rupture mesh spacing in kilometers. |
 | `width_of_mfd_bin` | float | `0.1` | MFD bin width in magnitude units. |
+| `complex_fault_mesh_spacing` | float | none | Mesh spacing (km) for `complexFaultGeometry` surfaces. Required by the OpenQuake source converter whenever the source model contains a `complexFaultGeometry` — whether inside a `characteristicFaultSource` or as a standalone `complexFaultSource`. |
 
 ```ini
 [erf]

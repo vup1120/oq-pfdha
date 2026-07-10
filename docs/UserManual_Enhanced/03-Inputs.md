@@ -14,11 +14,17 @@ This project uses NRML (Natural Hazard Risk Markup Language)—the XML schema ad
 In OpenQuake, a source model may include several source types. In this PFDHA toolkit we currently support only:
 
 -   **`SimpleFaultSource`**: A planar fault surface derived from a surface trace (polyline) plus dip and seismogenic depths; suited to shallow crustal faults.
--   **`CharacteristicFaultSource`**: Ruptures span (essentially) the entire mapped fault surface, following a characteristic magnitude/area representation.
+-   **`CharacteristicFaultSource`**: Ruptures span (essentially) the entire mapped fault surface, following a characteristic magnitude/area representation. The enclosed surface may be a `simpleFaultGeometry` **or a `complexFaultGeometry`** (fault top/bottom edges); in both cases the exact NRML trace (the top edge) is retained for the FDHA distance metrics. A `complexFaultGeometry` additionally requires `[erf].complex_fault_mesh_spacing` in the job INI (see [Configuration](05-Configuration.md)).
 -   **`MultiFaultSource`**: Non-parametric ruptures defined as combinations of pre-defined fault **sections**, each rupture carrying its own magnitude, rake, and probability mass function (`probs_occur`). Sections are defined in a `<geometryModel>` (in the same file or a separate NRML file listed in the source-model logic tree). This is the typology used by fault-system models with multi-segment ruptures.
 
 !!! warning "Unsupported Source Types"
-    Other OQ source types (e.g., `ComplexFaultSource`, `AreaSource`, `SubductionInterfaceSource`) are not supported at present.
+    Other OQ source types (e.g., `AreaSource`, `PointSource`) are not supported at present.
+    A standalone `ComplexFaultSource` parses and runs through the generic
+    calculation path when `[erf].complex_fault_mesh_spacing` is set (the
+    OpenQuake converter requires it), but it is **not covered by the test
+    suite** and its FDHA distances derive from the resampled surface mesh
+    rather than the exact NRML trace — prefer wrapping a
+    `complexFaultGeometry` in a `characteristicFaultSource` where possible.
 
 !!! note "MultiFaultSource conveniences"
     - The PMF time span must be declared as an `investigation_time` attribute on the NRML `<sourceModel>`/`<geometryModel>` header; the parser reads it from there automatically (per-rupture `probs_occur` are converted to equivalent annual rates using this value).
@@ -91,7 +97,7 @@ Each supported fault source must provide:
 
 -   **Stay OQ-conformant**: Use the exact MFD/geometry tags expected by the OpenQuake Engine.
 -   **Keep Units Explicit**: lon/lat in degrees, depths in km, dip/rake in degrees.
--   **One Source, One Role**: Avoid mixing unsupported source types; keep your NRML to `SimpleFaultSource` and/or `CharacteristicFaultSource` only.
+-   **One Source, One Role**: Avoid mixing unsupported source types; keep your NRML to `SimpleFaultSource`, `CharacteristicFaultSource` (with simple or complex geometry), and/or `MultiFaultSource`.
 -   **Geometry Quality**: Use dense, order-consistent traces; check for self-intersections and unrealistic dips/widths.
 -   **Kinematics Consistency**: Ensure rake aligns with the displacement models’ assumptions (e.g., reverse/normal/strike-slip branches).
 
