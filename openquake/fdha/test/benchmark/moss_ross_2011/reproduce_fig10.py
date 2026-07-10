@@ -35,7 +35,10 @@ import json
 import os
 from pathlib import Path
 
-os.environ.setdefault("NUMBA_DISABLE_JIT", "1")
+# NUMBA_DISABLE_JIT must only be set in the __main__ block below: this
+# module is also imported by test_fig10_reproduction.py inside a shared
+# pytest process, where flipping numba's config mid-process breaks any
+# later hazardlib import.
 
 import matplotlib
 
@@ -174,4 +177,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("NUMBA_DISABLE_JIT", "1")
     main()
