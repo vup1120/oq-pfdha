@@ -189,11 +189,15 @@ class Visini2025SecondaryFD(BaseSecondarySurfDispl):
             raise ValueError(f"n_sigma must be positive; got {eps}")
         denom = norm.cdf(eps) - norm.cdf(-eps)
 
-        # Broadcast to (n_sites, n_displ) when both are 1D vectors of different lengths
+        # Broadcast to (n_sites, n_displ): displacement thresholds along
+        # columns, per-site medians along rows. The orientation must NEVER be
+        # inferred from shape equality — when n_sites happens to equal
+        # n_displ that heuristic silently produced the element-wise diagonal
+        # (site i paired with threshold i) instead of the full matrix.
         ln_d_arr = np.asarray(ln_d)
         ln_med_arr = np.asarray(ln_med)
 
-        if (ln_d_arr.ndim == 1) and (ln_med_arr.ndim == 1) and (ln_d_arr.shape != ln_med_arr.shape):
+        if (ln_d_arr.ndim == 1) and (ln_med_arr.ndim == 1):
             ln_d_b = ln_d_arr.reshape((1, -1))
             ln_med_b = ln_med_arr.reshape((-1, 1))
         else:
@@ -320,6 +324,12 @@ class Visini2025SecondaryFD(BaseSecondarySurfDispl):
             L_km = sr.get_median_length(mag, rake)
         elif hasattr(sr, "get_rupture_length"):
             L_km = sr.get_rupture_length(mag)
+        elif hasattr(sr, "get_surface_rupture_length"):
+            # WC1994 exposes SRL(M) under this name; without this probe the
+            # DEFAULT scaling model would silently never activate the
+            # distance-dependent along-strike smoothing window (L_km = None
+            # forces r = 0 below).
+            L_km = sr.get_surface_rupture_length(mag, str(style).lower())
         else:
             L_km = None
 
