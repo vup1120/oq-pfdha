@@ -14,10 +14,19 @@ This project uses NRML (Natural Hazard Risk Markup Language)—the XML schema ad
 In OpenQuake, a source model may include several source types. In this PFDHA toolkit we currently support only:
 
 -   **`SimpleFaultSource`**: A planar fault surface derived from a surface trace (polyline) plus dip and seismogenic depths; suited to shallow crustal faults.
--   **`CharacteristicFaultSource`**: Ruptures span (essentially) the entire mapped fault surface, following a characteristic magnitude/area representation.
+-   **`CharacteristicFaultSource`**: Ruptures span (essentially) the entire mapped fault surface, following a characteristic magnitude/area representation. The enclosed surface may be a `simpleFaultGeometry` **or a `complexFaultGeometry`** (fault top/bottom edges); in both cases the exact NRML trace (the top edge) is retained for the FDHA distance metrics. A `complexFaultGeometry` additionally requires `[erf].complex_fault_mesh_spacing` in the job INI (see [Configuration](05-Configuration.md)).
+-   **`ComplexFaultSource`**: A non-planar fault surface interpolated between explicit top and bottom edges (each a 3-D polyline), with ruptures floating over the surface as for `SimpleFaultSource`. Requires `[erf].complex_fault_mesh_spacing`.
 
 !!! warning "Unsupported Source Types"
-    Other OQ source types (e.g., `ComplexFaultSource`, `AreaSource`, `SubductionInterfaceSource`) are not supported at present.
+    Other OQ source types (e.g., `AreaSource`, `PointSource`, `MultiFaultSource`) are not supported at present.
+
+!!! note "ComplexFaultSource and the fault trace"
+    For a standalone `ComplexFaultSource`, the FDHA distance metrics (r, x/L)
+    derive from the top row of the **resampled** surface mesh, not the exact
+    NRML top edge — keep `complex_fault_mesh_spacing` fine near sites of
+    interest. Where ruptures are meant to span the whole surface, prefer
+    wrapping the `complexFaultGeometry` in a `characteristicFaultSource`,
+    which retains the exact top-edge trace.
 
 ### 1.2 Required Data (fault-centric)
 
@@ -27,10 +36,11 @@ Each supported fault source must provide:
     -   Surface trace as a lon–lat polyline (WGS84).
     -   Dip (degrees), upper and lower seismogenic depth (km).
     -   (Strike is implied by the trace; width is derived from dip and seismogenic thickness.)
+    -   `ComplexFaultSource` / `complexFaultGeometry` instead provide explicit top and bottom edges as 3-D polylines (lon lat depth), ordered so the surface dips to the right of the strike direction (Aki & Richards convention).
 -   **Kinematics**
     -   Rake (degrees). If using OQ’s distributions, provide a single nodal plane with probability 1.0.
 -   **Occurrence model**
-    -   `SimpleFaultSource`: typically a Gutenberg–Richter MFD (truncated) or other OQ MFD element, plus a magnitude–area relation (e.g., `WC1994`) and a rupture aspect ratio.
+    -   `SimpleFaultSource` / `ComplexFaultSource`: typically a Gutenberg–Richter MFD (truncated) or other OQ MFD element, plus a magnitude–area relation (e.g., `WC1994`) and a rupture aspect ratio.
     -   `CharacteristicFaultSource`: a Characteristic MFD (single magnitude or narrow band) consistent with ruptures spanning the full fault.
 -   **Metadata**
     -   `id`, `name`, `tectonicRegionType` (e.g., `Active Shallow Crust`).
@@ -38,8 +48,9 @@ Each supported fault source must provide:
 ### 1.3 How PFDHA Uses the Source Model (workflow-critical)
 
 -   **Rupture Sampling**
-    -   `SimpleFaultSource`: Magnitudes are drawn from the MFD; rupture dimensions are derived via the selected mag–area relation and aspect ratio; rupture planes are positioned along the trace/width per OQ conventions.
+    -   `SimpleFaultSource` / `ComplexFaultSource`: Magnitudes are drawn from the MFD; rupture dimensions are derived via the selected mag–area relation and aspect ratio; rupture planes are positioned along the trace/width (or the interpolated edge surface) per OQ conventions.
     -   `CharacteristicFaultSource`: Ruptures span the full mapped surface; the characteristic magnitude is used directly.
+    -   Ruptures whose top edge lies deeper than 0.5 km are treated as non-surface-rupturing and are skipped: they contribute no fault-displacement hazard (applies to floating ruptures of all typologies, in both hazard-curve and hazard-map calculations).
 -   **Distance Metrics for Displacement Models**
     -   The rupture surfaces/planes feed vectorized rupture–site distance calculators (e.g., to trace, to surface projection, to rupture plane).
     -   These distances, along with rake/dip, are routed through the PFDHA decision tree to select the appropriate principal and distributed displacement modelling and geometry-dependent combinations.
@@ -85,7 +96,7 @@ Each supported fault source must provide:
 
 -   **Stay OQ-conformant**: Use the exact MFD/geometry tags expected by the OpenQuake Engine.
 -   **Keep Units Explicit**: lon/lat in degrees, depths in km, dip/rake in degrees.
--   **One Source, One Role**: Avoid mixing unsupported source types; keep your NRML to `SimpleFaultSource` and/or `CharacteristicFaultSource` only.
+-   **One Source, One Role**: Avoid mixing unsupported source types; keep your NRML to `SimpleFaultSource`, `CharacteristicFaultSource` (with simple or complex geometry), and/or `ComplexFaultSource`.
 -   **Geometry Quality**: Use dense, order-consistent traces; check for self-intersections and unrealistic dips/widths.
 -   **Kinematics Consistency**: Ensure rake aligns with the displacement models’ assumptions (e.g., reverse/normal/strike-slip branches).
 
@@ -160,6 +171,7 @@ The FDHA model logic tree selects the scientific models. The supported FDHA unce
 - `fdhaPrimaryFDModel`
 - `fdhaSecondarySRModel`
 - `fdhaSecondaryFDModel`
+- `fdhaCalcRThreshold` — a calculation-parameter uncertainty: each branch's `<uncertaintyModel>` carries an alternative value of the `r_threshold_km` distance threshold (in km) rather than a model class. A job must choose one mechanism: either the scalar `[calculation].r_threshold_km` in the INI or an `fdhaCalcRThreshold` branch set — defining both is a configuration error. See [Configuration](05-Configuration.md) for details.
 
 !!! note "primary = principal, secondary = distributed"
     The `Primary*` uncertainty types model **principal** rupture and

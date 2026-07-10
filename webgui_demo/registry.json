@@ -452,13 +452,13 @@
           "doc_page": "secondary/Petersen2011.md",
           "doc_params": [
             {
-              "name": "cell_size",
+              "name": "pixel_size",
               "type": "integer",
               "units": "meters",
               "default": "`25`",
               "allowed": "`25`, `50`, `100`, `150`, `200`",
               "required": false,
-              "description": "Size of the cell/pixel for distributed rupture modeling. Different cell sizes have different regression coefficients."
+              "description": "Size of the pixel (\"cell\" in the paper) for distributed rupture modeling. Different pixel sizes have different regression coefficients. The former name `cell_size` is still accepted as a deprecated alias."
             },
             {
               "name": "version",
@@ -675,13 +675,13 @@
           "doc_page": "secondary/Petersen2011.md",
           "doc_params": [
             {
-              "name": "cell_size",
+              "name": "pixel_size",
               "type": "integer",
               "units": "meters",
               "default": "`25`",
               "allowed": "`25`, `50`, `100`, `150`, `200`",
               "required": false,
-              "description": "Size of the cell/pixel for distributed rupture modeling. Different cell sizes have different regression coefficients."
+              "description": "Size of the pixel (\"cell\" in the paper) for distributed rupture modeling. Different pixel sizes have different regression coefficients. The former name `cell_size` is still accepted as a deprecated alias."
             }
           ],
           "prefill": ""

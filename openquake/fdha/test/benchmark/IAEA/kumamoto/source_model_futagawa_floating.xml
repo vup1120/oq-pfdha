@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<nrml xmlns="http://openquake.org/xmlns/nrml/0.5"
+      xmlns:gml="http://www.opengis.net/gml">
+  <sourceModel name="IAEA Kumamoto floating (Option 2)">
+    <sourceGroup name="IAEA Kumamoto floating (Option 2)" tectonicRegion="Active Shallow Crust">
+      <simpleFaultSource id="FFZ" name="Futagawa fault zone (floating)" tectonicRegion="Active Shallow Crust">
+        <simpleFaultGeometry>
+          <gml:LineString>
+            <gml:posList>
+                131.02300 32.89410
+                130.85600 32.79850
+                130.81500 32.76750
+                130.76600 32.74740
+                130.60300 32.68170
+                130.51400 32.66030
+                130.29300 32.56410
+            </gml:posList>
+          </gml:LineString>
+          <dip>64.6</dip>
+          <upperSeismoDepth>0.0</upperSeismoDepth>
+          <lowerSeismoDepth>14.0</lowerSeismoDepth>
+        </simpleFaultGeometry>
+        <!-- PeerMSR (A = 10^(M-4) = 316 km2 at M6.5) with aspect 1.3 yields a
+             full-seismogenic-width rupture (W = 15.5 km) of length ~20.4 km,
+             the "~20 km" floating rupture of the exercise. A width-limited
+             MSR would float ruptures down-dip as well, diluting the surface-
+             rupturing rate by ~3x relative to the exercise convention. -->
+        <magScaleRel>PeerMSR</magScaleRel>
+        <ruptAspectRatio>1.3</ruptAspectRatio>
+        <incrementalMFD binWidth="0.1" minMag="6.5">
+          <occurRates>64.2e-5</occurRates>
+        </incrementalMFD>
+        <rake>0.0</rake>
+      </simpleFaultSource>
+    </sourceGroup>
+  </sourceModel>
+</nrml>

@@ -1,0 +1,24 @@
+{
+  "plateau_ratio": 1.477,
+  "plateau_ratio_paper": "~1.45 ('increased by nearly 45%')",
+  "reverse_d_at_2pc50yr": {
+    "computed_cm": 70.2,
+    "paper_cm": 55.00000000000001,
+    "ratio": 1.277
+  },
+  "reverse_d_at_1pc50yr": {
+    "computed_cm": 102.5,
+    "paper_cm": 105.0,
+    "ratio": 0.976
+  },
+  "all_slip_types_d_at_2pc50yr": {
+    "computed_cm": 96.0,
+    "paper_cm": 95.0,
+    "ratio": 1.01
+  },
+  "all_slip_types_d_at_1pc50yr": {
+    "computed_cm": 133.3,
+    "paper_cm": 142.0,
+    "ratio": 0.939
+  }
+}
