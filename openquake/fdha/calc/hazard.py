@@ -105,17 +105,21 @@ def calculate_fdha_hazard(
     # PMF time span for non-parametric (multiFaultSource) ruptures:
     # get_ctx converts their probs_occur into a Poisson-equivalent annual
     # rate over this investigation time. Parametric ruptures ignore it.
-    investigation_time = float(
-        calculator.config.get('calculation', {}).get('investigation_time', 1.0))
-    
+    # The authoritative value is per source (parsed from the NRML header);
+    # the INI value is a fallback and must not silently contradict it.
+    ini_investigation_time = calculator.config.get(
+        'calculation', {}).get('investigation_time')
+
     # Process each fault source
     # Convert to list immediately to avoid iterator exhaustion issues
     fault_sources_list = list(calculator.fault_sources.values())
-    
+
     iterator = tqdm(fault_sources_list, desc="Computing hazard") if show_progress else fault_sources_list
-    
+
     for src in iterator:
         logger.info(f"Processing fault: {src.name}")
+        investigation_time = _resolve_investigation_time(
+            src, ini_investigation_time)
         
         fault_rate = np.zeros((n_sites, n_displ), dtype=np.float64)
         n_ruptures = 0
@@ -224,6 +228,38 @@ def calculate_fdha_hazard(
         'displacements': target_displacements.tolist(),
         'annual_rate_total': total_rate.tolist(),
     }
+
+
+def _resolve_investigation_time(src, ini_time) -> float:
+    """Return the PMF time span (years) used to convert a non-parametric
+    source's ``probs_occur`` into Poisson-equivalent annual rates.
+
+    The span declared by the source itself (the ``investigation_time``
+    attribute parsed from the NRML ``<sourceModel>``/``<geometryModel>``
+    header, e.g. on a multiFaultSource) is authoritative: the PMF is
+    *defined* over that span. The INI ``[calculation].investigation_time``
+    may restate it, but a conflicting INI value would silently rescale every
+    non-parametric rate (an XML span of 50 yr read with the 1-yr INI default
+    inflates all rates 50x), so a mismatch is rejected loudly.
+
+    Parametric sources carry no such attribute; they fall back to the INI
+    value, then 1.0 — their ruptures have explicit annual rates and ignore
+    this value anyway.
+    """
+    src_time = getattr(src, 'investigation_time', None)
+    if src_time is None:
+        return float(ini_time) if ini_time is not None else 1.0
+    src_time = float(src_time)
+    if ini_time is not None and abs(float(ini_time) - src_time) > \
+            1e-9 * max(abs(src_time), 1.0):
+        raise ValueError(
+            f"Source '{getattr(src, 'source_id', src)}' declares "
+            f"investigation_time={src_time} in its NRML header, but the job "
+            f"INI sets [calculation].investigation_time={ini_time}. The PMF "
+            "of a non-parametric source is defined over the NRML time span; "
+            "remove the INI key or set it to the same value."
+        )
+    return src_time
 
 
 def _setup_visini_calculator(
@@ -373,6 +409,16 @@ def _compute_rupture_contribution(
                           or calculator.secondary_surf_displ_model)
             _method = getattr(_sec_model, 'MULTIFAULT_REFERENCE_LINE', 'lcp')
             r_sel, x_L_sel, L_sel = ctx.metrics_for(_method)
+            # Style: an explicit model parameter wins; otherwise derive it
+            # from the rupture rake, exactly like LegacyModelAdapter does.
+            # The Visini coefficients are style-specific — silently
+            # defaulting to 'normal' on a reverse fault shifts the FD median
+            # by ~1.7x and swaps the SR occurrence tables.
+            style = (
+                calculator.get_model_parameters('secondary_surf_rup').get('style')
+                or calculator.get_model_parameters('secondary_surf_displ').get('style')
+                or str(ctx.style[0])
+            )
             P_dist_combined = visini_calc.compute(
                 mag=float(ctx.mag[0]),
                 r=r_sel,
@@ -385,6 +431,7 @@ def _compute_rupture_contribution(
                 fd_model=calculator.secondary_surf_displ_model,
                 s_sr_red_cfg=s_sr_red_cfg,
                 site_coords=site_coords,
+                style=style,
             )
     else:
         # Standard secondary: SR × FD
