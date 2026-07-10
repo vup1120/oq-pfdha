@@ -32,6 +32,14 @@ class BasePrimarySurfDispl(metaclass=abc.ABCMeta):
     principal displacement exceeds a given value (in metres).
     """
 
+    #: Reference-line treatment this model needs when the source has no
+    #: continuous fault trace (multiFaultSource / kite sections); one of
+    #: 'lcp', 'ecs', 'segments'. Declarative, mirroring hazardlib's
+    #: REQUIRES_DISTANCES pattern: the FDHA context maker computes the union
+    #: of declared requirements once per rupture. Irrelevant for single-strand
+    #: sources, whose trace is used directly.
+    MULTIFAULT_REFERENCE_LINE = "lcp"
+
     @abc.abstractmethod
     def get_prob(self):
         """
@@ -58,6 +66,9 @@ class BaseSecondarySurfDispl(metaclass=abc.ABCMeta):
     Subclasses implement :meth:`get_prob`, returning the probability that the
     distributed displacement exceeds a given value (in metres).
     """
+
+    #: See BasePrimarySurfDispl.MULTIFAULT_REFERENCE_LINE.
+    MULTIFAULT_REFERENCE_LINE = "lcp"
 
     @abc.abstractmethod
     def get_prob(self):
