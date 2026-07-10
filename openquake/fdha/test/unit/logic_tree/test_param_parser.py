@@ -18,3 +18,25 @@ def test_parse_ini_block_literals():
     assert params["style"] == "all"
     assert params["MSR"] == 1
 
+
+def test_parse_oq_engine_style_element_text():
+    # Plain element text as in oq-engine GMPE logic trees: block indented to
+    # the XML nesting depth, no CDATA. Irregular (even increasing) per-line
+    # indentation must not turn a "key = value" line into a continuation of
+    # the previous value.
+    text = (
+        "\n            [Youngs2003SecondarySR]"
+        "\n            version = 3"
+        "\n                style = all"
+        "\n          "
+    )
+    cls, params = parse_uncertainty_model(text)
+    assert cls == "Youngs2003SecondarySR"
+    assert params == {"version": 3, "style": "all"}
+
+
+def test_parse_plain_class_name_padded():
+    cls, params = parse_uncertainty_model("\n        Chiou2025PrimaryFD\n    ")
+    assert cls == "Chiou2025PrimaryFD"
+    assert params == {}
+

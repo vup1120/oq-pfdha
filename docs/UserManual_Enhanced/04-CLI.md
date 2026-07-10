@@ -62,8 +62,10 @@ Model choices are stored in the FDHA logic-tree XML, for example:
 <logicTreeBranchSet branchSetID="bs_1_primary_surf_rup"
                     uncertaintyType="fdhaPrimarySRModel">
   <logicTreeBranch branchID="B1_PRIMARY_SURF_RUP">
-    <uncertaintyModel><![CDATA[[Youngs2003PrimarySR]
-style = all]]></uncertaintyModel>
+    <uncertaintyModel>
+      [Youngs2003PrimarySR]
+      style = all
+    </uncertaintyModel>
     <uncertaintyWeight>1.0</uncertaintyWeight>
   </logicTreeBranch>
 </logicTreeBranchSet>
