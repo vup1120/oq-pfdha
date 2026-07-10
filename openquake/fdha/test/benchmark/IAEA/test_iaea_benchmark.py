@@ -25,7 +25,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-os.environ.setdefault("NUMBA_DISABLE_JIT", "1")
+# NOTE: do NOT set NUMBA_DISABLE_JIT here. Flipping it at import time
+# poisons numba's config for the rest of the pytest process: any module
+# importing hazardlib afterwards gets a half-JIT'd baselib.performance and
+# crashes with "'function' object has no attribute 'get_call_template'".
+# The standalone scripts (run_all.py, diagnose_M11.py) may still set it —
+# they own their whole process.
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
 
 HERE = Path(__file__).resolve().parent
