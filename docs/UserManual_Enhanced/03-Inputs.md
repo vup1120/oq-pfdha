@@ -15,9 +15,15 @@ In OpenQuake, a source model may include several source types. In this PFDHA too
 
 -   **`SimpleFaultSource`**: A planar fault surface derived from a surface trace (polyline) plus dip and seismogenic depths; suited to shallow crustal faults.
 -   **`CharacteristicFaultSource`**: Ruptures span (essentially) the entire mapped fault surface, following a characteristic magnitude/area representation.
+-   **`MultiFaultSource`**: Non-parametric ruptures defined as combinations of pre-defined fault **sections**, each rupture carrying its own magnitude, rake, and probability mass function (`probs_occur`). Sections are defined in a `<geometryModel>` (in the same file or a separate NRML file listed in the source-model logic tree). This is the typology used by fault-system models with multi-segment ruptures.
 
 !!! warning "Unsupported Source Types"
     Other OQ source types (e.g., `ComplexFaultSource`, `AreaSource`, `SubductionInterfaceSource`) are not supported at present.
+
+!!! note "MultiFaultSource conveniences"
+    - The PMF time span must be declared as an `investigation_time` attribute on the NRML `<sourceModel>`/`<geometryModel>` header; the parser reads it from there automatically (per-rupture `probs_occur` are converted to equivalent annual rates using this value).
+    - The auxiliary sections HDF5 file required by the OpenQuake engine is created automatically in a temporary directory; you do not need to provide one.
+    - Distance metrics (r, x/L) for multi-section ruptures are computed against a fault-system reference line built per FDHA model: each model class declares its method (Chiou-consistent event-coordinate-system line, least-cost-path line, or segmentation-direct distances) and the toolkit routes accordingly — no user configuration is needed.
 
 ### 1.2 Required Data (fault-centric)
 
@@ -160,6 +166,7 @@ The FDHA model logic tree selects the scientific models. The supported FDHA unce
 - `fdhaPrimaryFDModel`
 - `fdhaSecondarySRModel`
 - `fdhaSecondaryFDModel`
+- `fdhaCalcRThreshold` — a calculation-parameter uncertainty: each branch's `<uncertaintyModel>` carries an alternative value of the `r_threshold_km` distance threshold (in km) rather than a model class. A job must choose one mechanism: either the scalar `[calculation].r_threshold_km` in the INI or an `fdhaCalcRThreshold` branch set — defining both is a configuration error. See [Configuration](05-Configuration.md) for details.
 
 !!! note "primary = principal, secondary = distributed"
     The `Primary*` uncertainty types model **principal** rupture and
