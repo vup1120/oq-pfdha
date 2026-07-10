@@ -148,32 +148,47 @@ class LegacyModelAdapter:
                 f"  style = all"
             )
         
-        # Build kwargs
+        # Build kwargs; vs30 comes from the site collection (reference_vs30_value
+        # when no per-site value is given) and is needed by e.g. Moss2013PrimarySR.
         kwargs = {
             'mag': float(ctx.mag[0]),
             'dip': float(ctx.dip[0]),
             'dip_mu': float(ctx.dip[0]),
             'seismothickness': self.model_params.get('seismothickness', 15.0),
+            'vs30': float(ctx.vs30[0]),
             'style': style,
             **{k: v for k, v in self.model_params.items() if k != 'style'},
         }
         
+        def _reduced_scalar(res):
+            res_red = _reduce_mc(
+                res,
+                method=red_cfg.get('method', 'median'),
+                q=red_cfg.get('q', 50)
+            )
+            return float(np.atleast_1d(res_red).flat[0])
+
+        # vs30-dependent models (e.g. Moss 2013) give a different P_sr per
+        # site when the site collection carries heterogeneous vs30 values;
+        # evaluate once per unique vs30 instead of broadcasting site 0's.
+        unique_vs30 = np.unique(ctx.vs30)
+        if unique_vs30.size > 1 and 'vs30' in self._get_method_params('get_prob'):
+            out = np.zeros(N, dtype=np.float64)
+            for v in unique_vs30:
+                result = self._call_safely('get_prob', **{**kwargs, 'vs30': float(v)})
+                if result is None:
+                    return None
+                out[ctx.vs30 == v] = _reduced_scalar(result)
+            return out
+
         # Call model
         result = self._call_safely('get_prob', **kwargs)
-        
+
         if result is None:
             return None
-        
-        # Reduce MC samples
-        result_red = _reduce_mc(
-            result,
-            method=red_cfg.get('method', 'median'),
-            q=red_cfg.get('q', 50)
-        )
-        
+
         # Broadcast to all sites
-        scalar_val = float(np.atleast_1d(result_red).flat[0])
-        return np.full(N, scalar_val, dtype=np.float64)
+        return np.full(N, _reduced_scalar(result), dtype=np.float64)
     
     def compute_primary_fd(
         self,
