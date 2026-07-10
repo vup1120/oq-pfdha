@@ -99,6 +99,12 @@ def compute_hazard_map(
                 )
         if hasattr(source, 'iter_ruptures'):
             try:
+                if getattr(source, 'rupture_idxs', None) is not None:
+                    # multiFaultSource: ruptures cover different section
+                    # subsets; the site pre-filter and trace overlay need the
+                    # widest footprint, not whichever rupture comes first.
+                    return max((r.surface for r in source.iter_ruptures()),
+                               key=lambda s: len(getattr(s, 'surfaces', ())))
                 return next(source.iter_ruptures()).surface
             except StopIteration:
                 logger.warning(
@@ -120,12 +126,18 @@ def compute_hazard_map(
     
     from openquake.fdha.calc.utils.rupture_distance import (
         VectorizedRuptureDistanceCalculator, _extract_fault_trace_from_mesh,
+        _sections_info, SURFACE_DEPTH_TOLERANCE_KM,
     )
 
     dist_arrays = []
     for source_id, surface in surface_cache.items():
         try:
-            calc = VectorizedRuptureDistanceCalculator(sitecol, surface)
+            # 'segments' = distance to the nearest section trace: the natural
+            # rupture-proximity measure for the active-site pre-filter, and
+            # independent of any reference-line smoothing (an ECS/LCP line can
+            # bulge away from the sections and skew the cutoff).
+            calc = VectorizedRuptureDistanceCalculator(
+                sitecol, surface, reference_line_method='segments')
             distances = calc.calculate_site_to_trace_distances()
             dist_arrays.append(distances)
             logger.debug(f"Got distances for source {source_id}")
@@ -158,8 +170,18 @@ def compute_hazard_map(
         # Also avoids extracting thousands of zero-depth mesh nodes for
         # fine rupture_mesh_spacing (e.g. 0.02 km on an 80 km fault).
         if src_id in surface_cache:
-            polyline = _extract_fault_trace_from_mesh(surface_cache[src_id])
-            trace_coords.extend([(lon, lat) for lon, lat in polyline])
+            surf = surface_cache[src_id]
+            sections = _sections_info(surf)
+            if sections is not None:
+                # multi-section rupture: one top-edge trace per section;
+                # buried sections produce no surface displacement, so they
+                # contribute no on-trace display sites.
+                for sec_lons, sec_lats, dep in sections:
+                    if dep <= SURFACE_DEPTH_TOLERANCE_KM:
+                        trace_coords.extend(zip(sec_lons, sec_lats))
+            else:
+                polyline = _extract_fault_trace_from_mesh(surf)
+                trace_coords.extend([(lon, lat) for lon, lat in polyline])
         elif hasattr(src, 'fault_trace'):
             trace_coords.extend(
                 [(pt.longitude, pt.latitude) for pt in src.fault_trace]
