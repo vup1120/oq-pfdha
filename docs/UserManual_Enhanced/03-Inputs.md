@@ -15,21 +15,18 @@ In OpenQuake, a source model may include several source types. In this PFDHA too
 
 -   **`SimpleFaultSource`**: A planar fault surface derived from a surface trace (polyline) plus dip and seismogenic depths; suited to shallow crustal faults.
 -   **`CharacteristicFaultSource`**: Ruptures span (essentially) the entire mapped fault surface, following a characteristic magnitude/area representation. The enclosed surface may be a `simpleFaultGeometry` **or a `complexFaultGeometry`** (fault top/bottom edges); in both cases the exact NRML trace (the top edge) is retained for the FDHA distance metrics. A `complexFaultGeometry` additionally requires `[erf].complex_fault_mesh_spacing` in the job INI (see [Configuration](05-Configuration.md)).
--   **`MultiFaultSource`**: Non-parametric ruptures defined as combinations of pre-defined fault **sections**, each rupture carrying its own magnitude, rake, and probability mass function (`probs_occur`). Sections are defined in a `<geometryModel>` (in the same file or a separate NRML file listed in the source-model logic tree). This is the typology used by fault-system models with multi-segment ruptures.
+-   **`ComplexFaultSource`**: A non-planar fault surface interpolated between explicit top and bottom edges (each a 3-D polyline), with ruptures floating over the surface as for `SimpleFaultSource`. Requires `[erf].complex_fault_mesh_spacing`.
 
 !!! warning "Unsupported Source Types"
-    Other OQ source types (e.g., `AreaSource`, `PointSource`) are not supported at present.
-    A standalone `ComplexFaultSource` parses and runs through the generic
-    calculation path when `[erf].complex_fault_mesh_spacing` is set (the
-    OpenQuake converter requires it), but it is **not covered by the test
-    suite** and its FDHA distances derive from the resampled surface mesh
-    rather than the exact NRML trace — prefer wrapping a
-    `complexFaultGeometry` in a `characteristicFaultSource` where possible.
+    Other OQ source types (e.g., `AreaSource`, `PointSource`, `MultiFaultSource`) are not supported at present.
 
-!!! note "MultiFaultSource conveniences"
-    - The PMF time span must be declared as an `investigation_time` attribute on the NRML `<sourceModel>`/`<geometryModel>` header; the parser reads it from there automatically (per-rupture `probs_occur` are converted to equivalent annual rates using this value).
-    - The auxiliary sections HDF5 file required by the OpenQuake engine is created automatically in a temporary directory; you do not need to provide one.
-    - Distance metrics (r, x/L) for multi-section ruptures are computed against a fault-system reference line built per FDHA model: each model class declares its method (Chiou-consistent event-coordinate-system line, least-cost-path line, or segmentation-direct distances) and the toolkit routes accordingly — no user configuration is needed.
+!!! note "ComplexFaultSource and the fault trace"
+    For a standalone `ComplexFaultSource`, the FDHA distance metrics (r, x/L)
+    derive from the top row of the **resampled** surface mesh, not the exact
+    NRML top edge — keep `complex_fault_mesh_spacing` fine near sites of
+    interest. Where ruptures are meant to span the whole surface, prefer
+    wrapping the `complexFaultGeometry` in a `characteristicFaultSource`,
+    which retains the exact top-edge trace.
 
 ### 1.2 Required Data (fault-centric)
 
@@ -39,10 +36,11 @@ Each supported fault source must provide:
     -   Surface trace as a lon–lat polyline (WGS84).
     -   Dip (degrees), upper and lower seismogenic depth (km).
     -   (Strike is implied by the trace; width is derived from dip and seismogenic thickness.)
+    -   `ComplexFaultSource` / `complexFaultGeometry` instead provide explicit top and bottom edges as 3-D polylines (lon lat depth), ordered so the surface dips to the right of the strike direction (Aki & Richards convention).
 -   **Kinematics**
     -   Rake (degrees). If using OQ’s distributions, provide a single nodal plane with probability 1.0.
 -   **Occurrence model**
-    -   `SimpleFaultSource`: typically a Gutenberg–Richter MFD (truncated) or other OQ MFD element, plus a magnitude–area relation (e.g., `WC1994`) and a rupture aspect ratio.
+    -   `SimpleFaultSource` / `ComplexFaultSource`: typically a Gutenberg–Richter MFD (truncated) or other OQ MFD element, plus a magnitude–area relation (e.g., `WC1994`) and a rupture aspect ratio.
     -   `CharacteristicFaultSource`: a Characteristic MFD (single magnitude or narrow band) consistent with ruptures spanning the full fault.
 -   **Metadata**
     -   `id`, `name`, `tectonicRegionType` (e.g., `Active Shallow Crust`).
@@ -50,7 +48,7 @@ Each supported fault source must provide:
 ### 1.3 How PFDHA Uses the Source Model (workflow-critical)
 
 -   **Rupture Sampling**
-    -   `SimpleFaultSource`: Magnitudes are drawn from the MFD; rupture dimensions are derived via the selected mag–area relation and aspect ratio; rupture planes are positioned along the trace/width per OQ conventions.
+    -   `SimpleFaultSource` / `ComplexFaultSource`: Magnitudes are drawn from the MFD; rupture dimensions are derived via the selected mag–area relation and aspect ratio; rupture planes are positioned along the trace/width (or the interpolated edge surface) per OQ conventions.
     -   `CharacteristicFaultSource`: Ruptures span the full mapped surface; the characteristic magnitude is used directly.
 -   **Distance Metrics for Displacement Models**
     -   The rupture surfaces/planes feed vectorized rupture–site distance calculators (e.g., to trace, to surface projection, to rupture plane).
@@ -97,7 +95,7 @@ Each supported fault source must provide:
 
 -   **Stay OQ-conformant**: Use the exact MFD/geometry tags expected by the OpenQuake Engine.
 -   **Keep Units Explicit**: lon/lat in degrees, depths in km, dip/rake in degrees.
--   **One Source, One Role**: Avoid mixing unsupported source types; keep your NRML to `SimpleFaultSource`, `CharacteristicFaultSource` (with simple or complex geometry), and/or `MultiFaultSource`.
+-   **One Source, One Role**: Avoid mixing unsupported source types; keep your NRML to `SimpleFaultSource`, `CharacteristicFaultSource` (with simple or complex geometry), and/or `ComplexFaultSource`.
 -   **Geometry Quality**: Use dense, order-consistent traces; check for self-intersections and unrealistic dips/widths.
 -   **Kinematics Consistency**: Ensure rake aligns with the displacement models’ assumptions (e.g., reverse/normal/strike-slip branches).
 
