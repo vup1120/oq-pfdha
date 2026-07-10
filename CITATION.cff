@@ -12,7 +12,7 @@ authors:
   - family-names: Chen
     given-names: Yen-Shin
     email: ychen@ogs.it
-    affiliation: "Istituto Nazionale di Oceanografia e di Geofisica Sperimentale (OGS)" / "Global Earthquake Model (GEM) Foundation"
+    affiliation: "Istituto Nazionale di Oceanografia e di Geofisica Sperimentale (OGS) / Global Earthquake Model (GEM) Foundation"
 version: 1.0.0
 license: AGPL-3.0-or-later
 repository-code: "https://github.com/vup1120/oq-pfdha"
