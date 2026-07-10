@@ -30,7 +30,7 @@ from pathlib import Path
 
 import streamlit as st
 
-HERE = Path(__file__).parent
+HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 RUNS = HERE / "runs"
 REGISTRY = json.loads((HERE / "registry.json").read_text())
