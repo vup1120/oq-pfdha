@@ -134,9 +134,11 @@ rank1p5_traces_file = rank1p5_traces.xml
 <logicTreeBranchSet branchSetID="bs_secondary_sr"
                     uncertaintyType="fdhaSecondarySRModel">
   <logicTreeBranch branchID="B_VISINI2025_SECONDARY_SR">
-    <uncertaintyModel><![CDATA[[Visini2025SecondarySR]
-style = reverse
-pixel_size = 50]]></uncertaintyModel>
+    <uncertaintyModel>
+      [Visini2025SecondarySR]
+      style = reverse
+      pixel_size = 50
+    </uncertaintyModel>
     <uncertaintyWeight>1.0</uncertaintyWeight>
   </logicTreeBranch>
 </logicTreeBranchSet>
@@ -144,10 +146,12 @@ pixel_size = 50]]></uncertaintyModel>
 <logicTreeBranchSet branchSetID="bs_secondary_fd"
                     uncertaintyType="fdhaSecondaryFDModel">
   <logicTreeBranch branchID="B_VISINI2025_SECONDARY_FD">
-    <uncertaintyModel><![CDATA[[Visini2025SecondaryFD]
-style = reverse
-scaling_model = LEONARD2010
-# tpfm = 1.2]]></uncertaintyModel>
+    <uncertaintyModel>
+      [Visini2025SecondaryFD]
+      style = reverse
+      scaling_model = LEONARD2010
+      # tpfm = 1.2
+    </uncertaintyModel>
     <uncertaintyWeight>1.0</uncertaintyWeight>
   </logicTreeBranch>
 </logicTreeBranchSet>
