@@ -250,6 +250,58 @@ class TestSiteMetrics:
         assert ctx.L[0] == pytest.approx(TRACE_LEN_KM, abs=1.5)
 
 
+class TestBuriedRuptureGate:
+    """Ruptures whose top edge lies deeper than 0.5 km must be skipped:
+    they cannot produce surface fault displacement. The gate is
+    ``FDHAContextMaker.is_surface_rupturing`` applied per rupture in
+    ``calculate_fdha_hazard`` (curve and map paths alike)."""
+
+    def test_tolerance_is_half_km(self):
+        assert FDHAContextMaker.SURFACE_DEPTH_TOLERANCE_KM == 0.5
+
+    def test_buried_complex_ruptures_flagged(self, complex_source):
+        (src,) = complex_source.values()
+        rups = list(src.iter_ruptures())
+        tops = [float(np.nanmin(r.surface.mesh.depths)) for r in rups]
+        buried = [r for r, t in zip(rups, tops) if t > 0.5]
+        surface = [r for r, t in zip(rups, tops) if t <= 0.5]
+        # the floating-rupture scenario must exercise both sides of the gate
+        assert buried, "fixture has no buried ruptures - gate not exercised"
+        assert surface, "fixture has no surface ruptures"
+        cm = FDHAContextMaker(_sitecol(HW_SITE), {}, maximum_distance=50.0)
+        assert all(not cm.is_surface_rupturing(r) for r in buried)
+        assert all(cm.is_surface_rupturing(r) for r in surface)
+
+    def test_buried_only_source_contributes_zero(self, tmp_path):
+        """With iter_ruptures restricted to top edge > 0.5 km, the hazard
+        must be exactly zero everywhere: every rupture is skipped before
+        any probability model is evaluated."""
+        calc, src = _make_calc(tmp_path, COMPLEX_SOURCE_XML, "buried")
+        all_rups = list(src.iter_ruptures())
+        buried = [r for r in all_rups
+                  if float(np.nanmin(r.surface.mesh.depths)) > 0.5]
+        assert buried
+        src.iter_ruptures = lambda **kw: iter(buried)
+        results = calc.run()
+        assert np.asarray(results['poes']).max() == 0.0
+        assert np.asarray(results['rate_principal']).max() == 0.0
+        assert np.asarray(results['rate_distributed']).max() == 0.0
+
+    def test_surface_only_source_reproduces_full_hazard(self, tmp_path):
+        """Dropping the buried ruptures from the source changes nothing:
+        the full-source hazard already excludes them."""
+        calc_full, _ = _make_calc(tmp_path, COMPLEX_SOURCE_XML, "full")
+        poes_full = np.asarray(calc_full.run()['poes'])
+
+        calc_surf, src = _make_calc(tmp_path, COMPLEX_SOURCE_XML, "surfonly")
+        surface = [r for r in src.iter_ruptures()
+                   if float(np.nanmin(r.surface.mesh.depths)) <= 0.5]
+        src.iter_ruptures = lambda **kw: iter(surface)
+        poes_surf = np.asarray(calc_surf.run()['poes'])
+
+        np.testing.assert_array_equal(poes_full, poes_surf)
+
+
 INI_TEMPLATE = (
     "[general]\n"
     "description = complex fault end-to-end test\n"
@@ -284,8 +336,10 @@ INI_TEMPLATE = (
 )
 
 
-def _run_calc(tmp_path, source_xml_text, name, sites="0.0 0.15",
-              **converterparams):
+def _make_calc(tmp_path, source_xml_text, name, sites="0.0 0.15",
+               rupture_mesh_spacing=1.0, complex_fault_mesh_spacing=1.0,
+               width_of_mfd_bin=0.1, **converterparams):
+    """Build a ready-to-run calculator; returns (calculator, first source)."""
     from openquake.fdha.calc.calculators import (
         FaultRuptureProbabilityCalculator)
     src_xml = tmp_path / f"{name}.xml"
@@ -295,7 +349,18 @@ def _run_calc(tmp_path, source_xml_text, name, sites="0.0 0.15",
     ini = branch_dir / f"branch_{name}.ini"
     ini.write_text(INI_TEMPLATE.format(sites=sites))
     calc = FaultRuptureProbabilityCalculator(
-        str(ini), [str(src_xml)], **converterparams)
+        str(ini), [str(src_xml)],
+        rupture_mesh_spacing=rupture_mesh_spacing,
+        complex_fault_mesh_spacing=complex_fault_mesh_spacing,
+        width_of_mfd_bin=width_of_mfd_bin, **converterparams)
+    (src,) = calc.fault_sources.values()
+    return calc, src
+
+
+def _run_calc(tmp_path, source_xml_text, name, sites="0.0 0.15",
+              **converterparams):
+    calc, _src = _make_calc(
+        tmp_path, source_xml_text, name, sites=sites, **converterparams)
     return calc.run()
 
 
