@@ -25,6 +25,7 @@ import logging
 import os
 import shutil
 import xml.etree.ElementTree as ET
+import xml.sax.saxutils as saxutils
 import zipfile
 from pathlib import Path
 
@@ -549,13 +550,16 @@ def build_fdha_lt_xml(selections: dict) -> str:
     coupled model selected the tree is fully flat.
     """
     def branch(ind: str, bid: str, m: dict, weight) -> list[str]:
-        body = f"[{m['class_name']}]"
+        # oq-engine GMPE logic-tree style: plain indented text, one
+        # "[ClassName]" header line plus "key = value" lines.
         params = (m.get("params") or "").strip()
-        if params:
-            body += "\n" + params
+        body = [f"[{m['class_name']}]"]
+        body += [ln.strip() for ln in params.splitlines() if ln.strip()]
         return [
             f'{ind}<logicTreeBranch branchID="{bid}">',
-            f"{ind}  <uncertaintyModel><![CDATA[{body}]]></uncertaintyModel>",
+            f"{ind}  <uncertaintyModel>",
+            *(f"{ind}    {saxutils.escape(ln)}" for ln in body),
+            f"{ind}  </uncertaintyModel>",
             f"{ind}  <uncertaintyWeight>{weight}</uncertaintyWeight>",
             f"{ind}</logicTreeBranch>",
         ]
