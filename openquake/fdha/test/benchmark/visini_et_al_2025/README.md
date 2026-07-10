@@ -1,5 +1,5 @@
-This benchmark covers Visini secondary-model integration checks plus Figure 13
-and Figure 14 reproduction workflows, with source details recorded in
+This benchmark covers the Visini et al. (2025) Figure 13 and Figure 14
+reproduction workflows, with source details recorded in
 [REFERENCE.md](REFERENCE.md).
 
 - **`fig13/`** reproduces the paper's Figure 13 decision-tree worked example
@@ -21,5 +21,5 @@ and Figure 14 reproduction workflows, with source details recorded in
 Run: `pytest openquake/fdha/test/benchmark/visini_et_al_2025 -q`
 (add `-m slow` to include the Figure 13 reproduction cases).
 
-Status: PASS for model integration pytest checks and the Figure 13
-reproduction benchmark. Figure 14 remains a diagnostic workflow.
+Status: PASS for the Figure 13 reproduction benchmark. Figure 14 remains a
+diagnostic workflow.
