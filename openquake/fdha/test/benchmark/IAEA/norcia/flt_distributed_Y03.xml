@@ -4,8 +4,10 @@
     <logicTreeBranchingLevel branchingLevelID="bl_1_primary_surf_rup">
       <logicTreeBranchSet branchSetID="bs_1" uncertaintyType="fdhaPrimarySRModel">
         <logicTreeBranch branchID="B1_PSR">
-          <uncertaintyModel><![CDATA[[Youngs2003PrimarySR]
-style = normal]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Youngs2003PrimarySR]
+            style = normal
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
@@ -13,9 +15,11 @@ style = normal]]></uncertaintyModel>
     <logicTreeBranchingLevel branchingLevelID="bl_2_primary_surf_displ">
       <logicTreeBranchSet branchSetID="bs_2" uncertaintyType="fdhaPrimaryFDModel" applyToBranches="B1_PSR">
         <logicTreeBranch branchID="B2_PFD">
-          <uncertaintyModel><![CDATA[[Youngs2003PrimaryFD]
-style = normal
-norm_disp_type = AD]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Youngs2003PrimaryFD]
+            style = normal
+            norm_disp_type = AD
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
@@ -23,8 +27,10 @@ norm_disp_type = AD]]></uncertaintyModel>
     <logicTreeBranchingLevel branchingLevelID="bl_3_secondary_surf_rup">
       <logicTreeBranchSet branchSetID="bs_3" uncertaintyType="fdhaSecondarySRModel" applyToBranches="B2_PFD">
         <logicTreeBranch branchID="B3_SSR">
-          <uncertaintyModel><![CDATA[[Youngs2003SecondarySR]
-version = 3]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Youngs2003SecondarySR]
+            version = 3
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
@@ -32,8 +38,10 @@ version = 3]]></uncertaintyModel>
     <logicTreeBranchingLevel branchingLevelID="bl_4_secondary_surf_displ">
       <logicTreeBranchSet branchSetID="bs_4" uncertaintyType="fdhaSecondaryFDModel" applyToBranches="B3_SSR">
         <logicTreeBranch branchID="B4_SFD">
-          <uncertaintyModel><![CDATA[[Youngs2003SecondaryFD]
-percentile = 85]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Youngs2003SecondaryFD]
+            percentile = 85
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
