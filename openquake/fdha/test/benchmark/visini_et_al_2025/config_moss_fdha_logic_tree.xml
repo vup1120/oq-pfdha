@@ -4,9 +4,11 @@
     <logicTreeBranchingLevel branchingLevelID="bl_1_primary_surf_rup">
       <logicTreeBranchSet branchSetID="bs_1_primary_surf_rup" uncertaintyType="fdhaPrimarySRModel">
         <logicTreeBranch branchID="B1_PRIMARY_SURF_RUP">
-          <uncertaintyModel><![CDATA[[Moss2013PrimarySR]
-style = reverse
-vs30 = 600]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Moss2013PrimarySR]
+            style = reverse
+            vs30 = 600
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
@@ -14,10 +16,12 @@ vs30 = 600]]></uncertaintyModel>
     <logicTreeBranchingLevel branchingLevelID="bl_2_primary_surf_displ">
       <logicTreeBranchSet branchSetID="bs_2_primary_surf_displ" uncertaintyType="fdhaPrimaryFDModel" applyToBranches="B1_PRIMARY_SURF_RUP">
         <logicTreeBranch branchID="B2_PRIMARY_SURF_DISPL">
-          <uncertaintyModel><![CDATA[[Moss2024PrimaryFD]
-version = MD
-source = EQS
-completeness = all]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Moss2024PrimaryFD]
+            version = MD
+            source = EQS
+            completeness = all
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
@@ -25,9 +29,11 @@ completeness = all]]></uncertaintyModel>
     <logicTreeBranchingLevel branchingLevelID="bl_3_secondary_surf_rup">
       <logicTreeBranchSet branchSetID="bs_3_secondary_surf_rup" uncertaintyType="fdhaSecondarySRModel" applyToBranches="B2_PRIMARY_SURF_DISPL">
         <logicTreeBranch branchID="B3_SECONDARY_SURF_RUP">
-          <uncertaintyModel><![CDATA[[Visini2025SecondarySR]
-style = reverse
-pixel_size = 50]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Visini2025SecondarySR]
+            style = reverse
+            pixel_size = 50
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
@@ -35,9 +41,11 @@ pixel_size = 50]]></uncertaintyModel>
     <logicTreeBranchingLevel branchingLevelID="bl_4_secondary_surf_displ">
       <logicTreeBranchSet branchSetID="bs_4_secondary_surf_displ" uncertaintyType="fdhaSecondaryFDModel" applyToBranches="B3_SECONDARY_SURF_RUP">
         <logicTreeBranch branchID="B4_SECONDARY_SURF_DISPL">
-          <uncertaintyModel><![CDATA[[Visini2025SecondaryFD]
-style = reverse
-scaling_model = LEONARD2010]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Visini2025SecondaryFD]
+            style = reverse
+            scaling_model = LEONARD2010
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>

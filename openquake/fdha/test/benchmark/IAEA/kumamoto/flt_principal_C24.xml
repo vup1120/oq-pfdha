@@ -4,7 +4,9 @@
     <logicTreeBranchingLevel branchingLevelID="bl_1_primary_surf_rup">
       <logicTreeBranchSet branchSetID="bs_1" uncertaintyType="fdhaPrimarySRModel">
         <logicTreeBranch branchID="B1_PSR">
-          <uncertaintyModel><![CDATA[[WC1993PrimarySR]]]></uncertaintyModel>
+          <uncertaintyModel>
+            [WC1993PrimarySR]
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
@@ -12,8 +14,10 @@
     <logicTreeBranchingLevel branchingLevelID="bl_2_primary_surf_displ">
       <logicTreeBranchSet branchSetID="bs_2" uncertaintyType="fdhaPrimaryFDModel" applyToBranches="B1_PSR">
         <logicTreeBranch branchID="B2_PFD">
-          <uncertaintyModel><![CDATA[[Chiou2025PrimaryFD]
-version = model7]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Chiou2025PrimaryFD]
+            version = model7
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
@@ -21,8 +25,10 @@ version = model7]]></uncertaintyModel>
     <logicTreeBranchingLevel branchingLevelID="bl_3_secondary_surf_rup">
       <logicTreeBranchSet branchSetID="bs_3" uncertaintyType="fdhaSecondarySRModel" applyToBranches="B2_PFD">
         <logicTreeBranch branchID="B3_SSR">
-          <uncertaintyModel><![CDATA[[FixedSecondarySR]
-value = 0.0]]></uncertaintyModel>
+          <uncertaintyModel>
+            [FixedSecondarySR]
+            value = 0.0
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
@@ -30,8 +36,10 @@ value = 0.0]]></uncertaintyModel>
     <logicTreeBranchingLevel branchingLevelID="bl_4_secondary_surf_displ">
       <logicTreeBranchSet branchSetID="bs_4" uncertaintyType="fdhaSecondaryFDModel" applyToBranches="B3_SSR">
         <logicTreeBranch branchID="B4_SFD">
-          <uncertaintyModel><![CDATA[[Youngs2003SecondaryFD]
-style = all]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Youngs2003SecondaryFD]
+            style = all
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>

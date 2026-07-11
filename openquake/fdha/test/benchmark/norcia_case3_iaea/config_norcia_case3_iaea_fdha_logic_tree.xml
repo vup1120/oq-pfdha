@@ -4,11 +4,15 @@
     <logicTreeBranchingLevel branchingLevelID="bl_1_primary_surf_rup">
       <logicTreeBranchSet branchSetID="bs_1_primary_surf_rup" uncertaintyType="fdhaPrimarySRModel">
         <logicTreeBranch branchID="Y03_PRIMARY_SURF_RUP">
-          <uncertaintyModel><![CDATA[[Youngs2003PrimarySR]]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Youngs2003PrimarySR]
+          </uncertaintyModel>
           <uncertaintyWeight>0.5</uncertaintyWeight>
         </logicTreeBranch>
         <logicTreeBranch branchID="V24_PRIMARY_SURF_RUP_PROXY">
-          <uncertaintyModel><![CDATA[[Youngs2003PrimarySR]]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Youngs2003PrimarySR]
+          </uncertaintyModel>
           <uncertaintyWeight>0.5</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
@@ -19,8 +23,10 @@
                           uncertaintyType="fdhaPrimaryFDModel"
                           applyToBranches="Y03_PRIMARY_SURF_RUP">
         <logicTreeBranch branchID="Y03_PRIMARY_SURF_DISPL">
-          <uncertaintyModel><![CDATA[[Youngs2003PrimaryFD]
-norm_disp_type = AD]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Youngs2003PrimaryFD]
+            norm_disp_type = AD
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
@@ -28,8 +34,10 @@ norm_disp_type = AD]]></uncertaintyModel>
                           uncertaintyType="fdhaPrimaryFDModel"
                           applyToBranches="V24_PRIMARY_SURF_RUP_PROXY">
         <logicTreeBranch branchID="V24_PRIMARY_SURF_DISPL_PROXY">
-          <uncertaintyModel><![CDATA[[Youngs2003PrimaryFD]
-norm_disp_type = AD]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Youngs2003PrimaryFD]
+            norm_disp_type = AD
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
@@ -40,8 +48,10 @@ norm_disp_type = AD]]></uncertaintyModel>
                           uncertaintyType="fdhaSecondarySRModel"
                           applyToBranches="Y03_PRIMARY_SURF_DISPL">
         <logicTreeBranch branchID="Y03_SECONDARY_SURF_RUP">
-          <uncertaintyModel><![CDATA[[Youngs2003SecondarySR]
-version = 3]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Youngs2003SecondarySR]
+            version = 3
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
@@ -49,8 +59,10 @@ version = 3]]></uncertaintyModel>
                           uncertaintyType="fdhaSecondarySRModel"
                           applyToBranches="V24_PRIMARY_SURF_DISPL_PROXY">
         <logicTreeBranch branchID="V24_SECONDARY_SURF_RUP">
-          <uncertaintyModel><![CDATA[[Visini2025SecondarySR]
-pixel_size = 100]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Visini2025SecondarySR]
+            pixel_size = 100
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
@@ -61,8 +73,10 @@ pixel_size = 100]]></uncertaintyModel>
                           uncertaintyType="fdhaSecondaryFDModel"
                           applyToBranches="Y03_SECONDARY_SURF_RUP">
         <logicTreeBranch branchID="Y03_SECONDARY_SURF_DISPL">
-          <uncertaintyModel><![CDATA[[Youngs2003SecondaryFD]
-percentile = 85]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Youngs2003SecondaryFD]
+            percentile = 85
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
@@ -70,8 +84,10 @@ percentile = 85]]></uncertaintyModel>
                           uncertaintyType="fdhaSecondaryFDModel"
                           applyToBranches="V24_SECONDARY_SURF_RUP">
         <logicTreeBranch branchID="V24_SECONDARY_SURF_DISPL">
-          <uncertaintyModel><![CDATA[[Visini2025SecondaryFD]
-scaling_model = WC1994]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Visini2025SecondaryFD]
+            scaling_model = WC1994
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>

@@ -4,8 +4,10 @@
     <logicTreeBranchingLevel branchingLevelID="bl_1_primary_surf_rup">
       <logicTreeBranchSet branchSetID="bs_1_primary_surf_rup" uncertaintyType="fdhaPrimarySRModel">
         <logicTreeBranch branchID="B1_PRIMARY_SURF_RUP">
-          <uncertaintyModel><![CDATA[[WC1993PrimarySR]
-style = reverse]]></uncertaintyModel>
+          <uncertaintyModel>
+            [WC1993PrimarySR]
+            style = reverse
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
@@ -13,10 +15,12 @@ style = reverse]]></uncertaintyModel>
     <logicTreeBranchingLevel branchingLevelID="bl_2_primary_surf_displ">
       <logicTreeBranchSet branchSetID="bs_2_primary_surf_displ" uncertaintyType="fdhaPrimaryFDModel" applyToBranches="B1_PRIMARY_SURF_RUP">
         <logicTreeBranch branchID="B2_PRIMARY_SURF_DISPL">
-          <uncertaintyModel><![CDATA[[Moss2024PrimaryFD]
-version = AD
-source = EQS
-completeness = complete]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Moss2024PrimaryFD]
+            version = AD
+            source = EQS
+            completeness = complete
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
@@ -24,9 +28,11 @@ completeness = complete]]></uncertaintyModel>
     <logicTreeBranchingLevel branchingLevelID="bl_3_secondary_surf_rup">
       <logicTreeBranchSet branchSetID="bs_3_secondary_surf_rup" uncertaintyType="fdhaSecondarySRModel" applyToBranches="B2_PRIMARY_SURF_DISPL">
         <logicTreeBranch branchID="B3_SECONDARY_SURF_RUP">
-          <uncertaintyModel><![CDATA[[Youngs2003SecondarySR]
-version = 3
-style = all]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Youngs2003SecondarySR]
+            version = 3
+            style = all
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
@@ -34,9 +40,11 @@ style = all]]></uncertaintyModel>
     <logicTreeBranchingLevel branchingLevelID="bl_4_secondary_surf_displ">
       <logicTreeBranchSet branchSetID="bs_4_secondary_surf_displ" uncertaintyType="fdhaSecondaryFDModel" applyToBranches="B3_SECONDARY_SURF_RUP">
         <logicTreeBranch branchID="B4_SECONDARY_SURF_DISPL">
-          <uncertaintyModel><![CDATA[[Youngs2003SecondaryFD]
-percentile = 95
-style = all]]></uncertaintyModel>
+          <uncertaintyModel>
+            [Youngs2003SecondaryFD]
+            percentile = 95
+            style = all
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
