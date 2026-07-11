@@ -93,6 +93,26 @@ source_model_logic_tree_file = hazard_curve_minimal_source_model_logic_tree.xml
 
 ---
 
+## `[parameters]`
+
+This section is reserved for features under development — a standard job
+does not need it, and jobs shipped with the repository do not use it.
+
+When a model carries an internal Monte-Carlo/epistemic sample dimension
+(e.g. `Kuehn2024PrimaryFD` with `epistemic_uncertainty = true`), the
+calculator averages those samples by default, which yields the mean hazard
+curve with the model's internal epistemic spread fully included. There is
+nothing to configure.
+
+The development keys `primary_sr_reduction` / `secondary_sr_reduction`
+(`{"method": "mean"}` by default; `median` also accepted) override that
+statistic; `percentile` is rejected, since a per-rupture quantile of
+exceedance probabilities is not a hazard fractile of any kind. Fractiles
+of epistemic uncertainty are the province of the logic tree (see
+`[output]` quantiles).
+
+---
+
 ## `[geometry]`
 
 ### Hazard Curve Sites

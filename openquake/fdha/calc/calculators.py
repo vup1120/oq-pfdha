@@ -114,16 +114,66 @@ class BaseFaultRuptureCalculator:
 
     def get_model_parameters(self, name):
         return self.config.get('models', {}).get(name, {}).get('parameters', {})
-    
+
+    @staticmethod
+    def _validate_hazard_reduction(name, cfg):
+        """Validate a Monte-Carlo reduction config for the hazard integral.
+
+        Developer-facing; jobs should not set these keys. Only 'mean' and
+        'median' are accepted here. The mean (default) is exact: expectation
+        is linear, so reducing a model's epistemic/MC samples by their mean
+        inside the rate sum reproduces the mean hazard curve (McGuire,
+        Cornell & Toro, 2005). The median is a legacy central-estimate
+        heuristic. 'percentile' is refused because a per-rupture quantile of
+        exceedance probabilities is not a fractile of any hazard
+        distribution — quantiles are only additive over the rate sum under
+        comonotonicity (Dhaene et al., 2002). The percentile machinery in
+        ``utils.probability`` is intentionally kept for non-integral uses
+        (e.g. a future scenario calculator).
+        """
+        if isinstance(cfg, str):
+            cfg = {'method': cfg}
+        if not isinstance(cfg, dict):
+            raise TypeError(
+                f"[parameters] {name} must be a JSON object like "
+                f'{{"method": "mean"}}, got {cfg!r}')
+        method = str(cfg.get('method', 'mean')).lower()
+        if method == 'percentile':
+            raise ValueError(
+                f'[parameters] {name} = {{"method": "percentile"}} is not '
+                f'supported in hazard calculations: a quantile applied '
+                f'inside the hazard integral does not produce a hazard '
+                f'fractile of any kind. Use {{"method": "mean"}} — the '
+                f'mean hazard curve, which incorporates within-model '
+                f'epistemic uncertainty exactly. Fractiles of within-model '
+                f'epistemic uncertainty are not currently supported; they '
+                f'require propagating the model\'s posterior samples as '
+                f'logic-tree realizations.')
+        if method not in ('mean', 'median'):
+            raise ValueError(
+                f"[parameters] {name}: unknown reduction method "
+                f"'{method}'; expected 'mean' or 'median'.")
+        return {**cfg, 'method': method}
+
     def _initialize_calculation_params(self):
         """Initialize calculation parameters needed by calculate_fdha_hazard."""
         # Target displacements
         target_disp = self.config.get('parameters', {}).get('target_displacement', [0.001, 0.01, 0.1, 1.0, 10.0])
         self.target_displacements = np.array(target_disp, dtype=np.float64)
         
-        # Reduction configs
-        self.p_sr_red_cfg = self.config.get('parameters', {}).get('primary_sr_reduction', {'method': 'median', 'q': 50})
-        self.s_sr_red_cfg = self.config.get('parameters', {}).get('secondary_sr_reduction', self.p_sr_red_cfg)
+        # Reduction configs for models that return an internal MC/epistemic
+        # sample dimension. The default is the mean, which is exact (the
+        # expectation commutes with the hazard integral), so jobs never need
+        # to set these keys; they are undocumented developer knobs.
+        # secondary_sr_reduction inherits primary_sr_reduction when unset.
+        self.p_sr_red_cfg = self._validate_hazard_reduction(
+            'primary_sr_reduction',
+            self.config.get('parameters', {}).get(
+                'primary_sr_reduction', {'method': 'mean'}))
+        self.s_sr_red_cfg = self._validate_hazard_reduction(
+            'secondary_sr_reduction',
+            self.config.get('parameters', {}).get(
+                'secondary_sr_reduction', self.p_sr_red_cfg))
         
         # Principal/distributed split: r <= threshold -> primary (on-trace)
         # models, r > threshold -> secondary (distributed) models. Read from

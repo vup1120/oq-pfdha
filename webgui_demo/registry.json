@@ -563,15 +563,6 @@
               "allowed": ">0",
               "required": false,
               "description": "Distance split between principal (\u2264 threshold) and distributed (> threshold) branches in the hazard curve."
-            },
-            {
-              "name": "primary_sr_reduction` / `secondary_sr_reduction",
-              "type": "JSON string",
-              "units": "\u2013",
-              "default": "median, 50th percentile",
-              "allowed": "method\u2208{`median`,`mean`,`percentile`}",
-              "required": false,
-              "description": "Reduction statistic for Monte Carlo arrays. Use JSON format: `{\"method\": \"median\", \"q\": 50}`."
             }
           ],
           "prefill": "pixel_size = 100"
@@ -726,15 +717,6 @@
               "allowed": ">0",
               "required": false,
               "description": "Distance split between principal (\u2264 threshold) and distributed (> threshold) branches in the hazard curve."
-            },
-            {
-              "name": "primary_sr_reduction` / `secondary_sr_reduction",
-              "type": "JSON string",
-              "units": "\u2013",
-              "default": "median, 50th percentile",
-              "allowed": "method\u2208{`median`,`mean`,`percentile`}",
-              "required": false,
-              "description": "Reduction statistic for Monte Carlo arrays. Use JSON format: `{\"method\": \"median\", \"q\": 50}`."
             },
             {
               "name": "scaling_model",
