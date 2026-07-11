@@ -78,6 +78,7 @@ DOC_MAP = {
     "Visini2025SecondaryFD": "secondary/VisiniEtAl2025.md",
     "Youngs2003SecondarySR": "secondary/Youngs2003.md",
     "Youngs2003SecondaryFD": "secondary/Youngs2003.md",
+    "Takao2013SecondaryFD": "secondary/Takao2013.md",
 }
 
 # Editor prefill for <uncertaintyModel> parameter lines. Values are taken
@@ -98,6 +99,7 @@ PREFILL = {
     "Moss2024PrimaryFD": "version = AD",                # [T]
     "Youngs2003SecondarySR": "version = 3",             # [N]
     "Youngs2003SecondaryFD": "percentile = 85",         # [N]
+    "Takao2013SecondaryFD": "norm_disp_type = AD",      # paper's case study
     "Visini2025SecondarySR": "pixel_size = 100",        # [N] (pixel_size is Required)
     "Visini2025SecondaryFD": "scaling_model = WC1994",  # [N]
 }
