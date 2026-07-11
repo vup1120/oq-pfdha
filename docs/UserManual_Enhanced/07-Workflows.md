@@ -61,7 +61,7 @@ This is the most fundamental workflow, used to assess the hazard at a specific p
     -   Define a `[geometry]` section with `sites` for one or more point sites (format: `lon1 lat1, lon2 lat2, ...`), or `sites_csv` for sites from a CSV file.
     -   Define the `displacement_measure_levels` in `[calculation]` section (JSON format: `{"FD": [0.001, 0.01, ...]}`).
     -   Set `[calculation].source_model_logic_tree_file` and `[calculation].fdha_logic_tree_file`.
-    -   Select the four required model categories in the FDHA logic-tree XML, not in `[models]` INI sections.
+    -   Select the four required model categories in the FDHA logic-tree XML, not in `[models]` INI sections; to model only one side, neutralize the other with the constant `Fixed*SR` models (see [Models — Modeling only principal or only distributed displacement](06-Models.md#modeling-only-principal-or-only-distributed-displacement)).
 3.  **Run Calculation**:
     Execute the `fdha` command with your configuration file:
     ```bash
@@ -90,7 +90,7 @@ This workflow visualizes the spatial distribution of hazard across a region for 
     -   Set the desired `return_period` in the `[calculation]` section (e.g., `100000` years).
     -   Define `displacement_measure_levels` in `[calculation]` section.
     -   Set `[calculation].source_model_logic_tree_file` and `[calculation].fdha_logic_tree_file`.
-    -   Select the four required model categories in the FDHA logic-tree XML, not in `[models]` INI sections.
+    -   Select the four required model categories in the FDHA logic-tree XML, not in `[models]` INI sections; to model only one side, neutralize the other with the constant `Fixed*SR` models (see [Models — Modeling only principal or only distributed displacement](06-Models.md#modeling-only-principal-or-only-distributed-displacement)).
 3.  **Run Calculation**:
     ```bash
     fdha job_map.ini \

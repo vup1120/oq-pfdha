@@ -35,6 +35,49 @@ Models that describe the distribution of displacement amplitudes for secondary r
 - The primary pair (items 1–2) applies on the principal trace; the secondary pair (items 3–4) applies off‑trace. This principal vs distributed distinction is standard in IAEA guidance and current exercises.
 - For long return periods, hazard is often dominated by the surface‑rupture probability model choices (item 1), especially for moderate magnitudes—so multiple CPSR branches with justified weights are recommended.
 
+### Modeling only principal or only distributed displacement
+
+The FDHA logic tree **always declares all four categories**, because the tool
+computes principal (on‑fault) and distributed (off‑fault) displacement together
+in a single pass: principal hazard applies where `|r| ≤ r_threshold_km` and
+distributed hazard where `|r| > r_threshold_km`. To study only one side, you do
+not delete a category — you **neutralize** the other side with the constant
+`Fixed*SR` surface‑rupture models. Only surface‑rupture placeholders exist
+(`FixedPrimarySR`, `FixedSecondarySR`); there is deliberately no
+`FixedPrimaryFD`/`FixedSecondaryFD`, so each displacement side is switched off
+through its paired surface‑rupture probability.
+
+- **Principal (on‑fault) displacement only.** Set the secondary surface‑rupture
+  branch to `[FixedSecondarySR]` with `value = 0.0`. The distributed contribution
+  becomes `P_sr · (0 · P_fd_sec) = 0`, so the distributed zone reports no hazard.
+  The `fdhaSecondaryFDModel` branch still needs a valid entry (any registered
+  model), but it is multiplied by zero, so its choice does not affect the result.
+  This is exactly the pattern used in the `flt_principal_*` example files:
+
+    ```xml
+    <logicTreeBranchingLevel branchingLevelID="bl_3_secondary_surf_rup">
+      <logicTreeBranchSet branchSetID="bs_3" uncertaintyType="fdhaSecondarySRModel" applyToBranches="B2_PFD">
+        <logicTreeBranch branchID="B3_SSR">
+          <uncertaintyModel>
+            [FixedSecondarySR]
+            value = 0.0
+          </uncertaintyModel>
+          <uncertaintyWeight>1.0</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+    ```
+
+- **Principal + distributed displacement.** Provide real models in all four
+  categories (the `flt_distributed_*` pattern).
+
+- **Caveat — the P_sr gate.** The distributed contribution is scaled by the
+  primary surface‑rupture probability `P_sr`. When you want distributed hazard,
+  keep a physically appropriate primary SR model (e.g. `WC1993PrimarySR`) rather
+  than disabling it. `FixedPrimarySR` with `value = 0.0` sets `P_sr = 0`, which
+  zeroes **both** the principal and the distributed contributions — it is a full
+  "off" switch, not a way to isolate distributed displacement.
+
 ### Displacement Metrics and Definitions for PFDHA
 
 ## 1) Displacement metrics (what models predict)
@@ -144,6 +187,7 @@ These models answer the question: *Given that secondary rupture has occurred, wh
 | Model Class Name | Reference | Faulting style | Slip component | Mw range¹ | r range¹ | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | `Youngs2003SecondaryFD` | Youngs et al. (2003) | Normal | Vertical | 5.5–7.4 | 0–15 km | Models distributed displacement as a fraction of the Maximum Displacement on the principal fault. |
+| `Takao2013SecondaryFD` | Takao et al. (2013) | Reverse, strike-slip | Net | 5.8–7.4 | 0–20 km | Models distributed displacement normalized by the principal-fault maximum or average displacement (Gamma distribution anchored at the 90% non-exceedance level of their Eqs. 15-16). |
 | `Petersen2011SecondaryFD` | Petersen et al. (2011) | Strike-slip | Lateral | 6.5–7.5 | 0–2.5 km | Provides exceedance probability for distributed displacement on strike-slip faults. |
 | `Moss2022SecondaryFD` | Moss et al. (2022) | Reverse | Vertical distributed displacement normalized by MD/AD | Report-specific | Report-specific | Distributed displacement model from GIRS-2022-05 Section 5.2.3; envelope mode uses Eq. 5.8 / Tables 5.7-5.8 and gamma mode combines the report's global gamma distribution with the distance envelope. |
 | `Visini2025SecondaryFD` | Visini et al. (2025) | Normal, reverse | Vertical | 5.5–7.9 (N); 4.9–7.9 (R) | 0–10 km (HW); 0–8 km (FW) | A regression model for normal/reverse faults predicting median displacement from magnitude, distance, and mean throw. |
@@ -174,6 +218,7 @@ Section 5, rather than in the Valentini et al. summary table.
 
     **Secondary Surface Displacement Models:**
     - [Petersen et al. (2011)](models/secondary/Petersen2011.md) — Strike-slip faults, distributed displacement
+    - [Takao et al. (2013)](models/secondary/Takao2013.md) — Reverse and strike-slip faults, distributed displacement normalized by PMD/PAD
     - [Visini et al. (2025)](models/secondary/VisiniEtAl2025.md) — Normal and reverse faults, distributed displacement (Note: Model class name is `Visini2025SecondarySR` and `Visini2025SecondaryFD`)
     - [Youngs et al. (2003)](models/secondary/Youngs2003.md) — Normal faults, distributed displacement
 
