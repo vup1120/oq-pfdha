@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nrml xmlns:gml="http://www.opengis.net/gml"
+      xmlns="http://openquake.org/xmlns/nrml/0.4">
+  <logicTree logicTreeID="lt_sm_le_teil_sens1">
+    <logicTreeBranchSet uncertaintyType="sourceModel" branchSetID="bs_lt_sm_le_teil_sens1">
+      <logicTreeBranch branchID="b_lt_sm_le_teil_sens1_00">
+        <!-- LRF_2, rupture length 5.8 km -->
+        <uncertaintyModel>./source_model_sens1_L5p8.xml</uncertaintyModel>
+        <uncertaintyWeight>0.1</uncertaintyWeight>
+      </logicTreeBranch>
+      <logicTreeBranch branchID="b_lt_sm_le_teil_sens1_01">
+        <!-- LRF_2, rupture length 4.6 km -->
+        <uncertaintyModel>./source_model_sens1_L4p6.xml</uncertaintyModel>
+        <uncertaintyWeight>0.15</uncertaintyWeight>
+      </logicTreeBranch>
+      <logicTreeBranch branchID="b_lt_sm_le_teil_sens1_02">
+        <!-- LRF_2 + LRF_1 (13 km) -->
+        <uncertaintyModel>./source_model_sens1_LRF21.xml</uncertaintyModel>
+        <uncertaintyWeight>0.25</uncertaintyWeight>
+      </logicTreeBranch>
+      <logicTreeBranch branchID="b_lt_sm_le_teil_sens1_03">
+        <!-- LRF_2 + LRF_3 (8 km) -->
+        <uncertaintyModel>./source_model_sens1_LRF23.xml</uncertaintyModel>
+        <uncertaintyWeight>0.25</uncertaintyWeight>
+      </logicTreeBranch>
+      <logicTreeBranch branchID="b_lt_sm_le_teil_sens1_04">
+        <!-- LRF_2 + LRF_1 + LRF_3 (16 km) -->
+        <uncertaintyModel>./source_model_sens1_LRF213.xml</uncertaintyModel>
+        <uncertaintyWeight>0.25</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
+  </logicTree>
+</nrml>

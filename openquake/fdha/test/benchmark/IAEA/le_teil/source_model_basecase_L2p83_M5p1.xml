@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<nrml xmlns="http://openquake.org/xmlns/nrml/0.5"
+      xmlns:gml="http://www.opengis.net/gml">
+  <sourceModel name="IAEA Le Teil base case: L=2.83 km, T=2 km, Mw5.1">
+    <sourceGroup name="IAEA Le Teil base case" tectonicRegion="Active Shallow Crust">
+      <characteristicFaultSource id="LRF_L2p83_M5p1" name="La Rouviere Fault L=2.83 km, T=2 km, Mw5.1" tectonicRegion="Active Shallow Crust">
+        <incrementalMFD binWidth="0.1" minMag="5.1">
+          <occurRates>3.833034e-05</occurRates>
+        </incrementalMFD>
+        <rake>90.0</rake>
+        <surface>
+          <simpleFaultGeometry>
+            <gml:LineString>
+              <gml:posList>
+                4.65620 44.52200
+                4.68166 44.53984
+              </gml:posList>
+            </gml:LineString>
+            <dip>45</dip>
+            <upperSeismoDepth>0.0</upperSeismoDepth>
+            <lowerSeismoDepth>2.0</lowerSeismoDepth>
+          </simpleFaultGeometry>
+        </surface>
+      </characteristicFaultSource>
+    </sourceGroup>
+  </sourceModel>
+</nrml>

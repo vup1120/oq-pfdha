@@ -58,6 +58,25 @@ MANIFEST = [
     # ------------------------------------------------ Kumamoto distributed (Fig 6a)
     Entry("kumamoto", "distributed_P11", "fig6a_kumamoto_distributed.csv", "P11",
           assert_max_relerr=0.15),
+    # T13 distributed = Takao2013PrimarySR x Takao2014SecondarySR (100 m
+    # cell) x Takao2013SecondaryFD (AD, n_sigma 5): the curve head matches
+    # the published one to 0.1%, but the mid-range (0.1-1 m) runs up to
+    # ~35% high (Kumamoto) / ~35% low (Le Teil) — the team's aleatory
+    # integration of the DD/PAD distribution is not documented in
+    # TECDOC-2092, so the shape difference cannot be reconciled further.
+    Entry("kumamoto", "distributed_T13", "fig6a_kumamoto_distributed.csv", "T13",
+          assert_max_relerr=0.40),
+    # Same chains over the author workbook's BASE-CASE model: the four
+    # coexisting rupture sources (Uto, Futagawa+Uto, Uto+UHN, F+U+UHN) with
+    # the magnitude/rate epistemic branches mean-collapsed (see
+    # kumamoto/make_basecase.py). The published Fig 6a curves correspond to
+    # the Uto-only middle branch (the entries above match them at 0.4% /
+    # head 0.1%), so these tree entries are qualitative: they quantify how
+    # much hazard the multi-segment rupture branches add at the base site.
+    Entry("kumamoto", "distributed_P11_basecase",
+          "fig6a_kumamoto_distributed.csv", "P11", assert_max_relerr=None),
+    Entry("kumamoto", "distributed_T13_basecase",
+          "fig6a_kumamoto_distributed.csv", "T13", assert_max_relerr=None),
     # ------------------------------------------------ Kumamoto floating (Fig 4b)
     # Floating ruptures reproduce the exercise convention via a PeerMSR
     # full-width rupture; the residual ~8% rate offset is the along-strike
@@ -77,7 +96,19 @@ MANIFEST = [
           assert_max_relerr=0.15, assert_dmax_m=1.0),
     Entry("le_teil", "principal_M11", "fig4c_leteil_principal_M11.csv", "M11",
           assert_max_relerr=None),  # qualitative: see README
+    # The same M11 chain run over the author workbook's BASE-CASE epistemic
+    # tree (smlt_basecase.xml: thickness/rupture-length/magnitude branches,
+    # slip-rate level collapsed into the mean rates; see make_basecase.py).
+    # The published M11 curve is evidently dominated by the tree's
+    # large-magnitude branches (le_teil/diagnose_M11.py), so this entry
+    # tracks how far the full tree explains it. Qualitative.
+    Entry("le_teil", "principal_M11_basecase", "fig4c_leteil_principal_M11.csv",
+          "M11", assert_max_relerr=None),
     # ------------------------------------------------ Le Teil distributed (Fig 6b)
+    Entry("le_teil", "distributed_T13", "fig6b_leteil_distributed.csv", "T13",
+          assert_max_relerr=0.40, assert_dmax_m=1.0),  # same caveat as the
+    # Kumamoto T13 distributed entry; beyond 1 m the published tail is
+    # controlled by the team's (undocumented) aleatory truncation.
     Entry("le_teil", "distributed_V24", "fig6b_leteil_distributed.csv", "V24",
           assert_max_relerr=None),  # paper used the earlier (2024, under-
     # review) Visini model; our Visini 2025 implementation reproduces the

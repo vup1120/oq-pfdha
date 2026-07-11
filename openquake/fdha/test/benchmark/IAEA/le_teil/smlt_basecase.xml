@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nrml xmlns:gml="http://www.opengis.net/gml"
+      xmlns="http://openquake.org/xmlns/nrml/0.4">
+  <logicTree logicTreeID="lt_sm_le_teil_basecase">
+    <logicTreeBranchSet uncertaintyType="sourceModel" branchSetID="bs_sm_le_teil_basecase">
+      <logicTreeBranch branchID="b_basecase_00">
+        <!-- L=2.83 km, T=2 km, Mw4.7 -->
+        <uncertaintyModel>./source_model_basecase_L2p83_M4p7.xml</uncertaintyModel>
+        <uncertaintyWeight>0.024</uncertaintyWeight>
+      </logicTreeBranch>
+      <logicTreeBranch branchID="b_basecase_01">
+        <!-- L=2.83 km, T=2 km, Mw4.9 -->
+        <uncertaintyModel>./source_model_basecase_L2p83_M4p9.xml</uncertaintyModel>
+        <uncertaintyWeight>0.032</uncertaintyWeight>
+      </logicTreeBranch>
+      <logicTreeBranch branchID="b_basecase_02">
+        <!-- L=2.83 km, T=2 km, Mw5.1 -->
+        <uncertaintyModel>./source_model_basecase_L2p83_M5p1.xml</uncertaintyModel>
+        <uncertaintyWeight>0.024</uncertaintyWeight>
+      </logicTreeBranch>
+      <logicTreeBranch branchID="b_basecase_03">
+        <!-- L=4.6 km, T=2 km, Mw4.8 -->
+        <uncertaintyModel>./source_model_basecase_L4p6_M4p8.xml</uncertaintyModel>
+        <uncertaintyWeight>0.096</uncertaintyWeight>
+      </logicTreeBranch>
+      <logicTreeBranch branchID="b_basecase_04">
+        <!-- L=4.6 km, T=2 km, Mw4.9 -->
+        <uncertaintyModel>./source_model_basecase_L4p6_M4p9.xml</uncertaintyModel>
+        <uncertaintyWeight>0.128</uncertaintyWeight>
+      </logicTreeBranch>
+      <logicTreeBranch branchID="b_basecase_05">
+        <!-- L=4.6 km, T=2 km, Mw5 -->
+        <uncertaintyModel>./source_model_basecase_L4p6_M5.xml</uncertaintyModel>
+        <uncertaintyWeight>0.096</uncertaintyWeight>
+      </logicTreeBranch>
+      <logicTreeBranch branchID="b_basecase_06">
+        <!-- L=5.8 km, T=4 km, Mw5.32 -->
+        <uncertaintyModel>./source_model_basecase_L5p8_M5p32.xml</uncertaintyModel>
+        <uncertaintyWeight>0.120</uncertaintyWeight>
+      </logicTreeBranch>
+      <logicTreeBranch branchID="b_basecase_07">
+        <!-- L=5.8 km, T=4 km, Mw5.52 -->
+        <uncertaintyModel>./source_model_basecase_L5p8_M5p52.xml</uncertaintyModel>
+        <uncertaintyWeight>0.160</uncertaintyWeight>
+      </logicTreeBranch>
+      <logicTreeBranch branchID="b_basecase_08">
+        <!-- L=5.8 km, T=4 km, Mw5.72 -->
+        <uncertaintyModel>./source_model_basecase_L5p8_M5p72.xml</uncertaintyModel>
+        <uncertaintyWeight>0.120</uncertaintyWeight>
+      </logicTreeBranch>
+      <logicTreeBranch branchID="b_basecase_09">
+        <!-- L=21 km, T=10 km, Mw6.23 -->
+        <uncertaintyModel>./source_model_basecase_L21_M6p23.xml</uncertaintyModel>
+        <uncertaintyWeight>0.060</uncertaintyWeight>
+      </logicTreeBranch>
+      <logicTreeBranch branchID="b_basecase_10">
+        <!-- L=21 km, T=10 km, Mw6.48 -->
+        <uncertaintyModel>./source_model_basecase_L21_M6p48.xml</uncertaintyModel>
+        <uncertaintyWeight>0.080</uncertaintyWeight>
+      </logicTreeBranch>
+      <logicTreeBranch branchID="b_basecase_11">
+        <!-- L=21 km, T=10 km, Mw6.73 -->
+        <uncertaintyModel>./source_model_basecase_L21_M6p73.xml</uncertaintyModel>
+        <uncertaintyWeight>0.060</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
+  </logicTree>
+</nrml>

@@ -71,6 +71,13 @@ def plot_panel(ax, figure_csv: str, case: str, job_prefix: str, title: str,
     for entry in MANIFEST:
         if entry.case != case or not entry.job.startswith(job_prefix):
             continue
+        # Skip the base-case-tree diagnostic variants: they share a column
+        # (e.g. M11, T13) and figure with the single-scenario team chain,
+        # but do NOT correspond to the published curve (see README), so
+        # plotting them here would draw a second, identically labelled
+        # dashed curve. Their own comparison is documented separately.
+        if entry.job.endswith("_basecase"):
+            continue
         if entry.figure_csv != figure_csv and not (
                 figure_csv.startswith("fig4c") and
                 entry.figure_csv.startswith("fig4c")):
