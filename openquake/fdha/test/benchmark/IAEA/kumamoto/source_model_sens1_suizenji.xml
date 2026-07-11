@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<nrml xmlns="http://openquake.org/xmlns/nrml/0.5"
+      xmlns:gml="http://www.opengis.net/gml">
+  <sourceModel name="IAEA Kumamoto sensitivity 1/3: Suizenji fault">
+    <sourceGroup name="IAEA Kumamoto sensitivity 1/3: Suizenji fault" tectonicRegion="Active Shallow Crust">
+      <characteristicFaultSource id="SUIZENJI" name="Suizenji Fault" tectonicRegion="Active Shallow Crust">
+        <incrementalMFD binWidth="0.1" minMag="5.8">
+          <occurRates>2.330000e-04</occurRates>
+        </incrementalMFD>
+        <rake>0.0</rake>
+        <surface>
+          <simpleFaultGeometry>
+            <gml:LineString>
+              <gml:posList>
+                130.73180 32.80770
+                130.74670 32.79360
+                130.77020 32.77150
+              </gml:posList>
+            </gml:LineString>
+            <dip>60</dip>
+            <upperSeismoDepth>0.0</upperSeismoDepth>
+            <lowerSeismoDepth>5.0</lowerSeismoDepth>
+          </simpleFaultGeometry>
+        </surface>
+      </characteristicFaultSource>
+    </sourceGroup>
+  </sourceModel>
+</nrml>

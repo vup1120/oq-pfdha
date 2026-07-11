@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<nrml xmlns="http://openquake.org/xmlns/nrml/0.5"
+      xmlns:gml="http://www.opengis.net/gml">
+  <sourceModel name="IAEA Le Teil sensitivity 1: LRF_2 + LRF_1 + LRF_3 (16 km)">
+    <sourceGroup name="IAEA Le Teil sensitivity 1: LRF_2 + LRF_1 + LRF_3 (16 km)" tectonicRegion="Active Shallow Crust">
+      <characteristicFaultSource id="LRF_LRF213" name="LRF_2 + LRF_1 + LRF_3 (16 km)" tectonicRegion="Active Shallow Crust">
+        <incrementalMFD binWidth="0.1" minMag="6.35">
+          <occurRates>1.810000e-05</occurRates>
+        </incrementalMFD>
+        <rake>90.0</rake>
+        <surface>
+          <simpleFaultGeometry>
+            <gml:LineString>
+              <gml:posList>
+                4.61500 44.48834
+                4.64226 44.51204
+                4.68276 44.54119
+                4.75331 44.59755
+              </gml:posList>
+            </gml:LineString>
+            <dip>45</dip>
+            <upperSeismoDepth>0.0</upperSeismoDepth>
+            <lowerSeismoDepth>10.0</lowerSeismoDepth>
+          </simpleFaultGeometry>
+        </surface>
+      </characteristicFaultSource>
+    </sourceGroup>
+  </sourceModel>
+</nrml>

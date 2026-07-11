@@ -6,7 +6,6 @@
         <logicTreeBranch branchID="B1_PSR">
           <uncertaintyModel>
             [Moss2013PrimarySR]
-            vs30 = 760.0
           </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
