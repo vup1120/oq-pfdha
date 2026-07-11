@@ -678,6 +678,35 @@
           "prefill": ""
         },
         {
+          "class_name": "Takao2013SecondaryFD",
+          "module": "openquake.fdha.secondary_surf_displ.takao2013",
+          "doc_page": "secondary/Takao2013.md",
+          "doc_params": [
+            {
+              "name": "norm_disp_type",
+              "type": "string",
+              "units": "\u2013",
+              "default": "`\"AD\"`",
+              "allowed": "`\"AD\"`, `\"MD\"`",
+              "required": false,
+              "description": "Normalization displacement type. `\"AD\"` uses the average-displacement regression (Eq. 16, `DD/PAD = 1.9 exp(-0.17 r)`), `\"MD\"` the maximum-displacement regression (Eq. 15, `DD/PMD = 0.55 exp(-0.17 r)`). The paper's own case study uses `\"AD\"`."
+            },
+            {
+              "name": "n_sigma",
+              "type": "float",
+              "units": "\u2013",
+              "default": "`3.0`",
+              "allowed": "> 0",
+              "required": false,
+              "description": "Truncation of the PMD/PAD lognormal at `mean \u00b1 n_sigma \u00b7 sigma` in log10 space, mirroring `Takao2013PrimaryFD`."
+            }
+          ],
+          "prefill": "norm_disp_type = AD",
+          "ctor_defaults": {
+            "n_sigma": 3.0
+          }
+        },
+        {
           "class_name": "Visini2025SecondaryFD",
           "module": "openquake.fdha.secondary_surf_displ.visini2025",
           "doc_page": "secondary/VisiniEtAl2025.md",

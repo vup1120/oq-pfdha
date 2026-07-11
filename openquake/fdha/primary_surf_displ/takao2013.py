@@ -104,8 +104,9 @@ class Takao2013PrimaryFD(BasePrimarySurfDispl):
             sigma = 0.36
 
         elif norm_disp_type == "MD":
-            # Based on Wells and Coppersmith (1994) for maximum displacement
-            log_mean = -5.46 + 0.82 * mag
+            # Takao et al. (2013) Eq. 9: their refit of the Wells & Coppersmith
+            # (1994) maximum-displacement relation (constant term 0.3 larger)
+            log_mean = -5.16 + 0.82 * mag
             sigma = 0.42
             
         d_truncation = self.n_sigma  # ±n_sigma
@@ -221,9 +222,9 @@ class Takao2013PrimaryFD(BasePrimarySurfDispl):
         :param magnitude: Earthquake magnitude
         :returns: Probability of maximum displacement
         """
-        # Based on Wells and Coppersmith (1994) for maximum displacement
-        # All
-        log_mean = -5.46 + 0.82 * mag
+        # Takao et al. (2013) Eq. 9: their refit of the Wells & Coppersmith
+        # (1994) maximum-displacement relation (constant term 0.3 larger)
+        log_mean = -5.16 + 0.82 * mag
         sigma = 0.42
         d_truncation = self.n_sigma  # ±n_sigma
 
