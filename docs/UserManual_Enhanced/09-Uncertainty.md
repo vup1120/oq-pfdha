@@ -42,6 +42,7 @@ as alternative coefficient sets (style, regional dataset, site stiffness).
 ### `FixedPrimarySR` — [fixed.py](../../openquake/fdha/primary_surf_rup/fixed.py)
 - Deterministic constant probability supplied by the user (default 1.0).
 - No aleatory or epistemic structure.
+- **Typical use:** `value = 1.0` forces certain primary surface rupture (removes the P_sr dependence); `value = 0.0` disables *all* surface displacement — because distributed hazard is gated by P_sr, a zero here zeroes both the principal and the distributed zones.
 
 ### `WC1993PrimarySR` — [wells_coppersmith1993.py:51](../../openquake/fdha/primary_surf_rup/wells_coppersmith1993.py#L51)
 - Logistic, magnitude only: `a = −12.51`, `b = 2.053`.
@@ -186,6 +187,7 @@ choice.
 
 ### `FixedSecondarySR` — [fixed.py](../../openquake/fdha/secondary_surf_rup/fixed.py)
 - Deterministic constant probability.
+- **Typical use:** `value = 0.0` neutralizes the distributed side, yielding a principal‑only study (the `flt_principal_*` pattern). See [Models — Modeling only principal or only distributed displacement](06-Models.md#modeling-only-principal-or-only-distributed-displacement).
 
 ### `Youngs2003SecondarySR` — [youngs2003.py](../../openquake/fdha/secondary_surf_rup/youngs2003.py)
 - Logistic in distance with hanging-wall indicator h: `fx = const + (c₁ + c₂·h)·log(r + offset)` (h at [line 59](../../openquake/fdha/secondary_surf_rup/youngs2003.py#L59); v1/v2 formulas at [lines 62, 66](../../openquake/fdha/secondary_surf_rup/youngs2003.py#L62-L66)).
@@ -230,6 +232,12 @@ choice.
 - **Mean:** `μ = 1.4016·M − 0.1671·ln(r) − 6.7991` ([line 120](../../openquake/fdha/secondary_surf_displ/petersen2011.py#L120)).
 - **τ/φ:** Not separated. **Truncation:** none explicit. Single deterministic
   formulation.
+
+### `Takao2013SecondaryFD` — [takao2013.py](../../openquake/fdha/secondary_surf_displ/takao2013.py)
+- **Distribution:** Gamma on `DD/PMD` or `DD/PAD` via `gamma.sf`; shape `a = 2.5`, scale `b(r)` anchored so the 90th percentile equals the paper's Eq. 15/16 regression (`0.55·e^(−0.17r)` for MD, `1.9·e^(−0.17r)` for AD).
+- **σ:** PMD log₁₀-normal `σ = 0.42` (`log₁₀(PMD) = −5.16 + 0.82·Mw`, their Eq. 9); PAD `σ = 0.36` (`log₁₀(PAD) = −4.80 + 0.69·Mw`, W&C 1994).
+- **Truncation:** ±`n_sigma`·σ in log₁₀ (constructor parameter, default 3, settable via `[Takao2013SecondaryFD] n_sigma = <value>`).
+- **Epistemic branches:** AD vs MD normalization (`norm_disp_type`).
 
 ### `Moss2022SecondaryFD` — [moss2022.py](../../openquake/fdha/secondary_surf_displ/moss2022.py)
 - **Distribution alternatives:** Gamma method ([line 192](../../openquake/fdha/secondary_surf_displ/moss2022.py#L192)) **or** envelope (lognormal on MD) method ([line 216](../../openquake/fdha/secondary_surf_displ/moss2022.py#L216)).
