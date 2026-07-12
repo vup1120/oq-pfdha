@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<nrml xmlns="http://openquake.org/xmlns/nrml/0.5"
+      xmlns:gml="http://www.opengis.net/gml">
+  <sourceModel name="IAEA Le Teil sensitivity 4: LRF_2 + MRF_3 + PCF_2">
+    <sourceGroup name="IAEA Le Teil sensitivity 4: LRF_2 + MRF_3 + PCF_2" tectonicRegion="Active Shallow Crust">
+      <characteristicFaultSource id="LRF2_S4" name="La Rouviere LRF_2" tectonicRegion="Active Shallow Crust">
+        <incrementalMFD binWidth="0.1" minMag="5.52">
+          <occurRates>4.600000e-05</occurRates>
+        </incrementalMFD>
+        <rake>90.0</rake>
+        <surface>
+          <simpleFaultGeometry>
+            <gml:LineString>
+              <gml:posList>
+                4.64198 44.51204
+                4.69428 44.54868
+              </gml:posList>
+            </gml:LineString>
+            <dip>45</dip>
+            <upperSeismoDepth>0.0</upperSeismoDepth>
+            <lowerSeismoDepth>4.0</lowerSeismoDepth>
+          </simpleFaultGeometry>
+        </surface>
+      </characteristicFaultSource>
+      <characteristicFaultSource id="MRF3_S4" name="MRF_3" tectonicRegion="Active Shallow Crust">
+        <incrementalMFD binWidth="0.1" minMag="5.6">
+          <occurRates>4.220000e-05</occurRates>
+        </incrementalMFD>
+        <rake>90.0</rake>
+        <surface>
+          <simpleFaultGeometry>
+            <gml:LineString>
+              <gml:posList>
+                4.63964 44.48547
+                4.69237 44.51923
+              </gml:posList>
+            </gml:LineString>
+            <dip>80</dip>
+            <upperSeismoDepth>0.0</upperSeismoDepth>
+            <lowerSeismoDepth>6.0</lowerSeismoDepth>
+          </simpleFaultGeometry>
+        </surface>
+      </characteristicFaultSource>
+      <characteristicFaultSource id="PCF2_S4" name="PCF_2" tectonicRegion="Active Shallow Crust">
+        <incrementalMFD binWidth="0.1" minMag="4.9">
+          <occurRates>8.640000e-05</occurRates>
+        </incrementalMFD>
+        <rake>90.0</rake>
+        <surface>
+          <simpleFaultGeometry>
+            <gml:LineString>
+              <gml:posList>
+                4.63355 44.53303
+                4.65731 44.55658
+                4.65731 44.55658
+              </gml:posList>
+            </gml:LineString>
+            <dip>70</dip>
+            <upperSeismoDepth>0.0</upperSeismoDepth>
+            <lowerSeismoDepth>2.0</lowerSeismoDepth>
+          </simpleFaultGeometry>
+        </surface>
+      </characteristicFaultSource>
+    </sourceGroup>
+  </sourceModel>
+</nrml>

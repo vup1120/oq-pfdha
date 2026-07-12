@@ -4,6 +4,12 @@
     <logicTreeBranchingLevel branchingLevelID="bl_1_primary_surf_rup">
       <logicTreeBranchSet branchSetID="bs_1" uncertaintyType="fdhaPrimarySRModel">
         <logicTreeBranch branchID="B1_PSR">
+          <!-- NOT a published value. TECDOC-2092 only says the L23 team
+               "used the case-specific surface rupture probability" without
+               quoting it; 0.65 is back-calculated from their published
+               Le Teil curve (README.md, "L23" row). The Moss et al. (2013)
+               10%-at-Mw5.5 quote in the paper belongs to the M11 chain,
+               not this one. -->
           <uncertaintyModel>
             [FixedPrimarySR]
             value = 0.65

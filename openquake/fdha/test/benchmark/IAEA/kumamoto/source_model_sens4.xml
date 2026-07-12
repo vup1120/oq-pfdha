@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<nrml xmlns="http://openquake.org/xmlns/nrml/0.5"
+      xmlns:gml="http://www.opengis.net/gml">
+  <sourceModel name="IAEA Kumamoto sensitivity 4: four rupture sources (middle branches)">
+    <sourceGroup name="IAEA Kumamoto sensitivity 4: four rupture sources (middle branches)" tectonicRegion="Active Shallow Crust">
+      <characteristicFaultSource id="UTO_S4" name="Uto (2)" tectonicRegion="Active Shallow Crust">
+        <incrementalMFD binWidth="0.1" minMag="6.5">
+          <occurRates>1.890000e-04</occurRates>
+        </incrementalMFD>
+        <rake>0.0</rake>
+        <surface>
+          <simpleFaultGeometry>
+            <gml:LineString>
+              <gml:posList>
+                130.81530 32.76750
+                130.76560 32.74740
+                130.60350 32.68170
+              </gml:posList>
+            </gml:LineString>
+            <dip>60.0</dip>
+            <upperSeismoDepth>0.0</upperSeismoDepth>
+            <lowerSeismoDepth>14.0</lowerSeismoDepth>
+          </simpleFaultGeometry>
+        </surface>
+      </characteristicFaultSource>
+      <characteristicFaultSource id="FUT_UTO_S4" name="Futagawa (1) + Uto (2)" tectonicRegion="Active Shallow Crust">
+        <incrementalMFD binWidth="0.1" minMag="6.9">
+          <occurRates>1.280000e-05</occurRates>
+        </incrementalMFD>
+        <rake>0.0</rake>
+        <surface>
+          <simpleFaultGeometry>
+            <gml:LineString>
+              <gml:posList>
+                131.02250 32.89410
+                130.85560 32.79850
+                130.81530 32.76750
+                130.76560 32.74740
+                130.60350 32.68170
+              </gml:posList>
+            </gml:LineString>
+            <dip>68.6</dip>
+            <upperSeismoDepth>0.0</upperSeismoDepth>
+            <lowerSeismoDepth>14.0</lowerSeismoDepth>
+          </simpleFaultGeometry>
+        </surface>
+      </characteristicFaultSource>
+      <characteristicFaultSource id="UTO_UHN_S4" name="Uto (2) + Uto Hanto North (3)" tectonicRegion="Active Shallow Crust">
+        <incrementalMFD binWidth="0.1" minMag="7.0">
+          <occurRates>3.530000e-05</occurRates>
+        </incrementalMFD>
+        <rake>0.0</rake>
+        <surface>
+          <simpleFaultGeometry>
+            <gml:LineString>
+              <gml:posList>
+                130.81530 32.76750
+                130.76560 32.74740
+                130.60350 32.68170
+                130.51360 32.66030
+                130.29330 32.56410
+              </gml:posList>
+            </gml:LineString>
+            <dip>60.0</dip>
+            <upperSeismoDepth>0.0</upperSeismoDepth>
+            <lowerSeismoDepth>14.0</lowerSeismoDepth>
+          </simpleFaultGeometry>
+        </surface>
+      </characteristicFaultSource>
+      <characteristicFaultSource id="FUT_UTO_UHN_S4" name="Futagawa (1) + Uto (2) + Uto Hanto North (3)" tectonicRegion="Active Shallow Crust">
+        <incrementalMFD binWidth="0.1" minMag="7.2">
+          <occurRates>1.280000e-05</occurRates>
+        </incrementalMFD>
+        <rake>0.0</rake>
+        <surface>
+          <simpleFaultGeometry>
+            <gml:LineString>
+              <gml:posList>
+                131.02250 32.89410
+                130.85560 32.79850
+                130.81530 32.76750
+                130.76560 32.74740
+                130.60350 32.68170
+                130.51360 32.66030
+                130.29330 32.56410
+              </gml:posList>
+            </gml:LineString>
+            <dip>64.6</dip>
+            <upperSeismoDepth>0.0</upperSeismoDepth>
+            <lowerSeismoDepth>14.0</lowerSeismoDepth>
+          </simpleFaultGeometry>
+        </surface>
+      </characteristicFaultSource>
+    </sourceGroup>
+  </sourceModel>
+</nrml>

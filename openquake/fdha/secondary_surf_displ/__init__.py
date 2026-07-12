@@ -21,6 +21,7 @@ Package :mod:`openquake.fdha.secondary_surf_displ` contains implementations of d
 fault displacement prediction models
 """
 from openquake.fdha.secondary_surf_displ.youngs2003 import Youngs2003SecondaryFD
+from openquake.fdha.secondary_surf_displ.takao2013 import Takao2013SecondaryFD
 from openquake.fdha.secondary_surf_displ.petersen2011 import Petersen2011SecondaryFD
 from openquake.fdha.secondary_surf_displ.visini2025 import Visini2025SecondaryFD
 from openquake.fdha.secondary_surf_displ.moss2022 import Moss2022SecondaryFD

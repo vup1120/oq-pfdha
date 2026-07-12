@@ -1,0 +1,51 @@
+{
+  "P1p_M6.8": {
+    "computed": 0.7841471891774853,
+    "paper": 0.784,
+    "ratio": 1.0001877412978128
+  },
+  "sum_at_0.01m": {
+    "computed": 6.985190526734111e-07,
+    "paper": 7e-07,
+    "ratio": 0.9978843609620159
+  },
+  "fault2_fault3_curves_cross": true,
+  "fault1_over_fault2": 10.0,
+  "fig11b_match": {
+    "fault1": {
+      "n": 60,
+      "median_ratio": 1.01015070387088,
+      "median_abs_relerr": 0.010150703870879907,
+      "p90_abs_relerr": 0.03489285126970492,
+      "max_abs_relerr": 0.05227824389294722
+    },
+    "fault2": {
+      "n": 41,
+      "median_ratio": 1.0083452183573265,
+      "median_abs_relerr": 0.00834521835732649,
+      "p90_abs_relerr": 0.0296638157802378,
+      "max_abs_relerr": 0.04045344852405286
+    },
+    "fault3": {
+      "n": 44,
+      "median_ratio": 1.0120496397112824,
+      "median_abs_relerr": 0.012049639711282478,
+      "p90_abs_relerr": 0.03425578944084477,
+      "max_abs_relerr": 0.042830603538918544
+    },
+    "fault4": {
+      "n": 38,
+      "median_ratio": 1.009431422466016,
+      "median_abs_relerr": 0.009431422466015915,
+      "p90_abs_relerr": 0.026748667510676043,
+      "max_abs_relerr": 0.03196128996346914
+    },
+    "sum": {
+      "n": 25,
+      "median_ratio": 1.0142080201991042,
+      "median_abs_relerr": 0.014208020199104165,
+      "p90_abs_relerr": 0.04935617813835789,
+      "max_abs_relerr": 0.05107070599541008
+    }
+  }
+}

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nrml xmlns:gml="http://www.opengis.net/gml"
+      xmlns="http://openquake.org/xmlns/nrml/0.4">
+  <logicTree logicTreeID="lt_sm_kumamoto_sens4">
+    <logicTreeBranchSet uncertaintyType="sourceModel" branchSetID="bs_lt_sm_kumamoto_sens4">
+      <logicTreeBranch branchID="b_lt_sm_kumamoto_sens4_00">
+        <!-- 4 sources, middle branches -->
+        <uncertaintyModel>./source_model_sens4.xml</uncertaintyModel>
+        <uncertaintyWeight>1</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
+  </logicTree>
+</nrml>
