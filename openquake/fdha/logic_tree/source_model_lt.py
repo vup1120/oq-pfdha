@@ -289,7 +289,15 @@ def apply_realization_to_sources(
 
     out: dict[str, Any] = dict(fault_sources)
     for ua in branch.uncertainties:
-        bset = _build_pseudo_branchset(ua)
+        try:
+            bset = _build_pseudo_branchset(ua)
+        except NotImplementedError as e:
+            # hazardlib's BranchSet rejects unrecognised uncertainty types at
+            # construction time; keep the documented FDHA exception type.
+            raise SourceModelLogicTreeError(
+                f"Unknown uncertainty type '{ua.uncertainty_type}' "
+                f"in branch '{ua.branch_id}'"
+            ) from e
         for sid, src in list(out.items()):
             if not bset.filter_source(src):
                 continue

@@ -78,7 +78,10 @@ def test_two_branch_weighted_sum(tmp_path):
 
     ini = tmp_path / "job.ini"
     ini.write_text(
-        f"""[general]\ndescription = lt_two_branch\n\n[geometry]\nsites = 16.16573727 39.64704451\n\n[site_params]\nreference_vs30_value = 760.0\n\n[erf]\nrupture_mesh_spacing = 1.0\nwidth_of_mfd_bin = 0.1\n\n[calculation]\nsource_model_logic_tree_file = {smlt_xml}\ndisplacement_measure_levels = {{\"FD\": [0.01, 0.1]}}\nfdha_logic_tree_file = {lt_xml}\n"""
+        # On-trace site (fault-trace vertex, as in the demo job): the
+        # historical off-trace site produced all-zero curves, making the
+        # weighted-sum assertion vacuous (0 == 0).
+        f"""[general]\ndescription = lt_two_branch\n\n[geometry]\nsites = 16.1455213236 39.6196231258\n\n[site_params]\nreference_vs30_value = 760.0\n\n[erf]\nrupture_mesh_spacing = 1.0\nwidth_of_mfd_bin = 0.1\n\n[calculation]\nsource_model_logic_tree_file = {smlt_xml}\ndisplacement_measure_levels = {{\"FD\": [0.01, 0.1]}}\nfdha_logic_tree_file = {lt_xml}\n"""
     )
 
     lt = FdhaLogicTree.from_ini(str(ini))
@@ -88,6 +91,7 @@ def test_two_branch_weighted_sum(tmp_path):
     r0 = np.loadtxt(tmp_path / "out" / "hazard_curves" / "branch_0000.csv", delimiter=",", skiprows=1, usecols=1)
     r1 = np.loadtxt(tmp_path / "out" / "hazard_curves" / "branch_0001.csv", delimiter=",", skiprows=1, usecols=1)
 
+    assert np.any(r1 > 0), "SR=1 branch produced zero hazard — test is vacuous"
     expected = w * r0 + (1 - w) * r1
     assert np.allclose(mean_lt, expected, atol=1e-12, rtol=0)
 
