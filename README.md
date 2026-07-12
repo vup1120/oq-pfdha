@@ -7,7 +7,7 @@ This repository contains tools for performing Probabilistic Fault Displacement H
 
 -   **Hazard Curve & Hazard Map Calculation**: Compute hazard curves for specific sites or hazard maps over a region.
 -   **Extensible Model Library**: Includes a variety of published models for primary and secondary surface rupture and displacement.
--   **Flexible Configuration**: Use INI files (recommended, OpenQuake-style) to define calculation parameters, site locations, and model choices.
+-   **Flexible Configuration**: Use INI files (OpenQuake-style) to define calculation parameters, site locations, and model choices.
 -   **Standard-based Inputs**: Leverages NRML (XML) format for seismic source models, compatible with tools like the OpenQuake Engine.
 
 ## Quickstart
@@ -26,9 +26,7 @@ Installing in editable mode (`-e`) makes the `fdha` command-line tool available 
 
 ### 2. Run a Demo
 
-A minimal example is provided to quickly verify your installation. This command computes a hazard curve for a single site using the Youngs (2003) model.
-
-**Note**: The configuration file now includes all required parameters following OpenQuake Engine conventions.
+A minimal example is provided to quickly verify your installation. This command computes a hazard curve for a single site using the Youngs et al. (2003) model.
 
 ```bash
 # Run the minimal hazard curve example
@@ -39,14 +37,13 @@ fdha examples/hazard_curve_minimal.ini \
 ```
 
 The INI configuration file (`examples/hazard_curve_minimal.ini`) includes:
-- `[erf]` section: Rupture mesh spacing and MFD bin width
-- `[calculation]` section: source-model logic-tree file, FDHA logic-tree file, and displacement levels
-- `[geometry]`: Site coordinates (for hazard curves) or region definition (for hazard maps)
+- `[geometry]`: site coordinates (for hazard curves) or a region definition (for hazard maps)
+- `[erf]`: rupture mesh spacing and MFD bin width
+- `[calculation]`: source-model logic-tree file, FDHA logic-tree file, and displacement levels
 - FDHA model choices in `examples/hazard_curve_minimal_fdha_logic_tree.xml`
 
-**Note**: The calculation type (hazard curve or hazard map) is automatically detected from the configuration file:
-- If `[geometry]` contains `region`, it's a hazard map calculation
-- If `[geometry]` contains `sites`, it's a hazard curve calculation
+The calculation type is detected automatically: `sites` in `[geometry]` runs a
+hazard curve, `region` runs a hazard map.
 
 After running, you should find the following files:
 -   `examples/outputs/hazard_curve_minimal_results.json`: The calculated hazard curve data.

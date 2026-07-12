@@ -33,10 +33,18 @@ Before installing `pfdha`, ensure you have the following prerequisites met:
     You will see `(venv)` prefixed to your shell prompt, indicating the environment is active.
 
 3.  **Install the Package**:
-    Install `oq-pfdha` and its Python dependencies using `pip`. The `-e` flag installs the package in "editable" mode, which is convenient for development as it links the `fdha` command to your source code directory.
+    Install `oq-pfdha` and its Python dependencies using `pip`:
+    ```bash
+    pip install .
+    ```
+    If you plan to modify the source code, install in "editable" mode instead,
+    which links the `fdha` command to your source code directory:
     ```bash
     pip install -e .
     ```
+
+    No system-level packages are required beyond Python itself; all
+    dependencies are installed from PyPI.
 
 ## Verifying the Installation
 
