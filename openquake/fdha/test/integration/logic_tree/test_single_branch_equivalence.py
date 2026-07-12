@@ -88,7 +88,10 @@ def test_single_branch_equivalence(tmp_path):
 
     ini = tmp_path / "job.ini"
     ini.write_text(
-        f"""[general]\ndescription = lt_single_branch\n\n[geometry]\nsites = 16.16573727 39.64704451\n\n[site_params]\nreference_vs30_value = 760.0\n\n[erf]\nrupture_mesh_spacing = 1.0\nwidth_of_mfd_bin = 0.1\n\n[calculation]\nsource_model_logic_tree_file = {smlt_xml}\ndisplacement_measure_levels = {{\"FD\": [0.0001, 0.001, 0.01]}}\nfdha_logic_tree_file = {lt_xml}\n"""
+        # On-trace site (fault-trace vertex, as in the demo job): the
+        # historical off-trace site produced all-zero curves, making the
+        # equivalence assertion vacuous (0 == 0).
+        f"""[general]\ndescription = lt_single_branch\n\n[geometry]\nsites = 16.1455213236 39.6196231258\n\n[site_params]\nreference_vs30_value = 760.0\n\n[erf]\nrupture_mesh_spacing = 1.0\nwidth_of_mfd_bin = 0.1\n\n[calculation]\nsource_model_logic_tree_file = {smlt_xml}\ndisplacement_measure_levels = {{\"FD\": [0.0001, 0.001, 0.01]}}\nfdha_logic_tree_file = {lt_xml}\n"""
     )
 
     # Logic-tree path
@@ -102,6 +105,7 @@ def test_single_branch_equivalence(tmp_path):
         skiprows=1,
         usecols=1,
     )
+    assert np.any(branch_rates > 0), "branch curve is zero — test is vacuous"
     assert np.allclose(lt_rates[0], branch_rates, atol=1e-12, rtol=0)
 
 
