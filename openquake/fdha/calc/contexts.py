@@ -606,7 +606,13 @@ class FDHAContextMaker:
         # Extract rupture parameters
         mag = rupture.mag
         rake = getattr(rupture, 'rake', 0.0)
-        dip = rupture.surface.get_dip()
+        # Prefer the dip declared in the NRML (attached at parse time, see
+        # parsing._attach_original_traces): SimpleFaultSurface.get_dip()
+        # averages apparent mesh-cell dips, which on a wiggly trace is
+        # biased steep and drifts with rupture_mesh_spacing.
+        dip = getattr(rupture.surface, 'original_dip', None)
+        if dip is None:
+            dip = rupture.surface.get_dip()
 
         # Depth to top of rupture
         ztor = getattr(rupture.surface, 'ztor', None)
