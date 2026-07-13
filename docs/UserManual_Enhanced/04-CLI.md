@@ -5,15 +5,17 @@ The PFDHA toolkit is operated through the `fdha` command-line interface. The cur
 ## Synopsis
 
 ```bash
-fdha <job_ini> [--output <output_file>] [--plot [plot_file]]
+fdha <job_ini> [--plot [plot_file]]
 ```
+
+Like the OpenQuake engine, `fdha` writes results to an output directory (`out/`
+next to the INI by default); there is no single result-file argument.
 
 ## Arguments
 
 | Argument | Type | Default | Required? | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `job_ini` | string | none | **Yes** | Path to the v5 canonical INI job file. |
-| `--output`, `-o` | string | none | No | Save a JSON or CSV summary. In logic-tree mode this is a convenience summary that points to the output directory and aggregate files. |
 | `--plot`, `-p` | optional string | none | No | Generate a plot. Use `--plot` with no value to display it, or `--plot curve.png` to save it. |
 | `--verbose`, `-v` | flag | `False` | No | Enable verbose logging. |
 | `-h`, `--help` | flag | `False` | No | Show help and exit. |
@@ -74,7 +76,7 @@ Model choices are stored in the FDHA logic-tree XML, for example:
 Command:
 
 ```bash
-fdha job_curve.ini --output results.json --plot curve.png
+fdha job_curve.ini --plot curve.png
 ```
 
 ### 2. Calculate a Hazard Map
@@ -105,7 +107,7 @@ source_model_logic_tree_file = hazard_map_minimal_source_model_logic_tree.xml
 Command:
 
 ```bash
-fdha job_map.ini --output map_results.json --plot map.png
+fdha job_map.ini --plot map.png
 ```
 
 ### 3. Run Without Extra Output

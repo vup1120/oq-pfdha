@@ -632,7 +632,7 @@ def _load_curve_rates(csv_path: Path) -> np.ndarray:
     if not text:
         return np.zeros((1, 0))
     header = text[0].split(",")
-    if header == ["D0", "annual_rate"]:
+    if header[:2] == ["D0", "annual_rate"]:
         rates = [float(line.split(",")[1]) for line in text[1:] if line.strip()]
         return np.asarray([rates], dtype=float)
     # Multi-site: gather by site_id then by D0 order.

@@ -127,7 +127,15 @@ def compute_hazard_map(
     from openquake.fdha.calc.utils.rupture_distance import (
         VectorizedRuptureDistanceCalculator, _extract_fault_trace_from_mesh,
         _sections_info, SURFACE_DEPTH_TOLERANCE_KM,
+        trace_polyline_for_source, resample_polyline,
     )
+
+    # Sample principal-zone (on-trace) sites at the map grid resolution, so the
+    # principal band stays as dense as the distributed grid regardless of the
+    # (possibly coarse) ERF rupture_mesh_spacing. Convert the degree grid step
+    # to km at the region's mean latitude.
+    _mean_lat = float(np.mean(lats)) if len(lats) else 0.0
+    trace_step_km = float(spacing) * 111.32 * max(np.cos(np.radians(_mean_lat)), 0.1)
 
     dist_arrays = []
     for source_id, surface in surface_cache.items():
@@ -180,12 +188,21 @@ def compute_hazard_map(
                     if dep <= SURFACE_DEPTH_TOLERANCE_KM:
                         trace_coords.extend(zip(sec_lons, sec_lats))
             else:
-                polyline = _extract_fault_trace_from_mesh(surf)
-                trace_coords.extend([(lon, lat) for lon, lat in polyline])
+                # Single-strand fault: use the exact original trace (mesh-
+                # independent) and resample it to the grid step, so principal
+                # is neither coarsened by a large rupture_mesh_spacing nor
+                # over-sampled at the trace's native vertex spacing.
+                polyline = trace_polyline_for_source(src, surf)
+                if polyline is not None and len(polyline):
+                    polyline = resample_polyline(polyline, trace_step_km)
+                    trace_coords.extend((lon, lat) for lon, lat in polyline)
         elif hasattr(src, 'fault_trace'):
-            trace_coords.extend(
-                [(pt.longitude, pt.latitude) for pt in src.fault_trace]
+            polyline = resample_polyline(
+                np.asarray([(pt.longitude, pt.latitude) for pt in src.fault_trace],
+                           dtype=float),
+                trace_step_km,
             )
+            trace_coords.extend((lon, lat) for lon, lat in polyline)
     # Create Sites for trace points
     trace_sites = [
         Site(Point(lon, lat), vs30=vs30) if vs30 is not None else Site(Point(lon, lat))

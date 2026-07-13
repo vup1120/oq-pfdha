@@ -41,6 +41,8 @@ along-strike probability depends only on those geometric parameters, and the
 per-site evaluation is vectorized.
 """
 
+import zlib
+
 import numpy as np
 from functools import lru_cache
 from scipy.stats import lognorm
@@ -392,8 +394,17 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
         if segment_sampling == "truncated":
             x_vals, pdf_vals, t1i, t2i = self._pdf_tables[(mechanism_lower, hanging_wall_or_footwall)]
         
-        # Use local RNG instance instead of global np.random.seed()
-        rng = np.random.default_rng()
+        # Local RNG (no global np.random.seed() pollution), seeded
+        # deterministically from the physical inputs: identical parameters
+        # must give identical P_along_strike across runs and processes,
+        # otherwise hazard curves carry O(1/sqrt(num_simulations)) run-to-run
+        # noise (~8% observed at 10000 samples). crc32 rather than hash():
+        # Python string hashing is salted per process.
+        seed_key = (int(round(fault_length)), closest_across,
+                    int(round(along_strike_width)), hanging_wall_or_footwall,
+                    mechanism_lower, near_or_far, distribution_type,
+                    segment_sampling, int(num_simulations))
+        rng = np.random.default_rng(zlib.crc32(repr(seed_key).encode()))
 
         hits_uniform = 0
         hits_exponential = 0

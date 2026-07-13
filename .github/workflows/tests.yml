@@ -35,5 +35,4 @@ jobs:
         run: |
           mkdir -p examples/outputs
           fdha examples/hazard_curve_minimal.ini \
-               --output examples/outputs/hazard_curve_minimal_results.json \
                --plot examples/outputs/hazard_curve_minimal.png

@@ -16,9 +16,11 @@ Run a single-site hazard curve:
 ```bash
 mkdir -p examples/outputs
 fdha examples/hazard_curve_minimal.ini \
-  --output examples/outputs/hazard_curve_minimal_results.json \
   --plot examples/outputs/hazard_curve_minimal.png
 ```
+
+Results are written to the output directory (`examples/out/` by default);
+`--plot` saves the PNG to the path shown.
 
 Input files:
 
@@ -39,7 +41,6 @@ Run a small hazard map:
 ```bash
 mkdir -p examples/outputs
 fdha examples/hazard_map_minimal.ini \
-  --output examples/outputs/hazard_map_minimal_results.json \
   --plot examples/outputs/hazard_map_minimal.png
 ```
 

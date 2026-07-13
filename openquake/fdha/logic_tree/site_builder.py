@@ -20,7 +20,8 @@ import numpy as np
 from openquake.fdha.calc.utils.parsing import parse_source_model_faults
 from openquake.fdha.calc.utils.rupture_distance import (
     VectorizedRuptureDistanceCalculator,
-    _extract_fault_trace_from_mesh,
+    resample_polyline,
+    trace_polyline_for_source,
 )
 from openquake.hazardlib.geo import Point
 from openquake.hazardlib.geo.surface.simple_fault import SimpleFaultSurface
@@ -132,15 +133,28 @@ def build_hazard_map_sites(
 
     active_grid_sites = [grid_sites[i] for i in np.where(active_mask)[0]]
 
+    # Principal-zone (on-trace) sites are sampled along strike at the map's own
+    # grid resolution (``region_grid_spacing``), so the principal band matches
+    # the distributed grid it overlays and stays independent of the (possibly
+    # coarse) ERF ``rupture_mesh_spacing``. ``spacing`` is in degrees; convert
+    # to km at the region's mean latitude (longitudes shrink by cos φ, the
+    # finer of the two grid axes, keeping trace sites at least grid-dense).
+    #
+    # Resample (not merely densify): NRML traces are often digitised at
+    # sub-kilometre vertex spacing, so keeping every native vertex would place
+    # thousands of principal sites on a grid that cannot resolve them — the 48
+    # onshore Taiwan faults gave 3 246 trace sites against a 1 040-site 0.1°
+    # grid, a ~36x cost for no extra information.
+    mean_lat = float(np.mean(lats)) if len(lats) else 0.0
+    trace_step_km = float(spacing) * 111.32 * max(np.cos(np.radians(mean_lat)), 0.1)
+
     trace_coords: list[tuple[float, float]] = []
     for src_id, src in fault_sources.items():
-        if src_id in surface_cache:
-            polyline = _extract_fault_trace_from_mesh(surface_cache[src_id])
-            trace_coords.extend((float(lon), float(lat)) for lon, lat in polyline)
-        elif hasattr(src, "fault_trace"):
-            trace_coords.extend(
-                (float(pt.longitude), float(pt.latitude)) for pt in src.fault_trace
-            )
+        polyline = trace_polyline_for_source(src, surface_cache.get(src_id))
+        if polyline is None or len(polyline) == 0:
+            continue
+        polyline = resample_polyline(polyline, trace_step_km)
+        trace_coords.extend((float(lon), float(lat)) for lon, lat in polyline)
 
     trace_sites = [
         Site(Point(lon, lat), vs30=vs30) if vs30 is not None else Site(Point(lon, lat))

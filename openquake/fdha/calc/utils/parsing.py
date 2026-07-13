@@ -72,7 +72,7 @@ def parse_source_model_faults(
 
 
 def _attach_original_traces(files: List[str], sources: Dict[str, Any]) -> None:
-    """Attach the exact NRML fault trace to prebuilt fault surfaces.
+    """Attach the exact NRML fault trace and dip to prebuilt fault surfaces.
 
     The FDHA site metrics (r, rx sign, x/L) are trace quantities, but the
     hazardlib surface mesh resamples the trace at ``rupture_mesh_spacing``,
@@ -83,6 +83,15 @@ def _attach_original_traces(files: List[str], sources: Dict[str, Any]) -> None:
     exact and independent of the mesh spacing — the same decoupling the
     engine itself uses when it computes rx/ry0 from ``tor`` lines instead
     of the mesh.
+
+    The declared ``<dip>`` is retained for the same reason:
+    ``SimpleFaultSurface.get_dip()`` averages the apparent dip of the mesh
+    cells, which on a wiggly trace is biased steep (cells oblique to the
+    mean strike) and drifts with the mesh spacing — e.g. a declared 15°
+    fault reads 17.6° at 0.02 km spacing and 16.3° at 5 km. Models that
+    take dip as input (Visini 2025 FD hanging-wall term, Mammarella 2024
+    P_sr) must see the modeler's declared value, not a discretization
+    artifact.
 
     Only sources whose ruptures always span the full geometry get the trace
     (characteristicFaultSource with a prebuilt single surface). Floating
@@ -110,6 +119,9 @@ def _attach_original_traces(files: List[str], sources: Dict[str, Any]) -> None:
             trace = _extract_trace_coords(node)
             if trace is not None and trace.shape[0] >= 2:
                 surface.original_trace = trace
+            dip = _extract_declared_dip(node)
+            if dip is not None:
+                surface.original_dip = dip
 
 
 def _walk(node):
@@ -156,6 +168,27 @@ def _has_multifault(files: List[str]) -> bool:
             if tag in ('multiFaultSource', 'geometryModel'):
                 return True
     return False
+
+
+def _extract_declared_dip(src_node) -> 'float | None':
+    """Return the ``<dip>`` declared in a simpleFaultGeometry node, if any.
+
+    complexFaultGeometry has no declared dip (it is implied by the edges),
+    and planarSurface carries its dip as an attribute that hazardlib
+    already preserves exactly, so both return None here.
+    """
+    for node in _walk(src_node):
+        tag = node.tag.rsplit('}', 1)[-1]
+        if tag != 'simpleFaultGeometry':
+            continue
+        for sub in _walk(node):
+            if sub.tag.rsplit('}', 1)[-1] == 'dip' and sub.text is not None:
+                try:
+                    return float(sub.text)
+                except (ValueError, TypeError):
+                    return None
+        return None
+    return None
 
 
 def _extract_trace_coords(src_node) -> 'np.ndarray | None':

@@ -9,7 +9,6 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from pathlib import Path
 import subprocess
-import json
 import os
 import sys
 
@@ -30,13 +29,6 @@ ref_files = {
     'case3': ref_data_dir / "visini2025_case3.csv"
 }
 
-# Output files
-output_jsons = {
-    'case1': base_dir / "case1_results.json",
-    'case2': base_dir / "case2_results.json",
-    'case3': base_dir / "case3_results.json"
-}
-
 print("=" * 80)
 print("Running All Cases (1, 2, 3) using INI configuration files")
 print("=" * 80)
@@ -50,14 +42,11 @@ for case_name, config_file in config_files.items():
     print(f"{'='*80}")
     print(f"Config: {config_file}")
     
-    output_json = output_jsons[case_name]
-    
     cmd = [
         sys.executable, "-m", "openquake.fdha.main",
         str(config_file.name),
-        "--output", str(output_json.name),
     ]
-    
+
     try:
         # cwd = fig13 so rank1p5_traces.xml, logic trees, and source resolve like CLI users
         result = subprocess.run(
@@ -66,37 +55,24 @@ for case_name, config_file in config_files.items():
             text=True,
             cwd=str(base_dir),
         )
-        
+
         if result.returncode != 0:
             print(f"❌ Error running {case_name}:")
             print(result.stderr)
             continue
-        
-        with open(output_json, 'r') as f:
-            result_data = json.load(f)
 
-        displacements = None
-        probabilities = None
-        if 'imls' in result_data and 'poes' in result_data:
-            displacements = np.array(result_data['imls'])
-            if isinstance(result_data['poes'][0], list):
-                probabilities = np.array(result_data['poes'][0])
-            else:
-                probabilities = np.array(result_data['poes'])
-        elif result_data.get('logic_tree') and result_data.get('aggregate_hazard_csv'):
-            ag_path = Path(result_data['aggregate_hazard_csv'])
-            with open(ag_path, newline='') as f:
-                reader = csv.DictReader(f)
-                d0_list, mean_list = [], []
-                for row in reader:
-                    d0_list.append(float(row['D0']))
-                    mean_list.append(float(row['mean']))
-            displacements = np.array(d0_list)
-            probabilities = np.array(mean_list)
-        else:
-            print(f"⚠️  Unexpected format for {case_name}")
-            continue
-        
+        # Results are written to the output directory (out/ next to the INI);
+        # read the aggregate hazard curve directly, as a CLI user would.
+        ag_path = base_dir / "out" / "aggregate_hazard.csv"
+        with open(ag_path, newline='') as f:
+            reader = csv.DictReader(f)
+            d0_list, mean_list = [], []
+            for row in reader:
+                d0_list.append(float(row['D0']))
+                mean_list.append(float(row['mean']))
+        displacements = np.array(d0_list)
+        probabilities = np.array(mean_list)
+
         results[case_name] = {
             'displacements': displacements,
             'probabilities': probabilities

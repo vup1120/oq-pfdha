@@ -60,6 +60,14 @@ class LogicTreeResult:
     displ_mean: Optional[list[float]] = None
     displ_fractiles: Optional[dict[float, list[float]]] = None
     target_return_period: Optional[float] = None
+    # Principal/distributed split of the mean rates (linear in the branch
+    # rates, so principal + distributed == mean_rates exactly).
+    mean_rates_principal: Optional[list[list[float]]] = None
+    mean_rates_distributed: Optional[list[list[float]]] = None
+    # Component displacement maps: each component's mean rate curve inverted
+    # at the target return period (nonlinear; they do not sum to displ_mean).
+    displ_mean_principal: Optional[list[float]] = None
+    displ_mean_distributed: Optional[list[float]] = None
 
 
 class FdhaLogicTree:
@@ -172,6 +180,8 @@ class FdhaLogicTree:
     # -------------------------------------------------------- hazard-curve
     def _run_curve(self, outdir_path: Path, end_branches, all_reports) -> LogicTreeResult:
         branch_rates = []
+        branch_principal = []
+        branch_distributed = []
         branch_weights = []
         d0 = None
         site_lons = None
@@ -179,23 +189,28 @@ class FdhaLogicTree:
 
         for idx, eb in enumerate(end_branches):
             tmp_ini = self._write_branch_ini(eb, outdir_path, idx)
-            rates, d0_vals, lons, lats = _run_single(tmp_ini)
+            rates, rates_p, rates_d, d0_vals, lons, lats = _run_single(tmp_ini)
             if d0 is None:
                 d0 = d0_vals
                 site_lons = lons
                 site_lats = lats
             branch_rates.append(np.asarray(rates, dtype=float))
+            branch_principal.append(np.asarray(rates_p, dtype=float))
+            branch_distributed.append(np.asarray(rates_d, dtype=float))
             branch_weights.append(float(eb.weight))
 
             write_branch_rates_csv(
                 outdir_path / "hazard_curves" / f"branch_{idx:04d}.csv",
                 d0=d0_vals, rates=rates, site_lons=lons, site_lats=lats,
+                rates_principal=rates_p, rates_distributed=rates_d,
             )
 
         rates_arr = np.stack(branch_rates, axis=0)
         w = np.asarray(branch_weights, dtype=float)
         w = w / w.sum()
         mean = weighted_mean(rates_arr, w)
+        mean_p = weighted_mean(np.stack(branch_principal, axis=0), w)
+        mean_d = weighted_mean(np.stack(branch_distributed, axis=0), w)
         fr = weighted_fractiles(rates_arr, w, qs=self._quantiles)
 
         write_aggregate_csv(
@@ -204,6 +219,8 @@ class FdhaLogicTree:
             fractiles={q: fr[q].tolist() for q in fr},
             site_lons=site_lons, site_lats=site_lats,
             qs=self._quantiles, include_mean=self._emit_mean,
+            mean_principal=mean_p.tolist(),
+            mean_distributed=mean_d.tolist(),
         )
 
         manifest = _build_manifest(
@@ -219,6 +236,8 @@ class FdhaLogicTree:
             mode="hazard_curve",
             site_lons=list(map(float, site_lons)),
             site_lats=list(map(float, site_lats)),
+            mean_rates_principal=mean_p.tolist(),
+            mean_rates_distributed=mean_d.tolist(),
         )
 
     # ------------------------------------------------------------ map mode
@@ -292,6 +311,8 @@ class FdhaLogicTree:
         )
 
         rates_cube = np.zeros((n_br, n_sites, n_d0), dtype=float)
+        principal_cube = np.zeros((n_br, n_sites, n_d0), dtype=float)
+        distributed_cube = np.zeros((n_br, n_sites, n_d0), dtype=float)
         branch_weights: list[float] = []
         fingerprints: list[str] = []
 
@@ -342,6 +363,8 @@ class FdhaLogicTree:
                 branch_calc, sites.combined_sitecol, show_progress=False,
             )
             branch_rates = np.asarray(res["annual_rate_total"], dtype=float)
+            branch_principal = np.asarray(res["rate_principal"], dtype=float)
+            branch_distributed = np.asarray(res["rate_distributed"], dtype=float)
             # Explicit pre-aggregation shape guard: bail out loudly when a
             # branch produces the wrong grid rather than silently broadcasting.
             if branch_rates.shape != expected_branch_shape:
@@ -352,6 +375,8 @@ class FdhaLogicTree:
                     "Site grid or D0 axis is inconsistent across branches."
                 )
             rates_cube[idx] = branch_rates
+            principal_cube[idx] = branch_principal
+            distributed_cube[idx] = branch_distributed
             branch_weights.append(float(eb.weight))
             fp = _fingerprint_end_branch(eb)
             fingerprints.append(fp)
@@ -370,6 +395,8 @@ class FdhaLogicTree:
                     "style": str(eb.style or ""),
                     "index": int(idx),
                 },
+                rates_principal=branch_principal,
+                rates_distributed=branch_distributed,
             )
             if (idx + 1) % max(1, n_br // 10) == 0 or idx == n_br - 1:
                 log.info("  branch %d/%d done", idx + 1, n_br)
@@ -382,6 +409,14 @@ class FdhaLogicTree:
         mean_rates, per_source_means = _aggregate_multi_source_mean(
             rates_cube, branch_weights, source_ids_per_branch,
         )
+        # Component means share the (linear) aggregation, so
+        # principal + distributed == total mean stays exact.
+        mean_rates_principal, _ = _aggregate_multi_source_mean(
+            principal_cube, branch_weights, source_ids_per_branch,
+        )
+        mean_rates_distributed, _ = _aggregate_multi_source_mean(
+            distributed_cube, branch_weights, source_ids_per_branch,
+        )
         # Fractiles: computed per source and then SUM across sources (same
         # reasoning as the mean). For sources with a single end-branch the
         # fractile equals the mean; that case collapses to the deterministic
@@ -392,9 +427,16 @@ class FdhaLogicTree:
         )
 
         # Invert each site's mean rate curve at target_rate; likewise fractiles.
+        # Component displacements invert each component's own mean curve, so
+        # they answer "displacement at this return period from principal /
+        # distributed faulting alone" (nonlinear: they do not sum to the total).
         from openquake.fdha.calc.utils.interpolation import get_map_from_curves
         target_rate = 1.0 / return_period
         displ_mean = get_map_from_curves(target_displ, mean_rates, target_rate)
+        displ_mean_principal = get_map_from_curves(
+            target_displ, mean_rates_principal, target_rate)
+        displ_mean_distributed = get_map_from_curves(
+            target_displ, mean_rates_distributed, target_rate)
         displ_frac: dict[float, np.ndarray] = {}
         for q, cube in frac_rates.items():
             displ_frac[q] = get_map_from_curves(target_displ, cube, target_rate)
@@ -412,6 +454,8 @@ class FdhaLogicTree:
             d0=target_displ.tolist(),
             site_lons=sl_lons.tolist(),
             site_lats=sl_lats.tolist(),
+            rates_mean_principal=mean_rates_principal,
+            rates_mean_distributed=mean_rates_distributed,
         )
         if self._quantiles:
             fr_stack = np.stack([frac_rates[q] for q in self._quantiles], axis=0)
@@ -431,6 +475,8 @@ class FdhaLogicTree:
             target_return_period=return_period,
             label="displ_mean",
             site_is_trace=is_trace.tolist(),
+            displ_principal=displ_mean_principal.tolist(),
+            displ_distributed=displ_mean_distributed.tolist(),
         )
         for q in self._quantiles:
             lab = quantile_label(q)
@@ -490,6 +536,10 @@ class FdhaLogicTree:
             displ_mean=displ_mean.tolist(),
             displ_fractiles={q: displ_frac[q].tolist() for q in displ_frac},
             target_return_period=return_period,
+            mean_rates_principal=mean_rates_principal.tolist(),
+            mean_rates_distributed=mean_rates_distributed.tolist(),
+            displ_mean_principal=displ_mean_principal.tolist(),
+            displ_mean_distributed=displ_mean_distributed.tolist(),
         )
 
     # --------------------------------------------------- multi-source path
@@ -514,6 +564,8 @@ class FdhaLogicTree:
         original_paths = list(self.source_model_paths)
 
         combined_rates: list[np.ndarray] = []
+        combined_principal: list[np.ndarray] = []
+        combined_distributed: list[np.ndarray] = []
         combined_weights: list[float] = []
         combined_records: list[dict[str, Any]] = []
         # Aggregation keys: which SMLT realisation and which source group
@@ -581,12 +633,14 @@ class FdhaLogicTree:
                         f"realisation's sources "
                         f"(available: {sorted(modified_sources)})."
                     )
-                rates, d0_vals, lons, lats = self._compute_branch_rates(
-                    eb,
-                    sub_outdir,
-                    fdha_idx,
-                    mode=mode,
-                    fault_sources=sub_sources,
+                rates, rates_p, rates_d, d0_vals, lons, lats = (
+                    self._compute_branch_rates(
+                        eb,
+                        sub_outdir,
+                        fdha_idx,
+                        mode=mode,
+                        fault_sources=sub_sources,
+                    )
                 )
                 if d0_ref is None:
                     d0_ref = d0_vals
@@ -595,6 +649,8 @@ class FdhaLogicTree:
 
                 combined_w = float(sm_branch.weight) * float(eb.weight)
                 combined_rates.append(np.asarray(rates, dtype=float))
+                combined_principal.append(np.asarray(rates_p, dtype=float))
+                combined_distributed.append(np.asarray(rates_d, dtype=float))
                 combined_weights.append(combined_w)
                 combined_sm_ordinals.append(sm_idx)
                 combined_group_ids.append(eb.source_id)
@@ -634,12 +690,15 @@ class FdhaLogicTree:
                     write_branch_rates_csv(
                         outdir_path / "hazard_curves" / f"branch_{global_idx:04d}.csv",
                         d0=d0_vals, rates=rates, site_lons=lons, site_lats=lats,
+                        rates_principal=rates_p, rates_distributed=rates_d,
                     )
 
         # Restore for any callers that read it later.
         self.source_model_paths = original_paths
 
         rates_arr = np.stack(combined_rates, axis=0)
+        principal_arr = np.stack(combined_principal, axis=0)
+        distributed_arr = np.stack(combined_distributed, axis=0)
         w = np.asarray(combined_weights, dtype=float)
         total_weight = float(w.sum())
         if total_weight <= 0:
@@ -657,14 +716,26 @@ class FdhaLogicTree:
             # exact for both the mean and the fractiles.
             w_norm = w / total_weight
             mean = weighted_mean(rates_arr, w_norm)
+            mean_p = weighted_mean(principal_arr, w_norm)
+            mean_d = weighted_mean(distributed_arr, w_norm)
             fr = weighted_fractiles(rates_arr, w_norm, qs=self._quantiles)
         else:
             # Per-source-group LT statistics summed across groups within each
             # SMLT realisation, then SMLT-weighted across realisations —
-            # the same physically-correct aggregation map mode uses.
+            # the same physically-correct aggregation map mode uses. The
+            # component means use the same (linear) pipeline with no
+            # fractiles, so principal + distributed == mean stays exact.
             mean, fr = self._aggregate_grouped_curves(
                 rates_arr, combined_weights,
                 combined_sm_ordinals, combined_group_ids,
+            )
+            mean_p, _ = self._aggregate_grouped_curves(
+                principal_arr, combined_weights,
+                combined_sm_ordinals, combined_group_ids, qs=[],
+            )
+            mean_d, _ = self._aggregate_grouped_curves(
+                distributed_arr, combined_weights,
+                combined_sm_ordinals, combined_group_ids, qs=[],
             )
 
         if mode == "hazard_curve":
@@ -674,6 +745,8 @@ class FdhaLogicTree:
                 fractiles={q: fr[q].tolist() for q in fr},
                 site_lons=site_lons_ref, site_lats=site_lats_ref,
                 qs=self._quantiles, include_mean=self._emit_mean,
+                mean_principal=mean_p.tolist(),
+                mean_distributed=mean_d.tolist(),
             )
 
         manifest = self._build_multi_source_manifest(
@@ -701,6 +774,8 @@ class FdhaLogicTree:
             mode=mode,
             site_lons=list(map(float, site_lons_ref)) if site_lons_ref is not None else [],
             site_lats=list(map(float, site_lats_ref)) if site_lats_ref is not None else [],
+            mean_rates_principal=mean_p.tolist(),
+            mean_rates_distributed=mean_d.tolist(),
         )
 
     # ---------------------------------------------- multi-source map mode
@@ -853,6 +928,20 @@ class FdhaLogicTree:
         )
         mean_rates = np.tensordot(sm_weights_norm, per_sm_mean, axes=(0, 0))
 
+        # Component means combine SMLT branches with the same linear weights.
+        per_sm_principal = np.stack(
+            [np.asarray(r["result"].mean_rates_principal, dtype=float)
+             for r in sm_runs], axis=0
+        )
+        per_sm_distributed = np.stack(
+            [np.asarray(r["result"].mean_rates_distributed, dtype=float)
+             for r in sm_runs], axis=0
+        )
+        mean_rates_principal = np.tensordot(
+            sm_weights_norm, per_sm_principal, axes=(0, 0))
+        mean_rates_distributed = np.tensordot(
+            sm_weights_norm, per_sm_distributed, axes=(0, 0))
+
         frac_rates: dict[float, np.ndarray] = {}
         for q in self._quantiles:
             per_sm_q = np.stack(
@@ -873,6 +962,10 @@ class FdhaLogicTree:
         from openquake.fdha.calc.utils.interpolation import get_map_from_curves
         target_rate = 1.0 / return_period if return_period > 0 else 1.0
         displ_mean = get_map_from_curves(target_displ, mean_rates, target_rate)
+        displ_mean_principal = get_map_from_curves(
+            target_displ, mean_rates_principal, target_rate)
+        displ_mean_distributed = get_map_from_curves(
+            target_displ, mean_rates_distributed, target_rate)
         displ_frac = {
             q: get_map_from_curves(target_displ, frac_rates[q], target_rate)
             for q in self._quantiles
@@ -887,6 +980,8 @@ class FdhaLogicTree:
             d0=target_displ.tolist(),
             site_lons=sl_lons.tolist(),
             site_lats=sl_lats.tolist(),
+            rates_mean_principal=mean_rates_principal,
+            rates_mean_distributed=mean_rates_distributed,
         )
         if self._quantiles:
             fr_stack = np.stack([frac_rates[q] for q in self._quantiles], axis=0)
@@ -906,6 +1001,8 @@ class FdhaLogicTree:
             target_return_period=return_period,
             label="displ_mean",
             site_is_trace=is_trace.tolist(),
+            displ_principal=displ_mean_principal.tolist(),
+            displ_distributed=displ_mean_distributed.tolist(),
         )
         for q in self._quantiles:
             lab = quantile_label(q)
@@ -977,6 +1074,10 @@ class FdhaLogicTree:
             displ_mean=displ_mean.tolist(),
             displ_fractiles={q: displ_frac[q].tolist() for q in displ_frac},
             target_return_period=return_period,
+            mean_rates_principal=mean_rates_principal.tolist(),
+            mean_rates_distributed=mean_rates_distributed.tolist(),
+            displ_mean_principal=displ_mean_principal.tolist(),
+            displ_mean_distributed=displ_mean_distributed.tolist(),
         )
 
     def _compute_branch_rates(
@@ -988,6 +1089,9 @@ class FdhaLogicTree:
         fault_sources: Optional[dict] = None,
     ):
         """Run a single FDHA end-branch and return its rates / D0 / coords.
+
+        Returns ``(rates, rates_principal, rates_distributed, d0, lons,
+        lats)``; see :func:`_run_single`.
 
         When ``fault_sources`` is provided, those pre-built source objects
         (typically returned by :func:`apply_realization_to_sources`) are
@@ -1002,10 +1106,7 @@ class FdhaLogicTree:
                 f"_compute_branch_rates only handles hazard_curve mode; got {mode!r}"
             )
         tmp_ini = self._write_branch_ini(eb, sub_outdir, fdha_idx)
-        rates, d0_vals, lons, lats = _run_single(
-            tmp_ini, fault_sources=fault_sources,
-        )
-        return rates, d0_vals, lons, lats
+        return _run_single(tmp_ini, fault_sources=fault_sources)
 
     def _aggregate_grouped_curves(
         self,
@@ -1013,6 +1114,7 @@ class FdhaLogicTree:
         weights: list[float],
         sm_ordinals: list[int],
         group_ids: list[str],
+        qs: Optional[list[float]] = None,
     ):
         """Aggregate curve realisations when an SMLT realisation contains
         more than one source group (per-source / per-style model selections).
@@ -1023,6 +1125,9 @@ class FdhaLogicTree:
         results are then combined with the normalised SMLT weights. This is
         the same aggregation :meth:`_run_map` uses, including the documented
         sum-of-fractiles approximation for multi-group jobs.
+
+        ``qs`` overrides the fractile set (``[]`` computes the mean only,
+        e.g. for the principal/distributed component cubes).
         """
         sm_ids = sorted(set(sm_ordinals))
         sm_w = np.asarray(
@@ -1033,7 +1138,7 @@ class FdhaLogicTree:
             raise ValueError("Source-model branch weights sum to zero")
         sm_w = sm_w / sm_w.sum()
 
-        qs = list(self._quantiles)
+        qs = list(self._quantiles) if qs is None else list(qs)
         mean = np.zeros(rates_arr.shape[1:], dtype=float)
         fr: dict[float, np.ndarray] = {
             q: np.zeros(rates_arr.shape[1:], dtype=float) for q in qs}
@@ -1218,6 +1323,12 @@ def _infer_source_rake(src) -> float:
 def _run_single(config_path: str, fault_sources: Optional[dict] = None):
     """Run one FDHA hazard-curve calculation and return its rates.
 
+    Returns ``(rates, rates_principal, rates_distributed, d0, lons, lats)``
+    where ``rates`` is the total annual exceedance rate and the two
+    component arrays are the principal (on-fault) and distributed
+    (off-fault) contributions, ``rates == rates_principal +
+    rates_distributed`` elementwise.
+
     ``fault_sources``, if given, replaces the XML-driven parsing inside the
     calculator so callers can inject NRML-uncertainty-modified sources
     produced by :func:`apply_realization_to_sources`.
@@ -1251,7 +1362,8 @@ def _run_single(config_path: str, fault_sources: Optional[dict] = None):
             **converter_params,
         )
     res = calc.run()
-    return res["poes"], res["imls"], res["site_lons"], res["site_lats"]
+    return (res["poes"], res["rate_principal"], res["rate_distributed"],
+            res["imls"], res["site_lons"], res["site_lats"])
 
 
 def _converter_params_from_config(cfg: dict[str, Any]) -> dict[str, Any]:
