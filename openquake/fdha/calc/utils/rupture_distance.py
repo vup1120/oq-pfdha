@@ -164,6 +164,101 @@ def _extract_fault_trace_from_mesh(surface: Any) -> np.ndarray:
     return coords
 
 
+def trace_polyline_for_source(src: Any, surface: Any) -> Optional[np.ndarray]:
+    """Return the (lon, lat) trace polyline used to place principal-zone sites.
+
+    Prefers the exact ``original_trace`` retained at parse time — it is
+    independent of ``rupture_mesh_spacing`` and free of the mesh top-edge
+    drift — over the mesh top-edge (which becomes coarse when the ERF mesh is
+    coarse). Falls back to the mesh top-edge, then to ``src.fault_trace``.
+    Returns ``None`` when no usable trace is available.
+    """
+    orig = getattr(surface, "original_trace", None)
+    if orig is None:
+        orig = getattr(src, "original_trace", None)
+    if orig is not None and len(orig) >= 2:
+        return np.asarray(
+            [(float(p.longitude), float(p.latitude))
+             if hasattr(p, "longitude") else (float(p[0]), float(p[1]))
+             for p in orig],
+            dtype=float,
+        )
+    if surface is not None:
+        try:
+            poly = np.asarray(_extract_fault_trace_from_mesh(surface), dtype=float)
+        except Exception:
+            poly = np.empty((0, 2))
+        if poly.size:
+            return poly
+    ft = getattr(src, "fault_trace", None)
+    if ft is not None:
+        return np.asarray(
+            [(float(p.longitude), float(p.latitude)) for p in ft], dtype=float
+        )
+    return None
+
+
+def densify_polyline(coords: np.ndarray, max_step_km: float) -> np.ndarray:
+    """Insert intermediate vertices so no segment exceeds ``max_step_km``.
+
+    ``coords`` is an (N, 2) [lon, lat] array. Every original vertex is kept
+    (so the fault geometry is preserved) and evenly spaced points are added
+    along any segment longer than ``max_step_km``; the result is therefore
+    never coarser than the input. Linear interpolation in lon/lat is accurate
+    at the sub-kilometre steps used for trace sampling.
+    """
+    coords = np.asarray(coords, dtype=float)
+    if len(coords) < 2 or max_step_km <= 0:
+        return coords
+    R = 6371.0
+    out = [coords[0]]
+    for a, b in zip(coords[:-1], coords[1:]):
+        lo1, la1, lo2, la2 = np.radians([a[0], a[1], b[0], b[1]])
+        h = (np.sin((la2 - la1) / 2) ** 2
+             + np.cos(la1) * np.cos(la2) * np.sin((lo2 - lo1) / 2) ** 2)
+        seg_km = 2 * R * np.arcsin(np.sqrt(h))
+        n = int(np.ceil(seg_km / max_step_km)) if seg_km > 0 else 1
+        for k in range(1, n):
+            out.append(a + (k / n) * (b - a))
+        out.append(b)
+    return np.asarray(out, dtype=float)
+
+
+def resample_polyline(coords: np.ndarray, step_km: float) -> np.ndarray:
+    """Resample a polyline to ~uniform ``step_km`` spacing along its length.
+
+    Unlike :func:`densify_polyline`, which only *inserts* vertices and so can
+    never coarsen its input, this matches ``step_km`` in both directions:
+    a natively dense trace is decimated, a sparse one is refined.
+
+    Principal-zone map sites need this. A NRML trace is often digitised at
+    sub-kilometre vertex spacing; placing one principal site per native vertex
+    on a map whose own grid is 10 km wide creates thousands of sites the map
+    cannot resolve (48 onshore faults gave 3 246 trace sites against a 1 040
+    site grid — a ~36x cost with no added information). Sampling at the grid
+    step keeps the principal band consistent with the distributed grid.
+
+    Endpoints are always retained, so the rupture extent is preserved.
+    ``coords`` is an (N, 2) [lon, lat] array.
+    """
+    coords = np.asarray(coords, dtype=float)
+    if len(coords) < 2 or step_km <= 0:
+        return coords
+    R = 6371.0
+    lo, la = np.radians(coords[:, 0]), np.radians(coords[:, 1])
+    h = (np.sin(np.diff(la) / 2) ** 2
+         + np.cos(la[:-1]) * np.cos(la[1:]) * np.sin(np.diff(lo) / 2) ** 2)
+    seg = 2 * R * np.arcsin(np.sqrt(h))
+    s = np.concatenate([[0.0], np.cumsum(seg)])
+    total = float(s[-1])
+    if total <= 0:  # degenerate (all vertices coincident)
+        return coords[:1]
+    n = max(int(np.ceil(total / step_km)), 1)
+    targets = np.linspace(0.0, total, n + 1)
+    return np.column_stack([np.interp(targets, s, coords[:, 0]),
+                            np.interp(targets, s, coords[:, 1])])
+
+
 # ----------------------------- Polyline distance helpers (xy plane) -------------------------
 def _min_distance_point_to_polyline_xy(pxy: np.ndarray, poly_xy: np.ndarray) -> float:
     """Shortest distance from point *pxy* to polyline *poly_xy* in the xy plane (km)."""

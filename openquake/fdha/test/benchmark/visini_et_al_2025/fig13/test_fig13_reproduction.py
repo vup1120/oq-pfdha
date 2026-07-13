@@ -19,7 +19,6 @@ curves and (b) the Monte Carlo noise of the along-strike occurrence factor
 """
 
 import csv
-import json
 import subprocess
 import sys
 from pathlib import Path
@@ -39,16 +38,15 @@ MEDIAN_RATIO_BOUNDS = (0.80, 1.25)
 
 
 def _run_case(case):
-    out_json = BASE / f"_pytest_case{case}.json"
     res = subprocess.run(
         [sys.executable, "-m", "openquake.fdha.main",
-         str(BASE / f"job_case{case}.ini"), "--output", str(out_json)],
+         str(BASE / f"job_case{case}.ini")],
         capture_output=True, text=True, cwd=str(BASE), timeout=900,
     )
     assert res.returncode == 0, f"case{case} run failed:\n{res.stderr[-2000:]}"
-    result = json.loads(out_json.read_text())
-    out_json.unlink()
-    agg = Path(result["aggregate_hazard_csv"])
+    # Results are written to the output directory (out/ next to the INI); the
+    # aggregate hazard curve is read directly, as a CLI user would.
+    agg = BASE / "out" / "aggregate_hazard.csv"
     rows = np.genfromtxt(agg, delimiter=",", skip_header=1)
     return rows[:, 0], rows[:, 1]  # displacement (m), mean probability
 
