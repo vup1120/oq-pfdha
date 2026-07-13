@@ -24,6 +24,40 @@ sinuous traces, so their distances shifted). ``curve_explicit/`` is
 unchanged: the curve example uses a simpleFaultSource, whose path is
 untouched.
 
+**`curve_explicit/aggregate_hazard.csv`, `curve_explicit/branch_0000.csv`
+and `map_default/displacement_map_mean.csv` regenerated on 2026-07-11**
+after the principal/distributed component columns were added to the output
+files (`mean_principal`/`mean_distributed`,
+`annual_rate_principal`/`annual_rate_distributed`,
+`displ_mean_principal`/`displ_mean_distributed`). Before re-freezing, the
+new files were verified byte-identical to the previous fixtures once the
+added columns were stripped, i.e. all previously frozen numbers are
+unchanged. The fractile map CSVs and `rates_baseline.npz` did not change.
+
+**`map_default/` regenerated in full on 2026-07-12** after the principal-zone
+trace-sampling fix: on-trace (principal) sites are now placed from the exact
+``original_trace`` densified to the map grid resolution
+(``region_grid_spacing``), instead of the ERF mesh top edge whose node count
+collapses when ``rupture_mesh_spacing`` is large. For the minimal map example
+this raised the trace-site count 29 -> 98 (denser principal band), so all six
+displacement-map CSVs and ``rates_baseline.npz`` (site axis 1594 -> 1663) had
+to be re-frozen. Verified surgical before re-freezing: the 1565 distributed
+*grid* sites are byte-identical (max |Δ| = 0 on displ_mean/principal/
+distributed); only appended trace-site rows changed. ``curve_explicit/`` is a
+single-site curve and is unaffected.
+
+**`map_default/` regenerated in full on 2026-07-13** after the principal-zone
+trace sampling changed from *densify* to *resample*: the trace is now resampled
+at a uniform grid-resolution step instead of retaining every native NRML vertex
+(which are often digitised at sub-kilometre spacing, placing far more principal
+sites than the grid can resolve — the 48 onshore Taiwan faults produced 3 246
+trace sites against a 1 040-site 0.1° grid). For the minimal map example this
+lowered the trace-site count 98 -> 68, so all six displacement-map CSVs and
+``rates_baseline.npz`` (site axis 1663 -> 1633) were re-frozen. Verified
+surgical before re-freezing: the 1565 distributed *grid* sites are
+byte-identical (max |Δ| = 0 on displ_mean/principal/distributed); only the
+on-trace rows changed. ``curve_explicit/`` is unaffected.
+
 - `curve_explicit/` — `examples/hazard_curve_minimal.ini`
   (sets `r_threshold_km = 0.1` explicitly in `[calculation]`):
   - `aggregate_hazard.csv` — weighted mean + quantile curves (top-level).

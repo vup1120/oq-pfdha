@@ -16,7 +16,7 @@ graph TD
     E --> F[3. Unified Hazard Calculation per Branch];
     F --> G[4. Aggregate Weighted Hazard Rates and Fractiles];
     G --> H[5. Generate Final Product];
-    H --> I[Output directory: manifest.json, aggregate + per-branch rates<br/>optional JSON summary / PNG plot];
+    H --> I[Output directory: manifest.json, aggregate + per-branch rates<br/>optional PNG plot];
 
     subgraph "Unified Hazard Calculation (calculate_fdha_hazard)"
         direction LR
@@ -65,12 +65,14 @@ This is the most fundamental workflow, used to assess the hazard at a specific p
 3.  **Run Calculation**:
     Execute the `fdha` command with your configuration file:
     ```bash
-    fdha job_curve.ini \
-         --output results.json \
-         --plot curve.png
+    fdha job_curve.ini --plot curve.png
     ```
     The calculation type is automatically detected from the configuration (presence of `region` indicates hazard map, otherwise hazard curve).
-4.  **Interpret Results**: The output JSON contains the hazard curve data, and the PNG visualizes it.
+4.  **Interpret Results**: Results are written to the output directory (`out/`
+    next to the INI by default). The hazard curve data is written as CSV —
+    `aggregate_hazard.csv` (aggregate mean/quantile curve) and
+    `hazard_curves/branch_XXXX.csv` (per branch). The `--plot` PNG visualizes the
+    mean curve. See [Outputs](08-Outputs.md).
 
 ---
 
@@ -93,12 +95,16 @@ This workflow visualizes the spatial distribution of hazard across a region for 
     -   Select the four required model categories in the FDHA logic-tree XML, not in `[models]` INI sections; to model only one side, neutralize the other with the constant `Fixed*SR` models (see [Models — Modeling only principal or only distributed displacement](06-Models.md#modeling-only-principal-or-only-distributed-displacement)).
 3.  **Run Calculation**:
     ```bash
-    fdha job_map.ini \
-         --output map_results.json \
-         --plot map.png
+    fdha job_map.ini --plot map.png
     ```
     The calculation type is automatically detected from the presence of `region` in the `[geometry]` section.
-4.  **Interpret Results**: The output JSON contains the gridded map data, and the PNG shows the map colored by displacement values.
+4.  **Interpret Results**: Results are written to the output directory (`out/`
+    next to the INI by default). The gridded results are the displacement maps as
+    CSV (`aggregate/displacement_map_mean.csv` and one
+    `displacement_map_quantile-<q>.csv` per configured quantile) and the
+    underlying rate grids as HDF5 (`aggregate/rates_mean.h5`,
+    `aggregate/rates_fractiles.h5`). The `--plot` PNG shows the mean map colored by
+    displacement. See [Outputs](08-Outputs.md).
 
 ---
 

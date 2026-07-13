@@ -23,7 +23,6 @@ The goal is to compute a fault displacement hazard curve for a single site using
 
     ```bash
     fdha examples/hazard_curve_minimal.ini \
-         --output examples/outputs/hazard_curve_minimal_results.json \
          --plot examples/outputs/hazard_curve_minimal.png
     ```
 
@@ -69,13 +68,29 @@ The command you just ran used two main input files:
 
 ## Reviewing the Outputs
 
-If the command runs successfully, the CLI summary JSON and plot will be created in `examples/outputs/`. The logic-tree driver also writes its detailed outputs to the run output directory reported in the summary JSON.
+Like the OpenQuake engine, `fdha` writes its results to an **output directory**,
+not to a single file. The directory defaults to `out/` next to the INI file — so
+for this example it is `examples/out/`. (The `--plot` argument additionally saves
+a PNG of the hazard curve to the path you gave,
+`examples/outputs/hazard_curve_minimal.png`.)
 
-1.  **`hazard_curve_minimal_results.json`**:
-    A JSON summary file. For logic-tree jobs, this includes paths such as `outdir`, `manifest_json`, `validator_reports`, and `aggregate_hazard_csv`. To learn about the output format in detail, refer to the [Outputs](08-Outputs.md) chapter.
+For a hazard **curve** job, the key files in the output directory are:
 
-2.  **`hazard_curve_minimal.png`**:
-    A plot visualizing the hazard curve, with displacement on the x-axis and annual frequency of exceedance on the y-axis.
+| File | Contents |
+|------|----------|
+| `aggregate_hazard.csv` | The aggregate (mean/quantile) hazard curve — **the main result** |
+| `hazard_curves/branch_0000.csv` | Per-logic-tree-branch hazard curve |
+| `manifest.json` | Index of everything produced by the run |
+
+This particular INI also carries a hazard-**map** source-model branch, so the run
+additionally writes map outputs under `aggregate/` and
+`source_model_branches/.../aggregate/`:
+
+-   `displacement_map_mean.csv` and `displacement_map_quantile-0.05|0.16|0.5|0.84|0.95.csv`
+    — displacement maps as CSV.
+-   `rates_mean.h5`, `rates_fractiles.h5` — the underlying rate grids in HDF5.
+
+To learn about the output format in detail, refer to the [Outputs](08-Outputs.md) chapter.
 
 ## Next Steps
 

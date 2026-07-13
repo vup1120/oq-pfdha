@@ -32,7 +32,6 @@ A minimal example is provided to quickly verify your installation. This command 
 # Run the minimal hazard curve example
 mkdir -p examples/outputs
 fdha examples/hazard_curve_minimal.ini \
-     --output examples/outputs/hazard_curve_minimal_results.json \
      --plot examples/outputs/hazard_curve_minimal.png
 ```
 
@@ -45,13 +44,20 @@ The INI configuration file (`examples/hazard_curve_minimal.ini`) includes:
 The calculation type is detected automatically: `sites` in `[geometry]` runs a
 hazard curve, `region` runs a hazard map.
 
-After running, you should find the following files:
--   `examples/outputs/hazard_curve_minimal_results.json`: The calculated hazard curve data.
--   `examples/outputs/hazard_curve_minimal.png`: A plot of the hazard curve.
+Like the OpenQuake engine, results are written to an output directory rather
+than to a single file. The directory defaults to `out/` next to the INI file
+(here `examples/out/`). For this hazard-curve example the key files are:
 
-**Note**: Because the example is driven by a logic tree, the run also writes a
-per-branch output directory (containing `manifest.json`, per-branch hazard
-curves, and the aggregate result) alongside the JSON/plot files above.
+-   `examples/out/aggregate_hazard.csv`: the aggregate (mean and quantile) hazard
+    curve — the main result.
+-   `examples/out/hazard_curves/branch_0000.csv`: the per-logic-tree-branch curve.
+-   `examples/out/manifest.json`: an index of everything the run produced.
+
+The `--plot` argument additionally saves a PNG of the hazard curve to the path
+you give (here `examples/outputs/hazard_curve_minimal.png`).
+
+See the [Outputs](./docs/UserManual_Enhanced/08-Outputs.md) chapter for the full
+file layout and column definitions.
 
 ## Documentation
 

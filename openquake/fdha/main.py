@@ -6,13 +6,11 @@ OpenQuake-style invocation:
 
   fdha job.ini
   fdha job.ini --plot
-  fdha job.ini --output results.json
 
 """
 
 import os
 import sys
-import json
 import argparse
 import logging
 from pathlib import Path
@@ -54,21 +52,22 @@ def parse_config_file(config_path: str) -> Dict[str, Any]:
 
 def run_calculation(
     config_path: str,
-    output_path: Optional[str] = None,
     plot: bool = False,
     plot_file: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Run FDHA calculation.
-    
+
+    Results are written to the run output directory (``out/`` next to the INI by
+    default); see the returned dictionary's ``outdir`` for the location.
+
     Args:
         config_path: Path to configuration file
-        output_path: Optional output file path
         plot: Whether to generate plots
         plot_file: Optional plot file path
-        
+
     Returns:
-        Results dictionary
+        Results dictionary (metadata plus paths to the result files)
     """
     # Parse config
     config = parse_config_file(config_path)
@@ -84,7 +83,6 @@ def run_calculation(
     if has_fdha_lt:
         return _run_logic_tree(
             config_path=config_path,
-            output_path=output_path,
             plot=plot,
             plot_file=plot_file,
         )
@@ -97,32 +95,8 @@ def run_calculation(
     )
 
 
-def save_results(results: Dict[str, Any], output_path: str):
-    """Save results to file."""
-    import numpy as np
-    
-    ext = os.path.splitext(output_path)[1].lower()
-    
-    if ext == '.json':
-        with open(output_path, 'w') as f:
-            json.dump(results, f, indent=2)
-    elif ext == '.csv':
-        imls = results.get('imls', [])
-        poes = np.array(results.get('poes', []))
-        
-        with open(output_path, 'w') as f:
-            f.write('site_id,' + ','.join(f'd={d}' for d in imls) + '\n')
-            for i, row in enumerate(poes):
-                f.write(f'{i},' + ','.join(f'{v:.6e}' for v in row) + '\n')
-    else:
-        # Default to JSON
-        with open(output_path, 'w') as f:
-            json.dump(results, f, indent=2)
-
-
 def _run_logic_tree(
     config_path: str,
-    output_path: Optional[str],
     plot: bool,
     plot_file: Optional[str],
 ) -> Dict[str, Any]:
@@ -140,6 +114,15 @@ def _run_logic_tree(
     )
     n_displ = len(result.d0) if result.d0 else 0
 
+    # Validator reports are written per source-model branch; keep the legacy
+    # top-level key only when that file actually exists (older layouts).
+    validator_reports = sorted(
+        str(p) for p in outdir.glob("source_model_branches/*/validator_report.txt")
+    )
+    top_level_report = outdir / "validator_report.txt"
+    if top_level_report.exists():
+        validator_reports.insert(0, str(top_level_report))
+
     results: Dict[str, Any] = {
         "logic_tree": True,
         "outdir": str(outdir),
@@ -147,7 +130,7 @@ def _run_logic_tree(
         "n_sites": n_sites,
         "n_displ": n_displ,
         "manifest_json": str(outdir / "manifest.json"),
-        "validator_report": str(outdir / "validator_report.txt"),
+        "validator_reports": validator_reports,
     }
 
     if result.mode == "hazard_curve":
@@ -166,9 +149,6 @@ def _run_logic_tree(
         except Exception as e:  # never let plotting break the CLI
             logger.warning(f"Plot generation failed (logic-tree mode): {e}")
 
-    if output_path:
-        save_results(results, output_path)
-        logger.info(f"Results saved to: {output_path}")
     return results
 
 
@@ -315,7 +295,6 @@ Examples:
   fdha job.ini
   fdha job.ini --plot
   fdha job.ini --plot curve.png
-  fdha job.ini --output results.json
 """
     )
     
@@ -324,13 +303,8 @@ Examples:
         'job_ini',
         help='Configuration file (v5 canonical job.ini)'
     )
-    
+
     # Output options
-    parser.add_argument(
-        '--output', '-o',
-        help='Save results to file (JSON or CSV)'
-    )
-    
     parser.add_argument(
         '--plot', '-p',
         nargs='?',
@@ -370,25 +344,19 @@ def main():
     try:
         results = run_calculation(
             config_path=args.job_ini,
-            output_path=args.output,
             plot=plot_show,
             plot_file=plot_file,
         )
-        
+
         # Print summary
-        n_sites = results.get('n_sites', len(results.get('poes', [[]])))
-        n_displ = results.get('n_displ', len(results.get('imls', [])))
         print(f"\nCalculation complete:")
-        print(f"  Sites: {n_sites}")
-        print(f"  Displacement levels: {n_displ}")
+        print(f"  Sites: {results.get('n_sites')}")
+        print(f"  Displacement levels: {results.get('n_displ')}")
 
         if results.get('logic_tree'):
             print(f"  Mode: {results.get('mode', 'hazard_curve')}")
             print(f"  Output dir: {results.get('outdir')}")
 
-        if args.output:
-            print(f"  Results: {args.output}")
-        
     except Exception as e:
         logger.error(f"Error: {e}")
         if args.verbose:
