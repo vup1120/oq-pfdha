@@ -195,7 +195,49 @@ class BaseFaultRuptureCalculator:
         self.near_far_threshold_km = float(
             self.config.get('parameters', {}).get('near_far_threshold_km', 0.2)
         )
-        
+
+        # Rupture-location uncertainty
+        # (docs/design/rupture_location_uncertainty.md, section 3). W_p(r)
+        # weights the principal contribution; G(r) weights the distributed
+        # contribution per `combination_mode`. All read [calculation] first,
+        # [parameters] as fallback, same idiom as r_threshold_km above.
+        #
+        #   r_sigma_km          two-sided mapping-accuracy sigma (Petersen
+        #                       Tables 2-3). 0 = legacy boxcar; >0 = pinned
+        #                       +/-n-sigma normal footprint mass.
+        #   r_sigma_truncation  +/-n-sigma cut (Petersen p. 819 uses 2).
+        #   site_footprint_m    footprint z (Petersen cell size); the sigma>0
+        #                       window and the near-field-floor scale.
+        self.r_sigma_km = float(
+            self.config.get('calculation', {}).get('r_sigma_km') or
+            self.config.get('parameters', {}).get('r_sigma_km', 0.0)
+        )
+        self.r_sigma_truncation = float(
+            self.config.get('calculation', {}).get('r_sigma_truncation') or
+            self.config.get('parameters', {}).get('r_sigma_truncation', 2.0)
+        )
+        self.site_footprint_m = float(
+            self.config.get('calculation', {}).get('site_footprint_m') or
+            self.config.get('parameters', {}).get('site_footprint_m', 25.0)
+        )
+        # combination_mode selects the distributed weight G(r):
+        #   'additive'      G = 1 (Petersen et al. 2011 eq.1 + eq.2: principal
+        #                   and distributed are independent and summed).
+        #   'complementary' G = 1 - W_p (Youngs 2003 / Takao 2013 Fig.1 per-fault
+        #                   either/or bookkeeping; the tool's historical split).
+        # C2 flips this default from 'complementary' to 'additive'.
+        _combination_mode = (
+            self.config.get('calculation', {}).get('combination_mode') or
+            self.config.get('parameters', {}).get('combination_mode') or
+            'complementary'
+        )
+        self.combination_mode = str(_combination_mode).strip().lower()
+        if self.combination_mode not in ('additive', 'complementary'):
+            raise ValueError(
+                f"[calculation] combination_mode: unknown value "
+                f"'{self.combination_mode}'; expected 'additive' or "
+                f"'complementary'.")
+
         # Case label for Visini models. The logic-tree branch typically sets
         # 'case' as a parameter of the secondary-model uncertaintyModel (it
         # travels with the Visini2025SecondarySR/FD branch, not [parameters]),
@@ -263,6 +305,12 @@ class BaseFaultRuptureCalculator:
             'r_threshold_km': self.r_threshold_km,
             'near_far_threshold_km': self.near_far_threshold_km,
             'multifault_reference_lines': self.multifault_reference_lines,
+            # Rupture-location uncertainty (W_p / G); see
+            # docs/design/rupture_location_uncertainty.md.
+            'r_sigma_km': self.r_sigma_km,
+            'r_sigma_truncation': self.r_sigma_truncation,
+            'site_footprint_m': self.site_footprint_m,
+            'combination_mode': self.combination_mode,
         }
 
 

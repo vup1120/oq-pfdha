@@ -102,6 +102,13 @@ def calculate_fdha_hazard(
     s_sr_red_cfg = calculator.s_sr_red_cfg
     r_threshold_km = calculator.r_threshold_km
 
+    # Rupture-location uncertainty (W_p / G) and the near-field displacement
+    # floor. See docs/design/rupture_location_uncertainty.md, section 2.
+    r_sigma_km = calculator.r_sigma_km
+    r_sigma_truncation = calculator.r_sigma_truncation
+    site_footprint_m = calculator.site_footprint_m
+    combination_mode = calculator.combination_mode
+
     # PMF time span for non-parametric (multiFaultSource) ruptures:
     # get_ctx converts their probs_occur into a Poisson-equivalent annual
     # rate over this investigation time. Parametric ruptures ignore it.
@@ -152,6 +159,10 @@ def calculate_fdha_hazard(
                 use_visini=use_visini,
                 visini_calc=visini_calc,
                 calculator=calculator,
+                r_sigma_km=r_sigma_km,
+                r_sigma_truncation=r_sigma_truncation,
+                site_footprint_m=site_footprint_m,
+                combination_mode=combination_mode,
             )
             
             # Accumulate by site ID using vectorized operations
@@ -341,24 +352,37 @@ def _compute_rupture_contribution(
     use_visini: bool,
     visini_calc: Optional[Any],
     calculator: 'BaseFaultRuptureCalculator',
+    r_sigma_km: float = 0.0,
+    r_sigma_truncation: float = 2.0,
+    site_footprint_m: float = 25.0,
+    combination_mode: str = 'complementary',
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute principal and distributed hazard contributions for a rupture.
-    
+
     Args:
         ctx: FDHA context for this rupture
         adapters: Model adapters dict
         target_displacements: Displacement levels array
         p_sr_red_cfg: Primary SR reduction config
         s_sr_red_cfg: Secondary SR reduction config
-        r_threshold_km: Principal/distributed threshold
+        r_threshold_km: Principal/distributed threshold (W_p boxcar half-width)
         use_visini: Whether to use Visini model
         visini_calc: Visini calculator instance (if use_visini)
         calculator: Parent calculator for model access
-        
+        r_sigma_km: Two-sided mapping-accuracy sigma for W_p (0 = boxcar)
+        r_sigma_truncation: +/-n-sigma truncation for W_p (Petersen p. 819)
+        site_footprint_m: Footprint z for the W_p window and near-field floor
+        combination_mode: 'additive' (G=1) or 'complementary' (G=1-W_p)
+
+    The defaults reproduce the legacy boxcar split (sigma=0, complementary) so
+    that direct callers unaware of the new parameters see no behaviour change;
+    ``calculate_fdha_hazard`` always passes the job's resolved values.
+
     Returns:
         Tuple of (principal_contrib, distributed_contrib) arrays, each shape (N_ctx, n_displ)
     """
+    from openquake.fdha.calc.location_weight import location_weight
     N_ctx = len(ctx)
     n_displ = len(target_displacements)
     rate = ctx.occurrence_rate[0]
@@ -451,18 +475,47 @@ def _compute_rupture_contribution(
         P_dist_combined = P_sr_sec[:, np.newaxis] * P_fd_sec
     
     # =========================================================================
-    # COMBINE CONTRIBUTIONS BY ZONE
+    # COMBINE CONTRIBUTIONS: PRINCIPAL * W_p + DISTRIBUTED * G
     # =========================================================================
-    # Use abs(r) to match old implementation behavior (r should be positive, but abs ensures consistency)
-    mask_principal = np.abs(ctx.r) <= r_threshold_km
-    mask_distributed = ~mask_principal
-    
-    # Principal zone: uses primary SR and primary FD
-    # Rate × P(SR_primary) × P(FD_primary | SR_primary)
-    principal_contrib = (
-        rate * P_sr[:, np.newaxis] * P_fd_primary * mask_principal[:, np.newaxis]
+    # Rupture-location weighting replaces the historical complementary boxcar
+    # masks (docs/design/rupture_location_uncertainty.md, section 2):
+    #     lambda_principal   = rate * P_sr * P_fd_primary       * W_p(r)
+    #     lambda_distributed = rate * P_sr * P_dist_combined(r) * G(r)
+    #
+    # W_p(r) is the probability that the mapped trace is the true rupture
+    # location at across-strike distance r. At sigma=0 it is the legacy boxcar
+    # |r| <= h (Petersen et al. 2011, eq. 1/2 principal term); at sigma>0 it is
+    # the pinned +/-n-sigma normal footprint mass (Petersen p. 819, mapping
+    # accuracy). abs() inside the helper keeps r symmetric about the trace,
+    # matching the old np.abs(ctx.r) test bit-for-bit at sigma=0.
+    W_p = location_weight(
+        ctx.r,
+        r_threshold_km=r_threshold_km,
+        r_sigma_km=r_sigma_km,
+        site_footprint_m=site_footprint_m,
+        r_sigma_truncation=r_sigma_truncation,
     )
-    
+
+    # G(r), the distributed combination factor:
+    #   'additive'      G = 1: principal and distributed are independent and
+    #                   summed (Petersen et al. 2011, eq. 1 + eq. 2; Fig. 10a
+    #                   shows both non-zero and added at one site).
+    #   'complementary' G = 1 - W_p: the Youngs (2003) / Takao (2013, Fig. 1)
+    #                   per-fault either/or bookkeeping and the tool's historical
+    #                   behaviour -- a site fully inside the principal footprint
+    #                   contributes no distributed term. At sigma=0 this makes
+    #                   G the exact complement of the old mask_principal.
+    if combination_mode == 'complementary':
+        G = 1.0 - W_p
+    else:
+        G = np.ones_like(W_p)
+
+    # Principal zone: uses primary SR and primary FD.
+    # rate * P(SR_primary) * P(FD_primary | SR_primary) * W_p(r)
+    principal_contrib = (
+        rate * P_sr[:, np.newaxis] * P_fd_primary * W_p[:, np.newaxis]
+    )
+
     # Distributed zone: uses secondary (distributed) models.
     # Visini's DR occurrence regressions are fit on the SURE database, which
     # contains only earthquakes with a mapped Rank-1 (principal) surface
@@ -473,9 +526,9 @@ def _compute_rupture_contribution(
     # contribution (Visini et al. 2025 explicitly excludes both P_sr and the
     # earthquake rate from their worked example for this reason).
     distributed_contrib = (
-        rate * P_sr[:, np.newaxis] * P_dist_combined * mask_distributed[:, np.newaxis]
+        rate * P_sr[:, np.newaxis] * P_dist_combined * G[:, np.newaxis]
     )
-    
+
     return principal_contrib, distributed_contrib
 
 
