@@ -77,6 +77,27 @@ on-trace rows changed. ``curve_explicit/`` is unaffected.
 Determinism was verified by running each job twice and byte-comparing all
 text outputs before freezing.
 
+**`map_default/` (6 displacement-map CSVs + `rates_baseline.npz`) regenerated
+on 2026-07-15** for the complementary -> additive default flip (stage C2 of
+`docs/design/rupture_location_uncertainty.md`). The kernel now **sums** the
+principal and distributed contributions (Petersen et al. 2011, eq. 1 + eq. 2)
+instead of routing them complementarily; the distributed displacement gets a
+near-field floor at z/2 (Petersen eq. 18 diverges as r->0). Verified surgical
+before re-freezing:
+- **Isolation control**: a `combination_mode = complementary` forced run
+  reproduced the previous baseline **byte-identical** on all six CSVs, proving
+  the C1/C2 code left the complementary path untouched — the only change is the
+  intended flip.
+- **principal** columns are byte-identical everywhere (max |Δ| = 0).
+- **distributed / total** gain a bounded contribution at exactly **89 / 1633**
+  sites — precisely the sites inside the principal band where the complementary
+  mask had zeroed the distributed term (frozen distributed there was exactly 0
+  -> now added). All far-field sites are byte-identical. `branch_rates`
+  max |Δ| = 8.9e-5; the near-field floor keeps the on-trace gain bounded.
+- `branch_fingerprint` is unchanged (`cc2d97b3d85dbe6a`, path-independent) and
+  `manifest.json` is unchanged. `curve_explicit/` is unaffected: its single
+  evaluation site is off the principal band.
+
 ## Comparison contract
 
 - CSV outputs are deterministic text -> compared **byte-exact**.

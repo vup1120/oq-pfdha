@@ -225,11 +225,12 @@ class BaseFaultRuptureCalculator:
         #                   and distributed are independent and summed).
         #   'complementary' G = 1 - W_p (Youngs 2003 / Takao 2013 Fig.1 per-fault
         #                   either/or bookkeeping; the tool's historical split).
-        # C2 flips this default from 'complementary' to 'additive'.
+        # Default is 'additive' (Petersen et al. 2011 eq.1 + eq.2); jobs may
+        # opt back to the historical 'complementary' split via [calculation].
         _combination_mode = (
             self.config.get('calculation', {}).get('combination_mode') or
             self.config.get('parameters', {}).get('combination_mode') or
-            'complementary'
+            'additive'
         )
         self.combination_mode = str(_combination_mode).strip().lower()
         if self.combination_mode not in ('additive', 'complementary'):

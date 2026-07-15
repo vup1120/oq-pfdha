@@ -36,6 +36,13 @@ class Petersen2011SecondaryFD(BaseSecondarySurfDispl):
     faults. Bulletin of the Seismological Society of America, 101(2), 805-825.
     """
 
+    # Eqn 18 (Page 818) is a power law in ln(r) with no near-field definition:
+    # the mean displacement diverges as r -> 0 (ln r -> -inf). The tool floors
+    # the distance fed to that regression at the footprint half-width z/2; the
+    # clamp is applied at the calc/ adapter boundary so get_prob below stays
+    # paper-faithful (docs/design/rupture_location_uncertainty.md, D7).
+    NEAR_FIELD_FLOOR = "footprint_half"
+
     # Pixel ("cell") size parameters from Table 4 (Page 812, Petersen et al., 2011)
     PIXEL_SIZES = {
         25: {"a": -1.1470, "b": 2.1046, "sigma": 1.2508},  # 25 x 25 m

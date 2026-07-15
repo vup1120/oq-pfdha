@@ -400,21 +400,25 @@ class LegacyModelAdapter:
         self,
         ctx: 'FDHAContext',
         displacements: np.ndarray,
-        red_cfg: Dict[str, Any]
+        red_cfg: Dict[str, Any],
+        site_footprint_m: float = 25.0,
     ) -> np.ndarray:
         """
         Compute secondary fault displacement probability.
-        
+
         Args:
             ctx: FDHA context
             displacements: Target displacement levels (m)
             red_cfg: MC reduction config
-            
+            site_footprint_m: Footprint z (m); only used by models declaring
+                NEAR_FIELD_FLOOR == 'footprint_half', to clamp the near-field
+                distance to max(r, z/2).
+
         Returns:
             Array of shape (N, D)
         """
         from openquake.fdha.calc.utils.probability import _to_sites_x_displ
-        
+
         N = len(ctx)
         D = len(displacements)
         
@@ -437,6 +441,17 @@ class LegacyModelAdapter:
         # Build kwargs; r/x_L/L follow the model's declared multi-fault
         # reference line (e.g. Visini2025 -> nearest segment, raw GC2 x/L).
         r_sel, x_L_sel, L_sel = self._ctx_metrics(ctx)
+
+        # Near-field floor (D7). Petersen (2011) eq.18 diverges as r -> 0; a
+        # model declaring NEAR_FIELD_FLOOR == 'footprint_half' has the distance
+        # fed to its displacement regression clamped to max(r, z/2). The clamp
+        # lives here, at the adapter boundary, so the model's get_prob stays
+        # paper-faithful. Bounded models (Visini, Takao) declare nothing and are
+        # untouched. See docs/design/rupture_location_uncertainty.md.
+        if getattr(self.model, 'NEAR_FIELD_FLOOR', None) == 'footprint_half':
+            r_floor_km = (float(site_footprint_m) / 1000.0) / 2.0
+            r_sel = np.maximum(np.asarray(r_sel, dtype=np.float64), r_floor_km)
+
         kwargs = {
             'mag': float(ctx.mag[0]),
             'd': displacements,

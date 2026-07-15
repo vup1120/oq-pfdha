@@ -466,7 +466,8 @@ def _compute_rupture_contribution(
         
         if 'secondary_fd' in adapters:
             P_fd_sec = adapters['secondary_fd'].compute_secondary_fd(
-                ctx, target_displacements, s_sr_red_cfg
+                ctx, target_displacements, s_sr_red_cfg,
+                site_footprint_m=site_footprint_m,
             )
         else:
             P_fd_sec = np.zeros((N_ctx, n_displ), dtype=np.float64)
