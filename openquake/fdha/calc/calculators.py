@@ -203,11 +203,14 @@ class BaseFaultRuptureCalculator:
         # [parameters] as fallback, same idiom as r_threshold_km above.
         #
         #   r_sigma_km          two-sided mapping-accuracy sigma (Petersen
-        #                       Tables 2-3). 0 = legacy boxcar; >0 = pinned
-        #                       +/-n-sigma normal footprint mass.
+        #                       Tables 2-3). 0 = legacy boxcar; >0 = the
+        #                       boxcar(h) smoothed by the +/-n-sigma truncated
+        #                       mapping normal, pinned (window = h).
         #   r_sigma_truncation  +/-n-sigma cut (Petersen p. 819 uses 2).
-        #   site_footprint_m    footprint z (Petersen cell size); the sigma>0
-        #                       window and the near-field-floor scale.
+        #   site_footprint_m    footprint z (Petersen cell size); near-field
+        #                       displacement-floor scale only -- z is NOT the
+        #                       W_p window (that is r_threshold_km) and enters
+        #                       the distributed probability via pixel_size.
         self.r_sigma_km = float(
             self.config.get('calculation', {}).get('r_sigma_km') or
             self.config.get('parameters', {}).get('r_sigma_km', 0.0)

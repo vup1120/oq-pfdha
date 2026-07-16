@@ -372,7 +372,8 @@ def _compute_rupture_contribution(
         calculator: Parent calculator for model access
         r_sigma_km: Two-sided mapping-accuracy sigma for W_p (0 = boxcar)
         r_sigma_truncation: +/-n-sigma truncation for W_p (Petersen p. 819)
-        site_footprint_m: Footprint z for the W_p window and near-field floor
+        site_footprint_m: Footprint z; near-field displacement floor scale
+            only (z is NOT the W_p window -- that is r_threshold_km)
         combination_mode: 'additive' (G=1) or 'complementary' (G=1-W_p)
 
     The defaults reproduce the legacy boxcar split (sigma=0, complementary) so
@@ -485,15 +486,18 @@ def _compute_rupture_contribution(
     #
     # W_p(r) is the probability that the mapped trace is the true rupture
     # location at across-strike distance r. At sigma=0 it is the legacy boxcar
-    # |r| <= h (Petersen et al. 2011, eq. 1/2 principal term); at sigma>0 it is
-    # the pinned +/-n-sigma normal footprint mass (Petersen p. 819, mapping
-    # accuracy). abs() inside the helper keeps r symmetric about the trace,
-    # matching the old np.abs(ctx.r) test bit-for-bit at sigma=0.
+    # |r| <= h (Petersen et al. 2011, eq. 1/2 principal term); at sigma>0 it
+    # is that same boxcar(h) smoothed by the +/-n-sigma truncated mapping
+    # normal, pinned (Petersen p. 819: principal rupture "within 2 standard
+    # deviations" of the mapped trace). The window is h, not the site
+    # footprint z -- z enters only the distributed rupture probability
+    # (pixel_size) and the near-field displacement floor. abs() inside the
+    # helper keeps r symmetric about the trace, matching the old
+    # np.abs(ctx.r) test bit-for-bit at sigma=0.
     W_p = location_weight(
         ctx.r,
         r_threshold_km=r_threshold_km,
         r_sigma_km=r_sigma_km,
-        site_footprint_m=site_footprint_m,
         r_sigma_truncation=r_sigma_truncation,
     )
 
