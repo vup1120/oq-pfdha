@@ -6,7 +6,7 @@ fault zone PFDHA (Moss & Ross 2011, BSSA; reference curve in their Fig. 7,
 surface-rupture-distribution comparison in their Fig. 10).
 
 ```bash
-PYTHONPATH=. python openquake/fdha/test/benchmark/moss_ross_2011/reproduce_fig10.py
+PYTHONPATH=. python openquake/fdha/test/benchmark/moss_ross_2011/reproduce_mr2011_fig10.py
 pytest openquake/fdha/test/benchmark/moss_ross_2011/ -m benchmark
 ```
 
