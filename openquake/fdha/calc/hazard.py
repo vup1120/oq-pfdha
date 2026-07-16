@@ -102,12 +102,9 @@ def calculate_fdha_hazard(
     s_sr_red_cfg = calculator.s_sr_red_cfg
     r_threshold_km = calculator.r_threshold_km
 
-    # Rupture-location uncertainty (W_p / G) and the near-field displacement
-    # floor. See docs/design/rupture_location_uncertainty.md, section 2.
+    # Rupture-location uncertainty (W_p).
+    # See docs/design/rupture_location_uncertainty.md, section 2.
     r_sigma_km = calculator.r_sigma_km
-    r_sigma_truncation = calculator.r_sigma_truncation
-    site_footprint_m = calculator.site_footprint_m
-    combination_mode = calculator.combination_mode
 
     # PMF time span for non-parametric (multiFaultSource) ruptures:
     # get_ctx converts their probs_occur into a Poisson-equivalent annual
@@ -160,9 +157,6 @@ def calculate_fdha_hazard(
                 visini_calc=visini_calc,
                 calculator=calculator,
                 r_sigma_km=r_sigma_km,
-                r_sigma_truncation=r_sigma_truncation,
-                site_footprint_m=site_footprint_m,
-                combination_mode=combination_mode,
             )
             
             # Accumulate by site ID using vectorized operations
@@ -353,9 +347,6 @@ def _compute_rupture_contribution(
     visini_calc: Optional[Any],
     calculator: 'BaseFaultRuptureCalculator',
     r_sigma_km: float = 0.0,
-    r_sigma_truncation: float = 2.0,
-    site_footprint_m: float = 25.0,
-    combination_mode: str = 'complementary',
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute principal and distributed hazard contributions for a rupture.
@@ -366,19 +357,17 @@ def _compute_rupture_contribution(
         target_displacements: Displacement levels array
         p_sr_red_cfg: Primary SR reduction config
         s_sr_red_cfg: Secondary SR reduction config
-        r_threshold_km: Principal/distributed threshold (W_p boxcar half-width)
+        r_threshold_km: W_p boxcar half-width h (sigma == 0 path only)
         use_visini: Whether to use Visini model
         visini_calc: Visini calculator instance (if use_visini)
         calculator: Parent calculator for model access
-        r_sigma_km: Two-sided mapping-accuracy sigma for W_p (0 = boxcar)
-        r_sigma_truncation: +/-n-sigma truncation for W_p (Petersen p. 819)
-        site_footprint_m: Footprint z; near-field displacement floor scale
-            only (z is NOT the W_p window -- that is r_threshold_km)
-        combination_mode: 'additive' (G=1) or 'complementary' (G=1-W_p)
+        r_sigma_km: Two-sided mapping-accuracy sigma for W_p. 0 selects the
+            boxcar path; > 0 selects Petersen's pure Gaussian path (pinned,
+            fixed +-2 sigma truncation; r_threshold_km plays no role there).
 
-    The defaults reproduce the legacy boxcar split (sigma=0, complementary) so
-    that direct callers unaware of the new parameters see no behaviour change;
-    ``calculate_fdha_hazard`` always passes the job's resolved values.
+    Principal and distributed are independent contributions of the same
+    surface-rupturing event (both carry rate * P_sr) and are SUMMED by the
+    caller (Petersen et al. 2011 eq. 1 + eq. 2; Fig. 10a "total hazard").
 
     Returns:
         Tuple of (principal_contrib, distributed_contrib) arrays, each shape (N_ctx, n_displ)
@@ -468,7 +457,6 @@ def _compute_rupture_contribution(
         if 'secondary_fd' in adapters:
             P_fd_sec = adapters['secondary_fd'].compute_secondary_fd(
                 ctx, target_displacements, s_sr_red_cfg,
-                site_footprint_m=site_footprint_m,
             )
         else:
             P_fd_sec = np.zeros((N_ctx, n_displ), dtype=np.float64)
@@ -477,43 +465,26 @@ def _compute_rupture_contribution(
         P_dist_combined = P_sr_sec[:, np.newaxis] * P_fd_sec
     
     # =========================================================================
-    # COMBINE CONTRIBUTIONS: PRINCIPAL * W_p + DISTRIBUTED * G
+    # COMBINE CONTRIBUTIONS: PRINCIPAL * W_p + DISTRIBUTED
     # =========================================================================
-    # Rupture-location weighting replaces the historical complementary boxcar
-    # masks (docs/design/rupture_location_uncertainty.md, section 2):
-    #     lambda_principal   = rate * P_sr * P_fd_primary       * W_p(r)
-    #     lambda_distributed = rate * P_sr * P_dist_combined(r) * G(r)
+    # Both contributions belong to the same surface-rupturing event and are
+    # independent, so they are summed (Petersen et al. 2011, eq. 1 + eq. 2;
+    # Fig. 10a "total hazard" = sum of its two contribution curves):
+    #     lambda_principal   = rate * P_sr * P_fd_primary * W_p(r)
+    #     lambda_distributed = rate * P_sr * P_dist_combined(r)
     #
-    # W_p(r) is the probability that the mapped trace is the true rupture
-    # location at across-strike distance r. At sigma=0 it is the legacy boxcar
-    # |r| <= h (Petersen et al. 2011, eq. 1/2 principal term); at sigma>0 it
-    # is that same boxcar(h) smoothed by the +/-n-sigma truncated mapping
-    # normal, pinned (Petersen p. 819: principal rupture "within 2 standard
-    # deviations" of the mapped trace). The window is h, not the site
-    # footprint z -- z enters only the distributed rupture probability
-    # (pixel_size) and the near-field displacement floor. abs() inside the
-    # helper keeps r symmetric about the trace, matching the old
-    # np.abs(ctx.r) test bit-for-bit at sigma=0.
+    # W_p(r) is the probability that the site sits on the principal rupture
+    # at across-strike distance r. Two separate paths (location_weight):
+    # sigma=0 -> the boxcar |r| <= h (h = r_threshold_km); sigma>0 ->
+    # Petersen's pure Gaussian exp(-r^2/2 sigma^2), pinned, truncated at
+    # +-2 sigma (fixed), with h playing no role. abs() inside the helper
+    # keeps r symmetric about the trace, matching the old np.abs(ctx.r)
+    # test bit-for-bit at sigma=0.
     W_p = location_weight(
         ctx.r,
         r_threshold_km=r_threshold_km,
         r_sigma_km=r_sigma_km,
-        r_sigma_truncation=r_sigma_truncation,
     )
-
-    # G(r), the distributed combination factor:
-    #   'additive'      G = 1: principal and distributed are independent and
-    #                   summed (Petersen et al. 2011, eq. 1 + eq. 2; Fig. 10a
-    #                   shows both non-zero and added at one site).
-    #   'complementary' G = 1 - W_p: the Youngs (2003) / Takao (2013, Fig. 1)
-    #                   per-fault either/or bookkeeping and the tool's historical
-    #                   behaviour -- a site fully inside the principal footprint
-    #                   contributes no distributed term. At sigma=0 this makes
-    #                   G the exact complement of the old mask_principal.
-    if combination_mode == 'complementary':
-        G = 1.0 - W_p
-    else:
-        G = np.ones_like(W_p)
 
     # Principal zone: uses primary SR and primary FD.
     # rate * P(SR_primary) * P(FD_primary | SR_primary) * W_p(r)
@@ -531,7 +502,7 @@ def _compute_rupture_contribution(
     # contribution (Visini et al. 2025 explicitly excludes both P_sr and the
     # earthquake rate from their worked example for this reason).
     distributed_contrib = (
-        rate * P_sr[:, np.newaxis] * P_dist_combined * G[:, np.newaxis]
+        rate * P_sr[:, np.newaxis] * P_dist_combined
     )
 
     return principal_contrib, distributed_contrib

@@ -74,8 +74,10 @@ class BaseSecondarySurfDispl(metaclass=abc.ABCMeta):
     #: applied at the calc/ adapter boundary so model files stay paper-faithful.
     #: ``None`` (default) means no floor: bounded models (Takao exponential,
     #: Visini's own 5 m exclusion) leave this alone. ``"footprint_half"`` clamps
-    #: the distance fed to the displacement regression to ``max(r, z/2)`` with
-    #: ``z = site_footprint_m/1000`` km -- a tool regularisation of Petersen
+    #: the distance fed to the displacement regression to
+    #: ``max(r, NEAR_FIELD_FLOOR_KM)`` -- a fixed 12.5 m (half a 25-m Petersen
+    #: cell), hard-coded in model_adapter.py, deliberately independent of any
+    #: occurrence cell size (pixel_size) -- a tool regularisation of Petersen
     #: (2011) eq.18's r -> 0 divergence (docs/design/
     #: rupture_location_uncertainty.md, decision D7).
     NEAR_FIELD_FLOOR = None

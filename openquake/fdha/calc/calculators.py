@@ -197,50 +197,25 @@ class BaseFaultRuptureCalculator:
         )
 
         # Rupture-location uncertainty
-        # (docs/design/rupture_location_uncertainty.md, section 3). W_p(r)
-        # weights the principal contribution; G(r) weights the distributed
-        # contribution per `combination_mode`. All read [calculation] first,
-        # [parameters] as fallback, same idiom as r_threshold_km above.
+        # (docs/design/rupture_location_uncertainty.md, section 3).
         #
-        #   r_sigma_km          two-sided mapping-accuracy sigma (Petersen
-        #                       Tables 2-3). 0 = legacy boxcar; >0 = the
-        #                       boxcar(h) smoothed by the +/-n-sigma truncated
-        #                       mapping normal, pinned (window = h).
-        #   r_sigma_truncation  +/-n-sigma cut (Petersen p. 819 uses 2).
-        #   site_footprint_m    footprint z (Petersen cell size); near-field
-        #                       displacement-floor scale only -- z is NOT the
-        #                       W_p window (that is r_threshold_km) and enters
-        #                       the distributed probability via pixel_size.
+        #   r_sigma_km   two-sided mapping-accuracy sigma (Petersen Tables
+        #                2-3). Selects one of the two SEPARATE W_p paths:
+        #                0  -> boxcar 1{|r| <= r_threshold_km};
+        #                >0 -> Petersen's pure Gaussian exp(-r^2/2 sigma^2),
+        #                      pinned, truncated at +-2 sigma (fixed, not
+        #                      user-configurable); r_threshold_km plays no
+        #                      role on this path.
+        #
+        # Principal and distributed are always independent and SUMMED
+        # (Petersen eq.1 + eq.2, Fig. 10a). The near-field displacement floor
+        # is a fixed kernel constant (model_adapter.NEAR_FIELD_FLOOR_KM); the
+        # distributed occurrence cell size is the secondary model's own
+        # pixel_size from the FD logic tree. Neither is a job parameter.
         self.r_sigma_km = float(
             self.config.get('calculation', {}).get('r_sigma_km') or
             self.config.get('parameters', {}).get('r_sigma_km', 0.0)
         )
-        self.r_sigma_truncation = float(
-            self.config.get('calculation', {}).get('r_sigma_truncation') or
-            self.config.get('parameters', {}).get('r_sigma_truncation', 2.0)
-        )
-        self.site_footprint_m = float(
-            self.config.get('calculation', {}).get('site_footprint_m') or
-            self.config.get('parameters', {}).get('site_footprint_m', 25.0)
-        )
-        # combination_mode selects the distributed weight G(r):
-        #   'additive'      G = 1 (Petersen et al. 2011 eq.1 + eq.2: principal
-        #                   and distributed are independent and summed).
-        #   'complementary' G = 1 - W_p (Youngs 2003 / Takao 2013 Fig.1 per-fault
-        #                   either/or bookkeeping; the tool's historical split).
-        # Default is 'additive' (Petersen et al. 2011 eq.1 + eq.2); jobs may
-        # opt back to the historical 'complementary' split via [calculation].
-        _combination_mode = (
-            self.config.get('calculation', {}).get('combination_mode') or
-            self.config.get('parameters', {}).get('combination_mode') or
-            'additive'
-        )
-        self.combination_mode = str(_combination_mode).strip().lower()
-        if self.combination_mode not in ('additive', 'complementary'):
-            raise ValueError(
-                f"[calculation] combination_mode: unknown value "
-                f"'{self.combination_mode}'; expected 'additive' or "
-                f"'complementary'.")
 
         # Case label for Visini models. The logic-tree branch typically sets
         # 'case' as a parameter of the secondary-model uncertaintyModel (it
@@ -309,12 +284,9 @@ class BaseFaultRuptureCalculator:
             'r_threshold_km': self.r_threshold_km,
             'near_far_threshold_km': self.near_far_threshold_km,
             'multifault_reference_lines': self.multifault_reference_lines,
-            # Rupture-location uncertainty (W_p / G); see
+            # Rupture-location uncertainty (W_p); see
             # docs/design/rupture_location_uncertainty.md.
             'r_sigma_km': self.r_sigma_km,
-            'r_sigma_truncation': self.r_sigma_truncation,
-            'site_footprint_m': self.site_footprint_m,
-            'combination_mode': self.combination_mode,
         }
 
 

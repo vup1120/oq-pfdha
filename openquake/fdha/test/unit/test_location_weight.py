@@ -19,16 +19,17 @@
 """Unit tests for the rupture-location weight ``W_p(r)`` (verification V2 of
 ``docs/design/rupture_location_uncertainty.md``).
 
-The properties exercised are, per the design doc section 6:
+``W_p`` has two separate, mutually exclusive paths (design doc section 2):
 
-* exact boxcar recovery at ``sigma == 0``;
-* ``W_p(0) == 1`` pinned (``sigma > 0``);
-* monotone non-increasing in ``|r|``;
-* exactly ``0`` beyond ``h + n*sigma``;
-* ``sigma -> 0+`` collapses smoothly onto the ``sigma == 0`` boxcar(h) --
-  the smoothing window IS ``h``, so there is no discontinuity between the
-  two paths (the site footprint ``z`` plays no role in ``W_p``; it belongs
-  to the distributed rupture probability only).
+* ``sigma == 0`` -- the legacy boxcar ``1{|r| <= h}`` (``h`` = r_threshold_km),
+  combined complementarily with distributed. ``h`` is used only here.
+* ``sigma > 0`` -- Petersen's pinned, +/-n-sigma-truncated Gaussian
+  mapping-error weight ``exp(-r^2/2 sigma^2)``. ``h`` plays NO role; the weight
+  is a pure bell with toe at ``|r| = n*sigma``.
+
+The two are deliberately NOT a smooth limit of one another -- ``h`` (a fixed
+rupture-zone half-width) and ``sigma`` (a mapping uncertainty) describe
+different things.
 """
 
 import numpy as np
@@ -41,6 +42,9 @@ from openquake.fdha.calc.location_weight import location_weight
 PETERSEN_SIGMAS = [0.0269, 0.0438, 0.0655, 0.0727, 0.116]
 
 
+# --------------------------------------------------------------------------
+# Path 1: boxcar (sigma == 0). h is used here and only here.
+# --------------------------------------------------------------------------
 def test_sigma0_recovers_boxcar_exactly():
     """sigma == 0 must reproduce the legacy boxcar |r| <= h bit-for-bit."""
     h = 0.1
@@ -60,12 +64,36 @@ def test_sigma0_boxcar_edge_inclusive():
     assert wp[0] == 1.0 and wp[1] == 1.0 and wp[2] == 0.0
 
 
+# --------------------------------------------------------------------------
+# Path 2: Gaussian (sigma > 0). h must NOT influence the result.
+# --------------------------------------------------------------------------
 @pytest.mark.parametrize("sigma", PETERSEN_SIGMAS)
 def test_pinned_at_zero(sigma):
-    """W_p(0) == 1 exactly (pinning subsumes truncated-normal renorm)."""
+    """W_p(0) == 1 exactly (Gaussian density pinned to its peak)."""
     wp0 = location_weight(0.0, r_threshold_km=0.1, r_sigma_km=sigma,
                           r_sigma_truncation=2.0)
     assert float(wp0) == 1.0
+
+
+@pytest.mark.parametrize("sigma", PETERSEN_SIGMAS)
+def test_gaussian_shape(sigma):
+    """On the sigma>0 path W_p is exactly exp(-r^2/2 sigma^2) inside the
+    truncation, independent of h."""
+    r = np.linspace(0.0, 1.9 * sigma, 40)
+    wp = location_weight(r, r_threshold_km=0.1, r_sigma_km=sigma,
+                         r_sigma_truncation=2.0)
+    expected = np.exp(-(r ** 2) / (2.0 * sigma ** 2))
+    np.testing.assert_allclose(wp, expected, rtol=0, atol=1e-12)
+
+
+@pytest.mark.parametrize("h", [0.0, 0.02, 0.1, 5.0])
+def test_gaussian_independent_of_h(h):
+    """Changing h must not change the sigma>0 weight at all."""
+    sigma = 0.0655
+    r = np.linspace(-0.3, 0.3, 601)
+    ref = location_weight(r, r_threshold_km=0.1, r_sigma_km=sigma)
+    got = location_weight(r, r_threshold_km=h, r_sigma_km=sigma)
+    np.testing.assert_array_equal(got, ref)
 
 
 @pytest.mark.parametrize("sigma", PETERSEN_SIGMAS)
@@ -80,21 +108,28 @@ def test_monotone_non_increasing_in_abs_r(sigma):
 
 @pytest.mark.parametrize("sigma", PETERSEN_SIGMAS)
 def test_exactly_zero_beyond_support(sigma):
-    """W_p == 0 for |r| > h + n*sigma, and > 0 just inside it.
+    """W_p == 0 for |r| > n*sigma, and > 0 just inside it.
 
-    h + n*sigma is the profile toe: Petersen p. 819 places the principal
-    rupture within +/-2 standard deviations of the mapped trace, so the
-    principal zone [r-h, r+h] stops intersecting it beyond h + n*sigma.
+    The toe is n*sigma (Petersen p. 819, "within 2 standard deviations"),
+    independent of h -- the Gaussian path has no boxcar term.
     """
-    h, n = 0.1, 2.0
-    edge = h + n * sigma
-    inside = location_weight(edge - 1e-6, r_threshold_km=h, r_sigma_km=sigma,
+    n = 2.0
+    edge = n * sigma
+    inside = location_weight(edge - 1e-6, r_threshold_km=0.1, r_sigma_km=sigma,
                              r_sigma_truncation=n)
     beyond = location_weight(
         np.array([edge + 1e-9, edge + 0.01, 2.0]),
-        r_threshold_km=h, r_sigma_km=sigma, r_sigma_truncation=n)
+        r_threshold_km=0.1, r_sigma_km=sigma, r_sigma_truncation=n)
     assert float(inside) > 0.0
     assert np.all(beyond == 0.0)
+
+
+def test_truncation_at_n_sigma_value():
+    """Just inside the toe W_p equals exp(-n^2/2); just outside it is 0."""
+    sigma, n = 0.05, 2.0
+    inside = float(location_weight(n * sigma - 1e-9, r_threshold_km=0.1,
+                                   r_sigma_km=sigma, r_sigma_truncation=n))
+    assert inside == pytest.approx(np.exp(-n * n / 2.0), rel=1e-6)
 
 
 def test_symmetric_about_trace():
@@ -106,7 +141,7 @@ def test_symmetric_about_trace():
 
 
 def test_bounded_between_zero_and_one():
-    """0 <= W_p <= 1 everywhere (pinned mass can never exceed M(0))."""
+    """0 <= W_p <= 1 everywhere (a peak-normalised density)."""
     r = np.linspace(-0.6, 0.6, 4001)
     for sigma in PETERSEN_SIGMAS:
         wp = location_weight(r, r_threshold_km=0.1, r_sigma_km=sigma)
@@ -114,36 +149,21 @@ def test_bounded_between_zero_and_one():
         assert wp.max() <= 1.0
 
 
-def test_sigma_to_zero_collapses_to_h_boxcar():
-    """sigma -> 0+ collapses smoothly onto the sigma == 0 boxcar(h).
+def test_sigma_to_zero_is_a_spike_not_the_h_boxcar():
+    """sigma -> 0+ collapses onto a spike at r = 0, NOT the h boxcar.
 
-    Because the smoothing window is h itself, the two paths connect with no
-    discontinuity: for vanishing sigma, W_p -> 1 inside |r| < h and -> 0
-    outside. (Under the earlier, wrong z/2-window formulation the sigma -> 0+
-    limit collapsed onto the footprint half-width instead, leaving a
-    discontinuity against the sigma == 0 boxcar.)
+    The two paths describe different things and are deliberately not a smooth
+    limit of one another: as sigma vanishes the Gaussian narrows to a point at
+    the trace. In particular, points inside |r| < h that the boxcar would keep
+    at 1 go to 0 here (unless they are also within ~sigma of the trace).
     """
     h = 0.1
     tiny = 1e-7
-    inside = location_weight(np.array([0.0, 0.5 * h, h - 1e-4]),
-                             r_threshold_km=h, r_sigma_km=tiny)
-    outside = location_weight(np.array([h + 1e-4, 2 * h, 5 * h]),
-                              r_threshold_km=h, r_sigma_km=tiny)
-    np.testing.assert_allclose(inside, 1.0, atol=1e-9)
-    np.testing.assert_allclose(outside, 0.0, atol=1e-9)
-
-
-def test_smoothing_softens_the_edge():
-    """At sigma > 0 the boxcar edge is smoothed: W_p(h) == 0.5-ish shoulder,
-    with mass moved from just inside the edge to just outside it."""
-    h, sigma = 0.1, 0.05
-    wp = location_weight(np.array([h - sigma, h, h + sigma]),
-                         r_threshold_km=h, r_sigma_km=sigma)
-    # Shoulder ordering: inside > edge > outside, all strictly between 0 and 1.
-    assert 1.0 > wp[0] > wp[1] > wp[2] > 0.0
-    # The edge value sits near the half-mass point of the smoothing normal
-    # (slightly above 0.5 because of the +/-2-sigma truncation and pinning).
-    assert 0.4 < wp[1] < 0.7
+    on_trace = location_weight(0.0, r_threshold_km=h, r_sigma_km=tiny)
+    inside_boxcar = location_weight(np.array([0.5 * h, h - 1e-4]),
+                                    r_threshold_km=h, r_sigma_km=tiny)
+    assert float(on_trace) == 1.0
+    np.testing.assert_allclose(inside_boxcar, 0.0, atol=1e-9)
 
 
 def test_shape_and_dtype_preserved():

@@ -13,6 +13,15 @@ from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
+# Near-field displacement floor: the smallest across-strike distance (km) fed to
+# a distributed displacement regression that diverges as r -> 0 (Petersen 2011
+# eq.18, ln r term). Fixed at half a 25-m Petersen cell (12.5 m). It exists only
+# to tame the divergence, so it is a constant -- deliberately NOT the footprint
+# z, which is a per-model occurrence-table cell size and can legitimately be
+# hundreds of metres. Hard-coded and not exposed in job configuration.
+# See docs/design/rupture_location_uncertainty.md (D7).
+NEAR_FIELD_FLOOR_KM = 0.0125
+
 
 class LegacyModelAdapter:
     """
@@ -401,7 +410,6 @@ class LegacyModelAdapter:
         ctx: 'FDHAContext',
         displacements: np.ndarray,
         red_cfg: Dict[str, Any],
-        site_footprint_m: float = 25.0,
     ) -> np.ndarray:
         """
         Compute secondary fault displacement probability.
@@ -410,9 +418,11 @@ class LegacyModelAdapter:
             ctx: FDHA context
             displacements: Target displacement levels (m)
             red_cfg: MC reduction config
-            site_footprint_m: Footprint z (m); only used by models declaring
-                NEAR_FIELD_FLOOR == 'footprint_half', to clamp the near-field
-                distance to max(r, z/2).
+
+        The near-field distance floor is the fixed NEAR_FIELD_FLOOR_KM
+        constant; the distributed occurrence cell size lives with the
+        secondary_surf_rup model's own pixel_size (FD logic tree). Neither
+        is a caller-supplied parameter.
 
         Returns:
             Array of shape (N, D)
@@ -444,13 +454,20 @@ class LegacyModelAdapter:
 
         # Near-field floor (D7). Petersen (2011) eq.18 diverges as r -> 0; a
         # model declaring NEAR_FIELD_FLOOR == 'footprint_half' has the distance
-        # fed to its displacement regression clamped to max(r, z/2). The clamp
-        # lives here, at the adapter boundary, so the model's get_prob stays
-        # paper-faithful. Bounded models (Visini, Takao) declare nothing and are
-        # untouched. See docs/design/rupture_location_uncertainty.md.
+        # fed to its displacement regression clamped to max(r, NEAR_FIELD_FLOOR_KM).
+        # The floor is a FIXED 12.5 m (= half a 25-m Petersen cell), deliberately
+        # decoupled from the footprint z: z can be a large model-specific cell
+        # (e.g. 500 m selects a coarser occurrence table via pixel_size), and a
+        # z/2 = 250 m floor would silently erase the near-trace distributed
+        # hazard the model exists to produce -- it would push every on-trace
+        # site out past the entire distributed zone. 12.5 m only tames ln(r),
+        # nothing more. Hard-coded, not user-facing. The clamp lives here, at the
+        # adapter boundary, so the model's get_prob stays paper-faithful. Bounded
+        # models (Visini, Takao) declare nothing and are untouched.
+        # See docs/design/rupture_location_uncertainty.md.
         if getattr(self.model, 'NEAR_FIELD_FLOOR', None) == 'footprint_half':
-            r_floor_km = (float(site_footprint_m) / 1000.0) / 2.0
-            r_sel = np.maximum(np.asarray(r_sel, dtype=np.float64), r_floor_km)
+            r_sel = np.maximum(np.asarray(r_sel, dtype=np.float64),
+                               NEAR_FIELD_FLOOR_KM)
 
         kwargs = {
             'mag': float(ctx.mag[0]),

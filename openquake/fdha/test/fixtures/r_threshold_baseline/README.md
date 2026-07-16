@@ -82,12 +82,14 @@ on 2026-07-15** for the complementary -> additive default flip (stage C2 of
 `docs/design/rupture_location_uncertainty.md`). The kernel now **sums** the
 principal and distributed contributions (Petersen et al. 2011, eq. 1 + eq. 2)
 instead of routing them complementarily; the distributed displacement gets a
-near-field floor at z/2 (Petersen eq. 18 diverges as r->0). Verified surgical
-before re-freezing:
-- **Isolation control**: a `combination_mode = complementary` forced run
+fixed 12.5 m near-field floor (Petersen eq. 18 diverges as r->0). Verified
+surgical before re-freezing:
+- **Isolation control**: at freeze time a complementary-mode forced run
   reproduced the previous baseline **byte-identical** on all six CSVs, proving
-  the C1/C2 code left the complementary path untouched — the only change is the
-  intended flip.
+  the C1/C2 code left the complementary path untouched — the only change was
+  the intended flip. (The complementary mode has since been removed entirely:
+  the calculator always sums, and `combination_mode` is no longer a job
+  parameter.)
 - **principal** columns are byte-identical everywhere (max |Δ| = 0).
 - **distributed / total** gain a bounded contribution at exactly **89 / 1633**
   sites — precisely the sites inside the principal band where the complementary
