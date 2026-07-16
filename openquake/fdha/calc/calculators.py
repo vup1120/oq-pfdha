@@ -82,21 +82,27 @@ class BaseFaultRuptureCalculator:
         model_type = model_cfg['type']
         params = model_cfg.get('parameters', {})
         
+        # Look up class by name in current globals or imported modules.
+        # A typo'd model name must fail the job loudly: returning None here
+        # would silently zero the corresponding hazard contribution.
         try:
-            # Look up class by name in current globals or imported modules
             model_class = globals()[model_type]
-            
-            # Check which parameters the model's __init__ accepts
-            sig = inspect.signature(model_class.__init__)
-            init_params = set(sig.parameters.keys()) - {'self'}
-            
-            # Only pass parameters that the constructor accepts
-            constructor_params = {k: v for k, v in params.items() if k in init_params}
-            
-            return model_class(**constructor_params)
-        except Exception as e:
-            logger.warning(f"Model class '{model_type}' not found or failed to instantiate: {e}")
-            return None
+        except KeyError:
+            raise ValueError(
+                f"Unknown FDHA model class '{model_type}'; check the "
+                f"uncertaintyModel / [models] configuration")
+
+        # Check which parameters the model's __init__ accepts
+        sig = inspect.signature(model_class.__init__)
+        init_params = set(sig.parameters.keys()) - {'self'}
+
+        # Only pass parameters that the constructor accepts
+        constructor_params = {k: v for k, v in params.items() if k in init_params}
+
+        # Constructor errors (e.g. an invalid scaling_model) must propagate:
+        # swallowing them here used to convert a bad configuration into a
+        # silently-zero hazard contribution.
+        return model_class(**constructor_params)
 
     def call_model_safely(self, model, method, **kwargs):
         if model is None:

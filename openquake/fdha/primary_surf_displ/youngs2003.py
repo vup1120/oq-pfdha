@@ -46,18 +46,46 @@ class Youngs2003PrimaryFD(BasePrimarySurfDispl):
 
     _ACCEPTED_DISP_TYPES = frozenset(["AD", "MD"])
     _ACCEPTED_STYLES = frozenset(["all", "normal"])
+    # The ε-space convolution below needs log10-space (intercept, slope,
+    # sigma) regressions for BOTH AD and MD per style; only Wells &
+    # Coppersmith (1994) provides them here (and is the relation used by
+    # Youngs et al. 2003 themselves). LEONARD2010 / THINGBAIJAM2017 expose
+    # AD-only regressions (see openquake.fdha.scalerel) and their use inside
+    # the Youngs (2003) convolution has not been validated, so they are
+    # rejected rather than silently ignored.
+    _ACCEPTED_SCALING_MODELS = frozenset(["WC1994"])
 
-    def __init__(self, n_sigma=6.0):
+    def __init__(self, n_sigma=6.0, scaling_model="WC1994"):
         """
         :param n_sigma:
             Half-width of the ±σ ε-space integration truncation. Defaults to 6
             (improves accuracy over the historical ±3σ). Overridable from the
             logic tree via ``[Youngs2003PrimaryFD] n_sigma = <value>``.
+        :param scaling_model:
+            Magnitude-displacement scaling relation used to convert magnitude
+            into AD/MD inside the convolution. Only ``"WC1994"`` (the relation
+            used by Youngs et al. 2003) is implemented; any other value raises
+            ``ValueError`` instead of being silently ignored.
         """
         super().__init__()
         self._N_EPS = float(n_sigma)  # ±n_sigma truncation in epsilon space
         if self._N_EPS <= 0.0:
             raise ValueError(f"n_sigma must be positive; got {self._N_EPS}")
+        self.scaling_model = self._check_scaling_model(scaling_model)
+
+    @classmethod
+    def _check_scaling_model(cls, scaling_model):
+        """Validate ``scaling_model``, returning its canonical (upper) form."""
+        sm = str(scaling_model).upper()
+        if sm not in cls._ACCEPTED_SCALING_MODELS:
+            raise ValueError(
+                f"{cls.__name__} only implements scaling_model='WC1994' "
+                f"(the magnitude-displacement relation used by Youngs et al. "
+                f"2003); got {scaling_model!r}. LEONARD2010/THINGBAIJAM2017 "
+                f"provide AD-only regressions and are not validated inside "
+                f"the Youngs (2003) convolution."
+            )
+        return sm
     
     def _get_wc94_coeffs(self, style, norm_disp_type):
         """
@@ -72,7 +100,8 @@ class Youngs2003PrimaryFD(BasePrimarySurfDispl):
         elif style == "normal":  # normal
             return self._WC94_NORMAL[norm_disp_type]
     
-    def get_prob(self, d, X_L_ratio, mag, style, norm_disp_type):
+    def get_prob(self, d, X_L_ratio, mag, style, norm_disp_type,
+                 scaling_model=None):
         """
         Model of Youngs et al. (2003) for the probability of exceeding
         threshold values of primary displacement [m].
@@ -89,9 +118,14 @@ class Youngs2003PrimaryFD(BasePrimarySurfDispl):
                      - "all": Use WC94 "All styles" coefficients
                      - "normal": Use WC94 "Normal faulting" coefficients
         :param norm_disp_type: Normalization displacement type. Valid options are "AD" or "MD".
+        :param scaling_model: Optional call-time override of the constructor's
+                             ``scaling_model``; validated the same way
+                             (only "WC1994" is implemented).
         :returns: Probability of exceeding target displacement (m), shape (n_displacements, n_sites).
         """
         # Validate inputs
+        if scaling_model is not None:
+            self._check_scaling_model(scaling_model)
         style_lower = style.lower() if isinstance(style, str) else str(style).lower()
         if style_lower not in self._ACCEPTED_STYLES:
             raise ValueError(
