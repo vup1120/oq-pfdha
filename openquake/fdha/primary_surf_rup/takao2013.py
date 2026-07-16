@@ -24,6 +24,7 @@ Supported Fault Styles: Reverse & Strike‑Slip
 """
 
 import numpy as np
+from openquake.fdha.params import check_style
 from openquake.fdha.primary_surf_rup.base import BasePrimarySurfRup
 
 class Takao2013PrimarySR(BasePrimarySurfRup):
@@ -40,6 +41,18 @@ class Takao2013PrimarySR(BasePrimarySurfRup):
     Association for Earthquake Engineering, 13(1), 17-36.
     https://doi.org/10.5610/jaee.13.17
     """
+
+    def __init__(self, style=None):
+        """
+        :param style: optional faulting style declared by the logic-tree
+            branch. The Takao et al. (2013) regression pools Japanese
+            reverse- and strike-slip-faulting earthquakes in one equation, so
+            the value does not change the numbers; it is stored (validated
+            against the global style vocabulary) as a declaration of the
+            branch context.
+        """
+        super().__init__()
+        self.style = check_style(type(self).__name__, style)
 
     def get_prob(
         self,

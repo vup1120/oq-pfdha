@@ -22,6 +22,7 @@ the model of Youngs et al. (2003) in :class:`Youngs2003PrimarySR`
 """
 
 import numpy as np
+from openquake.fdha.params import check_style
 from openquake.fdha.primary_surf_rup.base import BasePrimarySurfRup
 
 class Youngs2003PrimarySR(BasePrimarySurfRup):
@@ -46,12 +47,28 @@ class Youngs2003PrimarySR(BasePrimarySurfRup):
     displacement hazard analysis (PFDHA). Earthquake Spectra, 19(1), 191-219.
     https://doi.org/10.1193/1.1542891
     """
-    def get_prob(self, mag, style="all"):
+    _ACCEPTED_STYLES = frozenset(["all", "normal"])
+
+    def __init__(self, style=None):
+        """
+        :param style: optional dataset selector pinned by the logic-tree
+            branch: 'all' (worldwide regression) or 'normal' (Great Basin
+            subset). ``None`` defers the choice to the ``get_prob`` call
+            (legacy default: 'all').
+        """
+        super().__init__()
+        self.style = check_style(type(self).__name__, style,
+                                 self._ACCEPTED_STYLES)
+
+    def get_prob(self, mag, style=None):
         """
         :param mag: float or array-like, earthquake magnitude(s)
-        :param style: string, 'all' regional datasets or 'normal' subset
+        :param style: string, 'all' regional datasets or 'normal' subset;
+            ``None`` falls back to the constructor value, then to 'all'
         :return: probability or array of probabilities
         """
+        if style is None:
+            style = self.style if self.style is not None else "all"
         m = np.asarray(mag, dtype=float)
         if style == 'all':
             a, b = -12.51, 2.053

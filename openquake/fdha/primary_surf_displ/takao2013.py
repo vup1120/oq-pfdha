@@ -24,6 +24,7 @@ model of Takao et al. (2013) into :class:`Takao2013`
 import numpy as np
 from scipy.integrate import quad
 from scipy.stats import gamma, norm, beta
+from openquake.fdha.params import check_choice, check_style
 from openquake.fdha.primary_surf_displ.base import BasePrimarySurfDispl
 
 
@@ -47,13 +48,28 @@ class Takao2013PrimaryFD(BasePrimarySurfDispl):
 
     _N_INTEGRATION = 1000
 
-    def __init__(self, n_sigma=3.0):
+    def __init__(self, n_sigma=3.0, norm_disp_type=None, style=None):
+        """
+        :param n_sigma: truncation half-width of the AD/MD distribution.
+        :param norm_disp_type: optional normalization type pinned by the
+            logic-tree branch ('AD' or 'MD'); ``None`` defers to the
+            ``get_prob`` call.
+        :param style: optional faulting style declared by the logic-tree
+            branch. The Takao et al. (2013) regressions pool Japanese
+            events in single equations, so the value does not change the
+            numbers; it is stored (validated against the global style
+            vocabulary) as a declaration of the branch context.
+        """
         super().__init__()
         self.n_sigma = float(n_sigma)
         if self.n_sigma <= 0.0:
             raise ValueError(f"n_sigma must be positive; got {self.n_sigma}")
+        self.norm_disp_type = check_choice(
+            type(self).__name__, "norm_disp_type", norm_disp_type,
+            frozenset(["AD", "MD"]), canon=lambda v: str(v).upper())
+        self.style = check_style(type(self).__name__, style)
 
-    def get_prob(self, d, X_L_ratio, mag, norm_disp_type):
+    def get_prob(self, d, X_L_ratio, mag, norm_disp_type=None):
         """
         Model of Takao et al. (2013) for the probability of exceeding
         threshold values of primary displacement [m]
@@ -78,6 +94,12 @@ class Takao2013PrimaryFD(BasePrimarySurfDispl):
         # Use Wells and Coppersmith 1994 law to estimate the surface rupture length (srl) in km
         srl = 10 ** (-2.86 + 0.63 * mag)
         # Validate the style
+        if norm_disp_type is None:
+            norm_disp_type = self.norm_disp_type
+        if norm_disp_type is None:
+            raise ValueError(
+                f"{type(self).__name__}: norm_disp_type must be given either "
+                f"in the logic-tree branch or at call time")
         if norm_disp_type not in accepted_version:
             raise ValueError(
                 f"Invalid style '{norm_disp_type}'. Accepted values are: {', '.join(accepted_version)}"

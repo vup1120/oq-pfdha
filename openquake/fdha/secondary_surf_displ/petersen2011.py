@@ -24,6 +24,7 @@ into :class:`Petersen2011SecondaryFD`
 
 import numpy as np
 from scipy.stats import norm
+from openquake.fdha.params import check_positive
 from openquake.fdha.primary_surf_displ.base import BaseSecondarySurfDispl
 
 class Petersen2011SecondaryFD(BaseSecondarySurfDispl):
@@ -54,7 +55,20 @@ class Petersen2011SecondaryFD(BaseSecondarySurfDispl):
         200: {"p0": 0.92483, "p1": 0.18975, "p2": 0.074709, "r1": 200, "r2": 400},
     }
 
-    def get_prob(self, d, mag, r, pixel_size=25, cell_size=None):
+    def __init__(self, pixel_size=None, cell_size=None):
+        """
+        :param pixel_size: optional pixel (cell) size in meters pinned by
+            the logic-tree branch; ``None`` defers to the ``get_prob`` call
+            (legacy default: 25).
+        :param cell_size: deprecated alias of ``pixel_size``.
+        """
+        super().__init__()
+        self.pixel_size = check_positive(type(self).__name__, "pixel_size",
+                                         pixel_size)
+        self.cell_size = check_positive(type(self).__name__, "cell_size",
+                                        cell_size)
+
+    def get_prob(self, d, mag, r, pixel_size=None, cell_size=None):
         """
         Calculate the probability of exceeding displacement thresholds [m] for distributed
         strike-slip faults, per Petersen et al. (2011).
@@ -84,6 +98,12 @@ class Petersen2011SecondaryFD(BaseSecondarySurfDispl):
             - Returns only the displacement exceedance probability (prob_exceeding_d); combine
               with rupture probability (get_prob_rupture) separately, per Petersen et al. (Page 818, Eqn 18).
         """
+        # Fall back to constructor-pinned values, then legacy defaults
+        if cell_size is None:
+            cell_size = self.cell_size
+        if pixel_size is None:
+            pixel_size = (self.pixel_size
+                          if self.pixel_size is not None else 25)
         # Ensure inputs are arrays with proper shapes - following Youngs2003 pattern
         d = np.asarray(d)
         if d.ndim == 0:

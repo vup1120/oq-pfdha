@@ -10,6 +10,7 @@ displacement hazard analysis (PFDHA). Earthquake Spectra, 19(1), 191-219.
 
 import numpy as np
 from scipy.stats import gamma, norm, beta
+from openquake.fdha.params import check_choice, check_style
 from openquake.fdha.primary_surf_displ.base import BasePrimarySurfDispl, BaseSecondarySurfDispl
 
 class Youngs2003PrimaryFD(BasePrimarySurfDispl):
@@ -55,7 +56,8 @@ class Youngs2003PrimaryFD(BasePrimarySurfDispl):
     # rejected rather than silently ignored.
     _ACCEPTED_SCALING_MODELS = frozenset(["WC1994"])
 
-    def __init__(self, n_sigma=6.0, scaling_model="WC1994"):
+    def __init__(self, n_sigma=6.0, scaling_model="WC1994", style=None,
+                 norm_disp_type=None):
         """
         :param n_sigma:
             Half-width of the ±σ ε-space integration truncation. Defaults to 6
@@ -66,12 +68,24 @@ class Youngs2003PrimaryFD(BasePrimarySurfDispl):
             into AD/MD inside the convolution. Only ``"WC1994"`` (the relation
             used by Youngs et al. 2003) is implemented; any other value raises
             ``ValueError`` instead of being silently ignored.
+        :param style:
+            Optional WC94 coefficient-set selector pinned by the logic-tree
+            branch ('all' or 'normal'); ``None`` defers to the ``get_prob``
+            call.
+        :param norm_disp_type:
+            Optional normalization type pinned by the logic-tree branch
+            ('AD' or 'MD'); ``None`` defers to the ``get_prob`` call.
         """
         super().__init__()
         self._N_EPS = float(n_sigma)  # ±n_sigma truncation in epsilon space
         if self._N_EPS <= 0.0:
             raise ValueError(f"n_sigma must be positive; got {self._N_EPS}")
         self.scaling_model = self._check_scaling_model(scaling_model)
+        self.style = check_style(type(self).__name__, style,
+                                 self._ACCEPTED_STYLES)
+        self.norm_disp_type = check_choice(
+            type(self).__name__, "norm_disp_type", norm_disp_type,
+            self._ACCEPTED_DISP_TYPES, canon=lambda v: str(v).upper())
 
     @classmethod
     def _check_scaling_model(cls, scaling_model):
@@ -100,7 +114,7 @@ class Youngs2003PrimaryFD(BasePrimarySurfDispl):
         elif style == "normal":  # normal
             return self._WC94_NORMAL[norm_disp_type]
     
-    def get_prob(self, d, X_L_ratio, mag, style, norm_disp_type,
+    def get_prob(self, d, X_L_ratio, mag, style=None, norm_disp_type=None,
                  scaling_model=None):
         """
         Model of Youngs et al. (2003) for the probability of exceeding
@@ -123,6 +137,15 @@ class Youngs2003PrimaryFD(BasePrimarySurfDispl):
                              (only "WC1994" is implemented).
         :returns: Probability of exceeding target displacement (m), shape (n_displacements, n_sites).
         """
+        # Fall back to constructor-pinned values (call-time argument wins)
+        if style is None:
+            style = self.style
+        if norm_disp_type is None:
+            norm_disp_type = self.norm_disp_type
+        if style is None or norm_disp_type is None:
+            raise ValueError(
+                f"{type(self).__name__}: style and norm_disp_type must be "
+                f"given either in the logic-tree branch or at call time")
         # Validate inputs
         if scaling_model is not None:
             self._check_scaling_model(scaling_model)

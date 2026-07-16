@@ -21,6 +21,7 @@ Module :mod:`openquake.fdha.primary_surf_rup.pizza2023`
 """
 
 import numpy as np
+from openquake.fdha.params import check_style
 from openquake.fdha.primary_surf_rup.base import BasePrimarySurfRup
 
 
@@ -39,7 +40,17 @@ class Pizza2023PrimarySR(BasePrimarySurfRup):
     https://doi.org/10.1785/0120230019
     """
 
-    def get_prob(self, mag, style="all"):
+    def __init__(self, style=None):
+        """
+        :param style: optional faulting style pinned by the logic-tree
+            branch ('all', 'normal', 'reverse' or 'strike-slip'); ``None``
+            defers the choice to the ``get_prob`` call (legacy default:
+            'all').
+        """
+        super().__init__()
+        self.style = check_style(type(self).__name__, style)
+
+    def get_prob(self, mag, style=None):
         """
         Model of Pizza et al., 2023 for the probability of surface rupture
         based on rupture mechanism and earthquake magnitude.
@@ -72,9 +83,13 @@ class Pizza2023PrimarySR(BasePrimarySurfRup):
             calculated using a logistic regression model.
         """
 
+        # Fall back to the constructor-pinned style, then legacy default
+        if style is None:
+            style = self.style if self.style is not None else "all"
+
         # Define the accepted style of faultings
         accepted_styles = ["all", "normal", "reverse", "strike-slip"]
-        
+
         # Validate the style
         if style not in accepted_styles:
             raise ValueError(

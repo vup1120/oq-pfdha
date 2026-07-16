@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 from scipy.interpolate import make_interp_spline
+from openquake.fdha.params import check_choice, check_style
 from openquake.fdha.primary_surf_displ.base import BasePrimarySurfDispl
 
 class Moss2024PrimaryFD(BasePrimarySurfDispl):
@@ -35,8 +36,35 @@ class Moss2024PrimaryFD(BasePrimarySurfDispl):
             "moss_2024_gamma_distribution_parameters_d_md.csv")),
     }
 
+    def __init__(self, version=None, source=None, completeness=None,
+                 style=None):
+        """
+        :param version: optional normalization type pinned by the logic-tree
+            branch ('AD' or 'MD'); ``None`` defers to the ``get_prob`` call
+            (legacy default: 'AD').
+        :param source: optional alpha/beta parameter source ('EQS' or
+            'GIRS'); legacy default 'EQS'.
+        :param completeness: optional reference-model subset ('complete' or
+            'all'); legacy default 'all'.
+        :param style: optional faulting style declared by the logic-tree
+            branch. Moss et al. (2024) is a reverse-faulting model; the value
+            does not change the numbers and is stored (validated against the
+            global style vocabulary) as a declaration of the branch context.
+        """
+        super().__init__()
+        self.version = check_choice(type(self).__name__, "version", version,
+                                    frozenset(["AD", "MD"]),
+                                    canon=lambda v: str(v).upper())
+        self.source = check_choice(type(self).__name__, "source", source,
+                                   frozenset(["EQS", "GIRS"]),
+                                   canon=lambda v: str(v).upper())
+        self.completeness = check_choice(
+            type(self).__name__, "completeness", completeness,
+            frozenset(["complete", "all"]), canon=lambda v: str(v).lower())
+        self.style = check_style(type(self).__name__, style)
+
     def get_prob(self, d, X_L_ratio, mag,
-                 version="AD", source="EQS", completeness="all"):
+                 version=None, source=None, completeness=None):
         """
         :param d: Target displacement (m), scalar or array-like
         :param X_L_ratio: Normalized position x/L, range [0,1]
@@ -46,6 +74,15 @@ class Moss2024PrimaryFD(BasePrimarySurfDispl):
         :param completeness: Reference model subset, 'complete' or 'all'
         :returns: Exceedance probability array (same shape as d)
         """
+
+        # Fall back to constructor-pinned values, then legacy defaults
+        if version is None:
+            version = self.version if self.version is not None else "AD"
+        if source is None:
+            source = self.source if self.source is not None else "EQS"
+        if completeness is None:
+            completeness = (self.completeness
+                            if self.completeness is not None else "all")
 
         # --- Validate and map parameters ---
         version_up = version.upper()

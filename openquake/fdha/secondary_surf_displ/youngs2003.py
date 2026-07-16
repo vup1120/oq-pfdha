@@ -23,6 +23,7 @@ model of Youngs et al. (2003) into :class:`Youngs2003`
 
 import numpy as np
 from scipy.stats import gamma, norm
+from openquake.fdha.params import check_choice, check_style
 from openquake.fdha.primary_surf_displ.base import BaseSecondarySurfDispl
 
 
@@ -53,12 +54,26 @@ class Youngs2003SecondaryFD(BaseSecondarySurfDispl):
         95: 5.535
     }
     
-    def __init__(self):
+    def __init__(self, percentile=None, style=None):
+        """
+        :param percentile: optional hanging-wall percentile curve pinned by
+            the logic-tree branch ('85' or '95'; integers accepted);
+            ``None`` defers to the ``get_prob`` call (legacy default: '85').
+        :param style: optional faulting style declared by the logic-tree
+            branch. The Youngs et al. (2003) secondary displacement
+            regressions carry no style selector, so the value does not
+            change the numbers; it is stored (validated against the global
+            style vocabulary) as a declaration of the branch context.
+        """
         super().__init__()
+        self.percentile = check_choice(
+            type(self).__name__, "percentile", percentile,
+            frozenset(["85", "95"]), canon=str)
+        self.style = check_style(type(self).__name__, style)
         # Pre-calculate common values
         self._norm_pdf_cache = {}
     
-    def get_prob(self, d, mag, rx, r, percentile="85"):
+    def get_prob(self, d, mag, rx, r, percentile=None):
         """
         Model of Youngs et al. (2003) for the probability of exceeding
         threshold values of secondary displacement [m]
@@ -70,6 +85,10 @@ class Youngs2003SecondaryFD(BaseSecondarySurfDispl):
         :param percentile: The percentile used in calculations ("85" or "95")
         :returns: Probability of exceeding the given displacement (shape (n_sites, n_displacements))
         """
+        # Fall back to constructor-pinned value, then legacy default
+        if percentile is None:
+            percentile = (self.percentile
+                          if self.percentile is not None else "85")
         # Validate percentile
         if percentile not in self._ACCEPTED_PERCENTILES:
             raise ValueError(

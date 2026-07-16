@@ -34,13 +34,24 @@ Reference:
 """
 
 import numpy as np
+from openquake.fdha.params import check_positive
 from openquake.fdha.secondary_surf_rup.base import BaseSecondarySurfRup
 
 
 class Takao2014SecondarySR(BaseSecondarySurfRup):
     """Implementation of the Takao et al. (2014) model for reverse and strike-slip faults"""
     
-    def get_prob(self, r: float, pixel_size: int = 100):
+    def __init__(self, pixel_size=None):
+        """
+        :param pixel_size: optional pixel (cell) size in meters pinned by
+            the logic-tree branch; ``None`` defers to the ``get_prob`` call
+            (legacy default: 100).
+        """
+        super().__init__()
+        self.pixel_size = check_positive(type(self).__name__, "pixel_size",
+                                         pixel_size)
+
+    def get_prob(self, r: float, pixel_size: int = None):
         """
         Calculates probability of surface rupture for reverse and strike-slip faults
         
@@ -52,6 +63,10 @@ class Takao2014SecondarySR(BaseSecondarySurfRup):
         :return:
             Probability of surface rupture
         """
+        # Fall back to constructor-pinned value, then legacy default
+        if pixel_size is None:
+            pixel_size = (self.pixel_size
+                          if self.pixel_size is not None else 100)
         # Coefficients for different pixel sizes
         coefficients = {
             500: (-3.859, -1.499, 0.2),

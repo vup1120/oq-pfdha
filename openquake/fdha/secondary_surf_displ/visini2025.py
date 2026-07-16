@@ -29,6 +29,7 @@ https://doi.org/10.1177/87552930241308860
 """
 import numpy as np
 from scipy.stats import norm
+from openquake.fdha.params import check_choice, check_style
 from openquake.fdha.primary_surf_displ.base import BaseSecondarySurfDispl
 from openquake.fdha.scalerel import WellsCoppersmith1994, Thingbaijam2017, Leonard2010
 
@@ -71,13 +72,41 @@ class Visini2025SecondaryFD(BaseSecondarySurfDispl):
     # no smoothed ECS/LCP reference line applies.
     MULTIFAULT_REFERENCE_LINE = "segments"
 
-    def __init__(self, n_sigma: float = 3.0, truncation_eps: float = None) -> None:
+    def __init__(self, n_sigma: float = 3.0, truncation_eps: float = None,
+                 style=None, scaling_model=None, tpfm=None, case=None,
+                 rupture_traces=None) -> None:
+        """
+        :param n_sigma: half-width of the ln(Y) truncation in sigma units
+            (``truncation_eps`` is the deprecated alias).
+        :param style: optional coefficient-set selector pinned by the
+            logic-tree branch ('normal' or 'reverse'); ``None`` defers to
+            the ``get_prob`` call.
+        :param scaling_model: optional magnitude-scaling relation for the
+            TPFm computation ('WC1994', 'THINGBAIJAM2017' or 'LEONARD2010');
+            ``None`` defers to the call (legacy default: 'WC1994').
+        :param tpfm: optional fixed total-principal-fault-length measure in
+            meters pinned by the logic-tree branch; ``None`` = computed.
+        :param case: optional Visini case label (e.g. 'case1'..'case3'),
+            consumed by the secondary calculation pipeline; stored as given.
+        :param rupture_traces: optional list of rank-1.5 trace names used by
+            combination B, consumed by the secondary calculation pipeline;
+            stored as given.
+        """
         super().__init__()
         # ``truncation_eps`` is the deprecated former name for ``n_sigma``; it is
         # still accepted (e.g. from older logic-tree configs) and takes priority.
         self.n_sigma = float(truncation_eps if truncation_eps is not None else n_sigma)
         if self.n_sigma <= 0.0:
             raise ValueError(f"n_sigma must be positive; got {self.n_sigma}")
+        self.style = check_style(type(self).__name__, style,
+                                 frozenset(["normal", "reverse"]))
+        self.scaling_model = check_choice(
+            type(self).__name__, "scaling_model", scaling_model,
+            frozenset(["WC1994", "THINGBAIJAM2017", "LEONARD2010"]),
+            canon=lambda v: str(v).upper())
+        self.tpfm = None if tpfm is None else float(tpfm)
+        self.case = None if case is None else str(case)
+        self.rupture_traces = rupture_traces
         # Empirical regression coefficients (ln Y)
         self.coeffs = {
             "a": -8.0651,          # intercept
@@ -106,9 +135,9 @@ class Visini2025SecondaryFD(BaseSecondarySurfDispl):
         X_L_ratio=0.5,
         dip=90.0,
         tpfm=None,
-        style="normal",
+        style=None,
         combination="A",
-        scaling_model="WC1994",
+        scaling_model=None,
         **kwargs,
     ):
         """
@@ -123,6 +152,14 @@ class Visini2025SecondaryFD(BaseSecondarySurfDispl):
         ``truncation_eps`` is also accepted.
         """
         n_sigma_override = kwargs.pop("n_sigma", kwargs.pop("truncation_eps", None))
+        # Fall back to constructor-pinned values, then legacy defaults
+        if style is None:
+            style = self.style if self.style is not None else "normal"
+        if scaling_model is None:
+            scaling_model = (self.scaling_model
+                             if self.scaling_model is not None else "WC1994")
+        if tpfm is None:
+            tpfm = self.tpfm
         # Sanitize inputs
         d = np.asarray(d, dtype=float)
         s = np.asarray(s, dtype=float)

@@ -21,6 +21,7 @@ Module :mod:`openquake.fdha.primary_surf_rup.moss2013`
 """
 
 import numpy as np
+from openquake.fdha.params import check_style
 from openquake.fdha.primary_surf_rup.base import BasePrimarySurfRup
 
 
@@ -38,7 +39,25 @@ class Moss2013PrimarySR(BasePrimarySurfRup):
     https://doi.org/10.1785/0220110109
     """
 
-    def get_prob(self, mag: float, style, vs30: float) -> float:
+    _ACCEPTED_STYLES = frozenset(["reverse", "strike-slip"])
+
+    def __init__(self, style=None, vs30=None):
+        """
+        :param style: optional faulting style pinned by the logic-tree
+            branch ('reverse' or 'strike-slip'); ``None`` defers to the
+            ``get_prob`` call (normally resolved from the rupture rake).
+        :param vs30: optional site Vs30 (m/s) pinned by the logic-tree
+            branch; ``None`` defers to the ``get_prob`` call (normally the
+            site collection's value). A pinned value overrides the
+            site-specific one, matching the historical parameter-merge
+            behaviour of the calculators.
+        """
+        super().__init__()
+        self.style = check_style(type(self).__name__, style,
+                                 self._ACCEPTED_STYLES)
+        self.vs30 = None if vs30 is None else float(vs30)
+
+    def get_prob(self, mag: float, style=None, vs30: float = None) -> float:
         """
         Model of Moss et al. (2013) for the probability of surface rupture
         based on the rupture mechanism (faulting style) and site conditions 
@@ -81,14 +100,24 @@ class Moss2013PrimarySR(BasePrimarySurfRup):
             print(f"Probability of surface rupture: {probability}")
         """
 
+        # Fall back to constructor-pinned values (call-time argument wins)
+        if style is None:
+            style = self.style
+        if vs30 is None:
+            vs30 = self.vs30
+
         # Define the accepted style of faultings
         accepted_styles = ["reverse", "strike-slip"]
-        
+
         # Validate the style
         if style not in accepted_styles:
             raise ValueError(
                 f"Invalid style '{style}'. Accepted values are: {', '.join(accepted_styles)}"
             )
+        if vs30 is None:
+            raise ValueError(
+                "Moss2013PrimarySR requires vs30, either from the site "
+                "collection or pinned in the logic-tree branch")
 
         m = np.asarray(mag, dtype=float)
         if style == 'reverse':

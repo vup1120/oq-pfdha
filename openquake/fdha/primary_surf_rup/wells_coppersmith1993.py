@@ -22,6 +22,7 @@ the model of Wells and Coppersmith (1993) in :class:`WC1993PrimarySR`
 """
 
 import numpy as np
+from openquake.fdha.params import check_style
 from openquake.fdha.primary_surf_rup.base import BasePrimarySurfRup, BaseSecondarySurfDispl
 
 class WC1993PrimarySR(BasePrimarySurfRup):
@@ -38,6 +39,17 @@ class WC1993PrimarySR(BasePrimarySurfRup):
     Spectra, 19(1), 191-219, and Petersen et al. (2011), Bulletin of the
     Seismological Society of America, 101(2), 805-825.
     """
+
+    def __init__(self, style=None):
+        """
+        :param style: optional faulting style declared by the logic-tree
+            branch. This model's single logistic regression covers all
+            faulting styles, so the value does not change the numbers; it is
+            stored (and validated against the global style vocabulary) as a
+            declaration of the branch context.
+        """
+        super().__init__()
+        self.style = check_style(type(self).__name__, style)
 
     def get_prob(
         self,

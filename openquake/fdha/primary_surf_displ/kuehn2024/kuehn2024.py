@@ -27,6 +27,7 @@ model of Kuehn et al. (2024) into :class:`Kuehn2024PrimaryFD`
 import numpy as np
 import pandas as pd
 from scipy import stats
+from openquake.fdha.params import check_bool, check_style
 from openquake.fdha.primary_surf_displ.base import BasePrimarySurfDispl
 from openquake.fdha.primary_surf_displ.kuehn2024.load_data import DATA as DATA_COEFFICIENTS
 
@@ -50,11 +51,50 @@ class Kuehn2024PrimaryFD(BasePrimarySurfDispl):
     database.
     """
 
-    def get_prob(self, d, X_L_ratio, mag, style, folded=True,
-                 epistemic_uncertainty=True, coefficient_type=None):
+    _ACCEPTED_STYLES = frozenset(["strike-slip", "reverse", "normal"])
+
+    def __init__(self, style=None, epistemic_uncertainty=None, folded=None,
+                 coefficient_type=None):
+        """
+        :param style: optional coefficient-set selector pinned by the
+            logic-tree branch ('strike-slip', 'reverse' or 'normal');
+            ``None`` defers to the ``get_prob`` call.
+        :param epistemic_uncertainty: optional flag pinned by the logic-tree
+            branch (accepts booleans or the strings 'true'/'false'); ``None``
+            defers to the ``get_prob`` call (legacy default: True).
+        :param folded: optional x/L folding flag; legacy default True.
+        :param coefficient_type: optional legacy alias ('full' enables
+            epistemic uncertainty); ``None`` defers to the call.
+        """
+        super().__init__()
+        self.style = check_style(type(self).__name__, style,
+                                 self._ACCEPTED_STYLES)
+        self.epistemic_uncertainty = check_bool(
+            type(self).__name__, "epistemic_uncertainty",
+            epistemic_uncertainty)
+        self.folded = check_bool(type(self).__name__, "folded", folded)
+        self.coefficient_type = coefficient_type
+
+    def get_prob(self, d, X_L_ratio, mag, style=None, folded=None,
+                 epistemic_uncertainty=None, coefficient_type=None):
         """
         Calculate the probability of exceeding displacement thresholds [m] for Kuehn et al. (2024).
         """
+        # Fall back to constructor-pinned values, then legacy defaults
+        if style is None:
+            style = self.style
+        if style is None:
+            raise ValueError(
+                f"{type(self).__name__}: style must be given either in the "
+                f"logic-tree branch or at call time")
+        if folded is None:
+            folded = self.folded if self.folded is not None else True
+        if epistemic_uncertainty is None:
+            epistemic_uncertainty = (
+                self.epistemic_uncertainty
+                if self.epistemic_uncertainty is not None else True)
+        if coefficient_type is None:
+            coefficient_type = self.coefficient_type
         style = style.lower()
         valid_styles = ['strike-slip', 'reverse', 'normal']
         if style not in valid_styles:

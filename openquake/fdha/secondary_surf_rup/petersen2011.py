@@ -21,6 +21,7 @@ Module :mod:`openquake.fdha.secondary_surf_rup.petersen2011`
 """
 
 import numpy as np
+from openquake.fdha.params import check_choice, check_positive, check_style
 from openquake.fdha.secondary_surf_rup.base import BaseSecondarySurfRup
 
 
@@ -50,7 +51,32 @@ class Petersen2011SecondarySR(BaseSecondarySurfRup):
         200: {"p0": 0.92483, "p1": 0.18975, "p2": 0.074709, "r1": 200, "r2": 400},  # 200 x 200 m
     }
 
-    def get_prob(self, r, pixel_size=25, version="default", cell_size=None):
+    def __init__(self, pixel_size=None, version=None, cell_size=None,
+                 style=None):
+        """
+        :param pixel_size: optional pixel (cell) size in meters pinned by
+            the logic-tree branch; ``None`` defers to the ``get_prob`` call
+            (legacy default: 25).
+        :param version: optional variant ('default' or 'near_field');
+            ``None`` defers to the call (legacy default: 'default').
+        :param cell_size: deprecated alias of ``pixel_size``.
+        :param style: optional faulting style declared by the logic-tree
+            branch. Petersen et al. (2011) is a strike-slip model with no
+            style selector, so the value does not change the numbers; it is
+            stored (validated against the global style vocabulary) as a
+            declaration of the branch context.
+        """
+        super().__init__()
+        self.pixel_size = check_positive(type(self).__name__, "pixel_size",
+                                         pixel_size)
+        self.version = check_choice(type(self).__name__, "version", version,
+                                    frozenset(["default", "near_field"]),
+                                    canon=lambda v: str(v).lower())
+        self.cell_size = check_positive(type(self).__name__, "cell_size",
+                                        cell_size)
+        self.style = check_style(type(self).__name__, style)
+
+    def get_prob(self, r, pixel_size=None, version=None, cell_size=None):
         """
         Calculate the probability of distributed-fault surface rupture as a function of distance,
         pixel size, and version, per Petersen et al. (2011).
@@ -77,6 +103,14 @@ class Petersen2011SecondarySR(BaseSecondarySurfRup):
             - No magnitude dependence, per Petersen et al. (2011, Page 818).
             - Limited to 2 km distance from principal fault; no triggered ruptures included.
         """
+        # Fall back to constructor-pinned values, then legacy defaults
+        if cell_size is None:
+            cell_size = self.cell_size
+        if pixel_size is None:
+            pixel_size = (self.pixel_size
+                          if self.pixel_size is not None else 25)
+        if version is None:
+            version = self.version if self.version is not None else "default"
         # Validate inputs
         if cell_size is not None:  # deprecated alias kept for old logic trees
             pixel_size = cell_size

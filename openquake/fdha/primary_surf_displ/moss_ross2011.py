@@ -18,6 +18,7 @@ from scipy.stats import gamma
 from scipy.stats import norm
 from scipy.stats import weibull_min
 
+from openquake.fdha.params import check_choice
 from openquake.fdha.primary_surf_displ.base import BasePrimarySurfDispl
 
 
@@ -40,11 +41,20 @@ class MossRoss2011PrimaryFD(BasePrimarySurfDispl):
     _ACCEPTED_DISP_TYPES = frozenset(["AD", "MD"])
     _N_INTEGRATION = 1000
 
-    def __init__(self, n_sigma=3.0):
+    def __init__(self, n_sigma=3.0, norm_disp_type=None):
+        """
+        :param n_sigma: truncation half-width of the AD/MD distribution.
+        :param norm_disp_type: optional normalization type pinned by the
+            logic-tree branch ('AD' or 'MD'); ``None`` defers to the
+            ``get_prob`` call.
+        """
         super().__init__()
         self.n_sigma = float(n_sigma)
         if self.n_sigma <= 0.0:
             raise ValueError(f"n_sigma must be positive; got {self.n_sigma}")
+        self.norm_disp_type = check_choice(
+            type(self).__name__, "norm_disp_type", norm_disp_type,
+            frozenset(["AD", "MD"]), canon=lambda v: str(v).upper())
 
     def _truncation_grid(self, mean, sigma):
         """
@@ -55,7 +65,7 @@ class MossRoss2011PrimaryFD(BasePrimarySurfDispl):
         upper = 10 ** (mean + self.n_sigma * sigma)
         return np.logspace(np.log10(lower), np.log10(upper), self._N_INTEGRATION)
 
-    def get_prob(self, d, X_L_ratio, mag, norm_disp_type):
+    def get_prob(self, d, X_L_ratio, mag, norm_disp_type=None):
         """
         Return probability of exceeding primary displacement threshold(s).
 
@@ -70,6 +80,12 @@ class MossRoss2011PrimaryFD(BasePrimarySurfDispl):
         :returns:
             Exceedance probabilities with shape ``(n_displacements, n_sites)``.
         """
+        if norm_disp_type is None:
+            norm_disp_type = self.norm_disp_type
+        if norm_disp_type is None:
+            raise ValueError(
+                f"{type(self).__name__}: norm_disp_type must be given either "
+                f"in the logic-tree branch or at call time")
         if norm_disp_type not in self._ACCEPTED_DISP_TYPES:
             raise ValueError(
                 f"Invalid displacement type '{norm_disp_type}'. Accepted values are: "

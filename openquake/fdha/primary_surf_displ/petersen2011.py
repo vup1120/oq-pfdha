@@ -28,6 +28,7 @@ faults. Bulletin of the Seismological Society of America, 101(2), 805-825.
 
 import numpy as np
 from scipy.stats import norm
+from openquake.fdha.params import check_choice
 from openquake.fdha.primary_surf_displ.base import BasePrimarySurfDispl
 
 
@@ -36,12 +37,29 @@ class Petersen2011PrimaryFD(BasePrimarySurfDispl):
     Implements the Petersen et al. (2011) primary fault displacement model.
     """
 
-    def get_prob(self, d, X_L_ratio, mag, version="quadratic"):
+    _ACCEPTED_VERSIONS = frozenset(["quadratic", "bilinear", "elliptical"])
+
+    def __init__(self, version=None):
+        """
+        :param version: optional along-strike shape variant pinned by the
+            logic-tree branch ('quadratic', 'bilinear' or 'elliptical');
+            ``None`` defers to the ``get_prob`` call (legacy default:
+            'quadratic').
+        """
+        super().__init__()
+        self.version = check_choice(type(self).__name__, "version", version,
+                                    self._ACCEPTED_VERSIONS,
+                                    canon=lambda v: str(v).lower())
+
+    def get_prob(self, d, X_L_ratio, mag, version=None):
         """
         Calculate probability of exceeding displacement thresholds [m] for Petersen et al. (2011).
         Supports vectorized inputs: d (n_displacements,), X_L_ratio (n_sites,), mag (scalar or broadcastable).
         Returns array of shape (n_displacements, n_sites).
         """
+        # Fall back to the constructor-pinned variant, then legacy default
+        if version is None:
+            version = self.version if self.version is not None else "quadratic"
         # Prepare inputs
         d_arr = np.atleast_1d(d).astype(float)
         X_L = np.atleast_1d(X_L_ratio).astype(float)

@@ -208,15 +208,76 @@ class Mammarella2024PrimarySR(BasePrimarySurfRup):
         Probability in [0, 1]. Scalar if mag is scalar, else shape (n_mw,).
     """
 
-    def get_prob(self, mag, MSR, HDD_str,
-                 dip_mu, dip_sigma, t_d, Zs_sigma, t_z,
-                 rake=None, style=None, seismothickness=None, Zs_mu=None):
+    def __init__(self, MSR=None, HDD_str=None, dip_mu=None, dip_sigma=None,
+                 t_d=None, Zs_sigma=None, t_z=None, style=None,
+                 seismothickness=None, Zs_mu=None):
+        """
+        Constructor-pinned model parameters, each defaulting to ``None``
+        ("provide at call time instead"): the magnitude-scaling-relation
+        index ``MSR`` (0, 1 or 2), the hypocentral-depth-distribution key
+        ``HDD_str``, the dip prior ``dip_mu``/``dip_sigma`` with truncation
+        ``t_d``, the seismogenic-thickness prior ``Zs_mu`` (alias
+        ``seismothickness``)/``Zs_sigma`` with truncation ``t_z``, and the
+        faulting ``style``. A pinned value is the fallback when the
+        corresponding ``get_prob`` argument is not passed; an explicit
+        call-time argument always wins (``dip_mu`` in particular normally
+        comes from the rupture context unless pinned here).
+        """
+        super().__init__()
+        if MSR is not None and int(MSR) not in (0, 1, 2):
+            raise ValueError(
+                f"{type(self).__name__}: MSR must be one of {{0, 1, 2}}; "
+                f"got {MSR!r}")
+        if HDD_str is not None and HDD_str not in TAB2:
+            raise ValueError(
+                f"{type(self).__name__}: invalid HDD_str {HDD_str!r}; "
+                f"expected one of {sorted(TAB2.keys())}")
+        self.MSR = None if MSR is None else int(MSR)
+        self.HDD_str = HDD_str
+        self.dip_mu = None if dip_mu is None else float(dip_mu)
+        self.dip_sigma = None if dip_sigma is None else float(dip_sigma)
+        self.t_d = None if t_d is None else float(t_d)
+        self.Zs_sigma = None if Zs_sigma is None else float(Zs_sigma)
+        self.t_z = None if t_z is None else float(t_z)
+        self.style = style
+        self.seismothickness = (None if seismothickness is None
+                                else float(seismothickness))
+        self.Zs_mu = None if Zs_mu is None else float(Zs_mu)
+
+    def get_prob(self, mag, MSR=None, HDD_str=None,
+                 dip_mu=None, dip_sigma=None, t_d=None, Zs_sigma=None,
+                 t_z=None, rake=None, style=None, seismothickness=None,
+                 Zs_mu=None):
         """Return the probability of principal surface rupture.
 
         See the class docstring for the full description of parameters
         (``mag``, ``MSR``, ``HDD_str``, dip and seismogenic-thickness
-        distribution parameters) and the return value.
+        distribution parameters) and the return value. Parameters left as
+        ``None`` fall back to the values pinned at construction.
         """
+        # Fall back to constructor-pinned values (call-time argument wins)
+        MSR = self.MSR if MSR is None else MSR
+        HDD_str = self.HDD_str if HDD_str is None else HDD_str
+        dip_mu = self.dip_mu if dip_mu is None else dip_mu
+        dip_sigma = self.dip_sigma if dip_sigma is None else dip_sigma
+        t_d = self.t_d if t_d is None else t_d
+        Zs_sigma = self.Zs_sigma if Zs_sigma is None else Zs_sigma
+        t_z = self.t_z if t_z is None else t_z
+        style = self.style if style is None else style
+        seismothickness = (self.seismothickness if seismothickness is None
+                           else seismothickness)
+        Zs_mu = self.Zs_mu if Zs_mu is None else Zs_mu
+
+        missing = [n for n, v in [("MSR", MSR), ("HDD_str", HDD_str),
+                                  ("dip_mu", dip_mu), ("dip_sigma", dip_sigma),
+                                  ("t_d", t_d), ("Zs_sigma", Zs_sigma),
+                                  ("t_z", t_z)] if v is None]
+        if missing:
+            raise ValueError(
+                f"{type(self).__name__}: missing required parameter(s) "
+                f"{missing}; provide them in the logic-tree branch or at "
+                f"call time")
+
         # Validate and prepare inputs
         msr = int(MSR)
         if msr not in (0, 1, 2):

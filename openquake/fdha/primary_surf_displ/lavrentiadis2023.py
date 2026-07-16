@@ -23,6 +23,7 @@ the model of Lavrentiadis and Abrahamson (2023) in :class:`Lavrentiadis2023Prima
 
 import numpy as np
 from scipy import stats as scipystats
+from openquake.fdha.params import check_bool, check_style
 from openquake.fdha.primary_surf_displ.base import BasePrimarySurfDispl
 
 class Lavrentiadis2023PrimaryFD(BasePrimarySurfDispl):
@@ -37,7 +38,24 @@ class Lavrentiadis2023PrimaryFD(BasePrimarySurfDispl):
 	for probabilistic fault displacement hazard analysis.
 	"""
 
-	def get_prob(self, d, X_L_ratio, mag, style="normal", output_type="disp_agg_prime", include_zero_slip=False):
+	def __init__(self, style=None, output_type=None, include_zero_slip=None):
+		"""
+		:param style: optional faulting style pinned by the logic-tree
+			branch; ``None`` defers to the ``get_prob`` call (legacy
+			default: 'normal').
+		:param output_type: optional output-type selector pinned by the
+			logic-tree branch (e.g. 'disp_agg_prime', 'disp_prnc_prime');
+			``None`` defers to the call (legacy default: 'disp_agg_prime').
+		:param include_zero_slip: optional flag pinned by the logic-tree
+			branch; ``None`` defers to the call (legacy default: False).
+		"""
+		super().__init__()
+		self.style = check_style(type(self).__name__, style)
+		self.output_type = None if output_type is None else str(output_type)
+		self.include_zero_slip = check_bool(
+			type(self).__name__, "include_zero_slip", include_zero_slip)
+
+	def get_prob(self, d, X_L_ratio, mag, style=None, output_type=None, include_zero_slip=None):
 		"""
 		Probability of exceeding displacement thresholds for the
 		Lavrentiadis et al. (2023) model.
@@ -62,6 +80,15 @@ class Lavrentiadis2023PrimaryFD(BasePrimarySurfDispl):
 		:raises ValueError:
 		    If ``output_type`` is invalid.
 		"""
+		# Fall back to constructor-pinned values, then legacy defaults
+		if style is None:
+			style = self.style if self.style is not None else "normal"
+		if output_type is None:
+			output_type = (self.output_type
+				if self.output_type is not None else "disp_agg_prime")
+		if include_zero_slip is None:
+			include_zero_slip = (self.include_zero_slip
+				if self.include_zero_slip is not None else False)
 
 		(
 			disp_agg_prime,
