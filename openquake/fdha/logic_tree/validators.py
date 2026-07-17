@@ -75,7 +75,7 @@ def _contract_of(class_name: str):
     """(definition, component) declared by a registered FD model class.
 
     The contract is STATIC class metadata -- the class choice IS the
-    definition (e.g. ``Lavrentiadis2023PrimaryFD`` [aggregate] vs
+    definition (e.g. ``Lavrentiadis2023PrimaryFD_aggregate`` [aggregate] vs
     ``Lavrentiadis2023PrimaryFD_principal`` [sum-of-principal]); no model
     parameter can change it. Returns ``(None, None)`` for unresolvable
     classes (already an FDLT-006 error) and for classes without the
@@ -246,7 +246,7 @@ def validate_spec(spec: LogicTreeSpec, source_ids: Optional[set[str]] = None) ->
                 # FDLT-015: wrong-class output_type. The class choice IS the
                 # displacement definition (static contract), so the branch
                 # parameters may never re-route a class to another published
-                # definition: Lavrentiadis2023PrimaryFD serves ONLY the
+                # definition: Lavrentiadis2023PrimaryFD_aggregate serves ONLY the
                 # aggregate variants (disp_agg_prime / disp_agg_seg), the
                 # sum-of-principal disp_prnc_prime metric lives in
                 # Lavrentiadis2023PrimaryFD_principal -- which in turn pins
@@ -254,7 +254,7 @@ def validate_spec(spec: LogicTreeSpec, source_ids: Optional[set[str]] = None) ->
                 # Fail-early-and-loud (cf. commit d541dbc3); the model
                 # classes raise the same errors at evaluation time.
                 _ot = (br_params or {}).get("output_type")
-                if class_name == "Lavrentiadis2023PrimaryFD" \
+                if class_name == "Lavrentiadis2023PrimaryFD_aggregate" \
                         and str(_ot) == "disp_prnc_prime":
                     issues.append(
                         ValidatorIssue(
@@ -264,7 +264,7 @@ def validate_spec(spec: LogicTreeSpec, source_ids: Optional[set[str]] = None) ->
                                 f"Branch {br.branch_id} in "
                                 f"{bs.branch_set_id} configures "
                                 "output_type = disp_prnc_prime on "
-                                "Lavrentiadis2023PrimaryFD, which serves "
+                                "Lavrentiadis2023PrimaryFD_aggregate, which serves "
                                 "only the AGGREGATE variants. The sum-of-"
                                 "principal metric is a different "
                                 "displacement definition: select the "
@@ -287,7 +287,7 @@ def validate_spec(spec: LogicTreeSpec, source_ids: Optional[set[str]] = None) ->
                                 "Lavrentiadis2023PrimaryFD_principal; "
                                 "output_type is fixed by the class choice "
                                 "(disp_prnc_prime). Remove the output_type "
-                                "line, or select Lavrentiadis2023PrimaryFD "
+                                "line, or select Lavrentiadis2023PrimaryFD_aggregate "
                                 "for the aggregate variants."
                             ),
                         )
@@ -503,7 +503,7 @@ def validate_end_branch_chains(end_branches) -> ValidatorReport:
     FDLT-013 (error): an AGGREGATE-definition primary FD model combined with
     a non-empty secondary slot in the same branch chain. Aggregate models
     (Sarmiento et al. 2025 Table 1, e.g. Kuehn2024PrimaryFD or
-    Lavrentiadis2023PrimaryFD) already predict the total of principal AND
+    Lavrentiadis2023PrimaryFD_aggregate) already predict the total of principal AND
     distributed displacement, so an additional secondary-slot model double
     counts the off-fault hazard
     (docs/design/rupture_location_uncertainty.md, D8). The definition is

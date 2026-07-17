@@ -74,7 +74,7 @@ class BasePrimarySurfDispl(metaclass=abc.ABCMeta):
     #: Displacement definition this model was calibrated for; one of
     #: :data:`DISPLACEMENT_DEFINITIONS`. STATIC -- the class choice IS the
     #: definition: papers that publish several definitions get one model
-    #: class per definition (e.g. ``Lavrentiadis2023PrimaryFD`` [aggregate]
+    #: class per definition (e.g. ``Lavrentiadis2023PrimaryFD_aggregate`` [aggregate]
     #: vs ``Lavrentiadis2023PrimaryFD_principal`` [sum-of-principal],
     #: following the ``Petersen2011PrimaryFD_*`` variant idiom); no model
     #: parameter may change it. The default is ``"principal"`` (the classic

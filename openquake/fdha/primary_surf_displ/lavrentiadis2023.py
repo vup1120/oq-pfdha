@@ -22,7 +22,7 @@ the model of Lavrentiadis and Abrahamson (2023) in two classes, one per
 displacement definition (the class choice IS the definition, following the
 Petersen2011PrimaryFD_bilinear/_elliptical/_quadratic variant idiom):
 
-- :class:`Lavrentiadis2023PrimaryFD` — the AGGREGATE-definition variants
+- :class:`Lavrentiadis2023PrimaryFD_aggregate` — the AGGREGATE-definition variants
   (``output_type`` ``disp_agg_prime`` (default) or ``disp_agg_seg``);
 - :class:`Lavrentiadis2023PrimaryFD_principal` — the sum-of-principal
   variant (``disp_prnc_prime``, hard-pinned by the class).
@@ -33,11 +33,12 @@ from scipy import stats as scipystats
 from openquake.fdha.params import check_bool, check_style
 from openquake.fdha.primary_surf_displ.base import BasePrimarySurfDispl
 
-class Lavrentiadis2023PrimaryFD(BasePrimarySurfDispl):
-	"""Principal fault-displacement model of Lavrentiadis and Abrahamson (2023).
+class Lavrentiadis2023PrimaryFD_aggregate(BasePrimarySurfDispl):
+	"""Aggregate fault-displacement model of Lavrentiadis and Abrahamson (2023).
 
-	Model of principal fault displacement as a function of magnitude,
-	normalized along-strike position, and faulting style.
+	Model of aggregate fault displacement as a function of magnitude,
+	normalized along-strike position, and faulting style, run in the
+	principal (primary_surf_displ) slot.
 
 	References
 	----------
@@ -71,16 +72,37 @@ class Lavrentiadis2023PrimaryFD(BasePrimarySurfDispl):
 			branch; ``None`` defers to the ``get_prob`` call (legacy
 			default: 'normal').
 		:param output_type: optional output-type selector pinned by the
-			logic-tree branch (e.g. 'disp_agg_prime', 'disp_prnc_prime');
-			``None`` defers to the call (legacy default: 'disp_agg_prime').
+			logic-tree branch ('disp_agg_prime' or 'disp_agg_seg');
+			``None`` defers to the call (legacy default:
+			'disp_agg_prime'). The sum-of-principal 'disp_prnc_prime'
+			metric is served by
+			:class:`Lavrentiadis2023PrimaryFD_principal` and rejected
+			here.
 		:param include_zero_slip: optional flag pinned by the logic-tree
 			branch; ``None`` defers to the call (legacy default: False).
 		"""
 		super().__init__()
 		self.style = check_style(type(self).__name__, style)
-		self.output_type = None if output_type is None else str(output_type)
+		if output_type is not None:
+			output_type = str(output_type)
+			self._check_aggregate_output_type(output_type)
+		self.output_type = output_type
 		self.include_zero_slip = check_bool(
 			type(self).__name__, "include_zero_slip", include_zero_slip)
+
+	@staticmethod
+	def _check_aggregate_output_type(output_type):
+		"""Reject the sum-of-principal metric on the aggregate class, both
+		at construction (logic-tree pin) and at call time."""
+		if output_type == "disp_prnc_prime":
+			raise ValueError(
+				"Lavrentiadis2023PrimaryFD_aggregate is the AGGREGATE-definition "
+				"model (disp_agg_prime / disp_agg_seg); the sum-of-"
+				"principal metric disp_prnc_prime is a different "
+				"displacement definition (Sarmiento et al. 2025, Table 1). "
+				"Select the Lavrentiadis2023PrimaryFD_principal model "
+				"class instead of passing output_type = disp_prnc_prime."
+			)
 
 	def get_prob(self, d, X_L_ratio, mag, style=None, output_type=None, include_zero_slip=None):
 		"""
@@ -118,15 +140,7 @@ class Lavrentiadis2023PrimaryFD(BasePrimarySurfDispl):
 		if include_zero_slip is None:
 			include_zero_slip = (self.include_zero_slip
 				if self.include_zero_slip is not None else False)
-		if output_type == "disp_prnc_prime":
-			raise ValueError(
-				"Lavrentiadis2023PrimaryFD is the AGGREGATE-definition "
-				"model (disp_agg_prime / disp_agg_seg); the sum-of-"
-				"principal metric disp_prnc_prime is a different "
-				"displacement definition (Sarmiento et al. 2025, Table 1). "
-				"Select the Lavrentiadis2023PrimaryFD_principal model "
-				"class instead of passing output_type = disp_prnc_prime."
-			)
+		self._check_aggregate_output_type(output_type)
 		return self._evaluate(
 			d, X_L_ratio, mag, style=style, output_type=output_type,
 			include_zero_slip=include_zero_slip)
@@ -640,10 +654,10 @@ class Lavrentiadis2023PrimaryFD(BasePrimarySurfDispl):
 		return np.nanmean(np.where(s >= 0, s, np.nan) ** (10 / 3), axis=1)
 
 
-class Lavrentiadis2023PrimaryFD_principal(Lavrentiadis2023PrimaryFD):
+class Lavrentiadis2023PrimaryFD_principal(Lavrentiadis2023PrimaryFD_aggregate):
 	"""Sum-of-principal variant of Lavrentiadis and Abrahamson (2023).
 
-	Identical regression machinery as :class:`Lavrentiadis2023PrimaryFD`,
+	Identical regression machinery as :class:`Lavrentiadis2023PrimaryFD_aggregate`,
 	hard-pinned to the paper's ``disp_prnc_prime`` metric: the principal-
 	strand slip summed within the measurement aperture, WITHOUT distributed
 	ruptures. Following the Petersen2011PrimaryFD_* variant idiom, the class
@@ -663,26 +677,45 @@ class Lavrentiadis2023PrimaryFD_principal(Lavrentiadis2023PrimaryFD):
 	DISPLACEMENT_DEFINITION = "sum-of-principal"
 	DISPLACEMENT_COMPONENT = "net"
 
-	def get_prob(self, d, X_L_ratio, mag, style="normal",
-			include_zero_slip=False, output_type=None):
+	def __init__(self, style=None, output_type=None, include_zero_slip=None):
 		"""
-		Probability of exceeding sum-of-principal (``disp_prnc_prime``)
-		displacement thresholds; parameters as in
-		:meth:`Lavrentiadis2023PrimaryFD.get_prob`.
+		Parameters as in :class:`Lavrentiadis2023PrimaryFD_aggregate`, except
+		``output_type``, which must be left unset -- the metric is fixed
+		by the class choice (a logic-tree pin would otherwise be silently
+		ignored).
+		"""
+		self._check_no_output_type(output_type)
+		super().__init__(style=style, include_zero_slip=include_zero_slip)
 
-		:param output_type:
-		    Must be left unset -- the metric is fixed by the class choice.
-		:raises ValueError:
-		    If an explicit ``output_type`` is passed.
-		"""
+	@staticmethod
+	def _check_no_output_type(output_type):
 		if output_type is not None:
 			raise ValueError(
 				"Lavrentiadis2023PrimaryFD_principal evaluates the "
 				"disp_prnc_prime (sum-of-principal) metric; output_type "
 				f"is fixed by the class choice (got '{output_type}'). "
 				"Remove the output_type parameter, or select "
-				"Lavrentiadis2023PrimaryFD for the aggregate variants."
+				"Lavrentiadis2023PrimaryFD_aggregate for the aggregate variants."
 			)
+
+	def get_prob(self, d, X_L_ratio, mag, style=None,
+			include_zero_slip=None, output_type=None):
+		"""
+		Probability of exceeding sum-of-principal (``disp_prnc_prime``)
+		displacement thresholds; parameters as in
+		:meth:`Lavrentiadis2023PrimaryFD_aggregate.get_prob`.
+
+		:param output_type:
+		    Must be left unset -- the metric is fixed by the class choice.
+		:raises ValueError:
+		    If an explicit ``output_type`` is passed.
+		"""
+		self._check_no_output_type(output_type)
+		if style is None:
+			style = self.style if self.style is not None else "normal"
+		if include_zero_slip is None:
+			include_zero_slip = (self.include_zero_slip
+				if self.include_zero_slip is not None else False)
 		return self._evaluate(
 			d, X_L_ratio, mag, style=style, output_type="disp_prnc_prime",
 			include_zero_slip=include_zero_slip)

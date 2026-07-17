@@ -30,7 +30,7 @@ def effective_displacement_definition(model):
     displacement definition as the ``DISPLACEMENT_DEFINITION`` class
     attribute. The contract is STATIC -- the class choice IS the definition
     (papers publishing several definitions expose one class per definition,
-    e.g. ``Lavrentiadis2023PrimaryFD`` vs
+    e.g. ``Lavrentiadis2023PrimaryFD_aggregate`` vs
     ``Lavrentiadis2023PrimaryFD_principal``); no model parameter may change
     it. This helper is the single lookup point used by the hazard kernel
     (single-bucket routing of aggregate models), by the calculator
@@ -263,16 +263,16 @@ class LegacyModelAdapter:
         # before _call_safely, which would otherwise swallow the model's own
         # ValueError into silent zero hazard (same pre-call pattern as the
         # Youngs2003 style check above; cf. commit d541dbc3). The class
-        # choice IS the displacement definition — Lavrentiadis2023PrimaryFD
+        # choice IS the displacement definition — Lavrentiadis2023PrimaryFD_aggregate
         # serves only the aggregate variants; the sum-of-principal
         # disp_prnc_prime metric lives in Lavrentiadis2023PrimaryFD_principal
         # (which in turn accepts no explicit output_type at all). Logic-tree
         # jobs are already rejected at validation time (FDLT-015).
         _output_type = self.model_params.get('output_type')
-        if model_name == 'Lavrentiadis2023PrimaryFD' \
+        if model_name == 'Lavrentiadis2023PrimaryFD_aggregate' \
                 and str(_output_type) == 'disp_prnc_prime':
             raise ValueError(
-                "Lavrentiadis2023PrimaryFD is the AGGREGATE-definition model; "
+                "Lavrentiadis2023PrimaryFD_aggregate is the AGGREGATE-definition model; "
                 "output_type = disp_prnc_prime (sum-of-principal) is served "
                 "by the Lavrentiadis2023PrimaryFD_principal model class. "
                 "Select that class instead of passing output_type."

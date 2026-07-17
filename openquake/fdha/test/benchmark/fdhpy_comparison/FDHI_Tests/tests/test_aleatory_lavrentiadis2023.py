@@ -6,7 +6,7 @@ STATUS: TESTABLE - pfdha exposes LavrentiadisAbrahamson2023SlipProfile() returni
 fdhpy exposes:
 - sigma_mu_agg property (std dev of predicted median aggregate displacement)
 
-pfdha Lavrentiadis2023PrimaryFD:
+pfdha Lavrentiadis2023PrimaryFD_aggregate:
 - LavrentiadisAbrahamson2023SlipProfile() returns:
   - sig_agg (total aggregate aleatory)
   - sig_prnc (total principal aleatory)
@@ -25,7 +25,7 @@ fdhpy = pytest.importorskip("fdhpy", reason="fdhpy not installed – FDHI aleato
 from fdhpy import LavrentiadisAbrahamson2023
 
 try:
-    from openquake.fdha.primary_surf_displ import Lavrentiadis2023PrimaryFD
+    from openquake.fdha.primary_surf_displ import Lavrentiadis2023PrimaryFD_aggregate
 except ImportError as e:
     pytest.skip(f"pfdha FD models not importable for aleatory tests: {e}", allow_module_level=True)
 
@@ -97,7 +97,7 @@ class TestLavrentiadis2023Aleatory:
         fdhpy_sigma = stat_params["params"].get("sigma")
         
         # pfdha
-        pfdha_model = Lavrentiadis2023PrimaryFD()
+        pfdha_model = Lavrentiadis2023PrimaryFD_aggregate()
         result = pfdha_model.LavrentiadisAbrahamson2023SlipProfile(
             x_array=np.array([xl]),
             mag=magnitude,
@@ -131,7 +131,7 @@ class TestLavrentiadis2023Aleatory:
         style = "strike-slip"
 
         # pfdha
-        pfdha_model = Lavrentiadis2023PrimaryFD()
+        pfdha_model = Lavrentiadis2023PrimaryFD_aggregate()
         result = pfdha_model.LavrentiadisAbrahamson2023SlipProfile(
             x_array=np.array([xl]),
             mag=magnitude,

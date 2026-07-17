@@ -235,7 +235,7 @@ def test_calculator_rejects_aggregate_plus_secondary_config():
 def test_calculator_rejects_aggregate_plus_secondary_fd_only():
     with pytest.raises(ValueError, match="double counts"):
         _calc_with_models({
-            "primary_surf_displ": {"type": "Lavrentiadis2023PrimaryFD"},
+            "primary_surf_displ": {"type": "Lavrentiadis2023PrimaryFD_aggregate"},
             "secondary_surf_displ": {"type": "Youngs2003SecondaryFD"},
         })
 

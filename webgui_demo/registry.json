@@ -208,7 +208,7 @@
           "prefill": ""
         },
         {
-          "class_name": "Lavrentiadis2023PrimaryFD",
+          "class_name": "Lavrentiadis2023PrimaryFD_aggregate",
           "module": "openquake.fdha.primary_surf_displ.lavrentiadis2023",
           "doc_page": "primary/Lavrentiadis2023.md",
           "doc_params": [

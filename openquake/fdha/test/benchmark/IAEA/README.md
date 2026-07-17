@@ -143,7 +143,7 @@ by pointing `source_model_logic_tree_file` at `smlt_basecase.xml`;
 | C24 | `WC1993PrimarySR` + `Chiou2025PrimaryFD (model7)` | same chain as `benchmark/valentini_et_al_2025` |
 | K24 | `FixedPrimarySR (1.0)` + `Kuehn2024PrimaryFD`, full-posterior **mean** (the default ensemble reduction) | paper: K24 team assumed P_sr = 1 |
 | T13 | `Takao2013PrimarySR` + `Takao2013PrimaryFD (AD, n_sigma = 5)`; distributed: `Takao2014SecondarySR (cell 100 m)` + `Takao2013SecondaryFD (AD, n_sigma = 5)` | published principal curves include the P2p site-rupture factor (~0.45–0.48), not yet a library model → applied as a documented `post_factor` in `manifest.py` |
-| L23 | `FixedPrimarySR (case-specific)` + `Lavrentiadis2023PrimaryFD (disp_prnc_prime, include_zero_slip)` | the team computed a case-specific P_sr by floating the rupture over the dip surface; adopted values 0.85 / 0.65 / 1.0 (Kumamoto / Le Teil / Norcia) back-calculated from their published curves and consistent with the rupture-width / fault-width ratio |
+| L23 | `FixedPrimarySR (case-specific)` + `Lavrentiadis2023PrimaryFD_aggregate (disp_prnc_prime, include_zero_slip)` | the team computed a case-specific P_sr by floating the rupture over the dip surface; adopted values 0.85 / 0.65 / 1.0 (Kumamoto / Le Teil / Norcia) back-calculated from their published curves and consistent with the rupture-width / fault-width ratio |
 | M11 | `Moss2013PrimarySR (stiff, vs30 760)` + `MossRoss2011PrimaryFD (AD)` | **qualitative only** — see below |
 | Y03 | `Youngs2003PrimarySR/FD (normal, AD)`; distributed: `Youngs2003SecondarySR (v3)` + `Youngs2003SecondaryFD (85th)` | |
 | V24 | gate `FixedPrimarySR (1.0)` + `Visini2025SecondarySR (100 m)` + `Visini2025SecondaryFD (WC1994)` | **qualitative only** — see below |

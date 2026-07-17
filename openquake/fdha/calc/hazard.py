@@ -509,7 +509,7 @@ def _compute_rupture_contribution(
     # An aggregate-definition model (Sarmiento et al. 2025 Table 1: total
     # displacement across principal AND distributed ruptures in the
     # measurement aperture, e.g. Kuehn2024PrimaryFD or
-    # Lavrentiadis2023PrimaryFD -- the contract is STATIC, the class choice
+    # Lavrentiadis2023PrimaryFD_aggregate -- the contract is STATIC, the class choice
     # IS the definition) already contains the distributed contribution, so
     # the split above does not apply:
     #

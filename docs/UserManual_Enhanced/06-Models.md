@@ -136,7 +136,7 @@ These models answer the question: *Given that a surface rupture has occurred, wh
 | `Youngs2003PrimaryFD` | Youngs et al. (2003) | Normal | Vertical | Single principal | via AD/MD scaling | Models the displacement profile based on Average or Maximum Displacement normalization. |
 | `Chiou2025PrimaryFD` | Chiou et al. (2025) | Strike-slip | Net | Sum-of-principal | 6.0–8.3 | A model for sum-of-principal displacement on strike-slip faults (NGA-Displacement). |
 | `Kuehn2024PrimaryFD` | Kuehn et al. (2024) | All | Net | Aggregate | 5.0–8.0 (R); 6.0–8.0 (N, SS) | A comprehensive model with options to include epistemic uncertainty via posterior sampling. |
-| `Lavrentiadis2023PrimaryFD`| Lavrentiadis & Abrahamson (2023) | All | Net | Aggregate | 5.0–8.5 | Aggregate variants (`output_type` `disp_agg_prime` default / `disp_agg_seg`); can account for zero-slip probability and rupture gaps. The class choice is the definition — for the sum-of-principal metric use the `_principal` class below. |
+| `Lavrentiadis2023PrimaryFD_aggregate`| Lavrentiadis & Abrahamson (2023) | All | Net | Aggregate | 5.0–8.5 | Aggregate variants (`output_type` `disp_agg_prime` default / `disp_agg_seg`); can account for zero-slip probability and rupture gaps. The class choice is the definition — for the sum-of-principal metric use the `_principal` class below. |
 | `Lavrentiadis2023PrimaryFD_principal`| Lavrentiadis & Abrahamson (2023) | All | Net | Sum-of-principal | 5.0–8.5 | The `disp_prnc_prime` variant, `output_type` pinned by the class (passing one is an error). Not aggregate: secondary models remain legitimate alongside it. |
 | `MossRoss2011PrimaryFD` | Moss & Ross (2011) | Reverse | Vertical | Single principal | via AD/MD scaling | Restored legacy normalized displacement model with AD/MD scaling. |
 | `Moss2022PrimaryFD` | Moss et al. (2022) | Reverse | Vertical | Single principal | 4.7–8.0 | GIRS-2022-05 report formulation with `gamma_mode`, incomplete MD subset, and `sigma_type` selector. |
@@ -211,7 +211,7 @@ Section 5, rather than in the Valentini et al. summary table.
     **Primary Surface Displacement Models:**
     - [Chiou et al. (2025)](models/primary/Chiou2025.md) — Strike-slip faults, sum-of-principal displacement
     - [Kuehn et al. (2024)](models/primary/Kuehn2024.md) — All fault styles, aggregate displacement with epistemic uncertainty
-    - [Lavrentiadis & Abrahamson (2023)](models/primary/Lavrentiadis2023.md) — All fault styles; aggregate (`Lavrentiadis2023PrimaryFD`) and sum-of-principal (`Lavrentiadis2023PrimaryFD_principal`) classes
+    - [Lavrentiadis & Abrahamson (2023)](models/primary/Lavrentiadis2023.md) — All fault styles; aggregate (`Lavrentiadis2023PrimaryFD_aggregate`) and sum-of-principal (`Lavrentiadis2023PrimaryFD_principal`) classes
     - [Moss et al. (2024)](models/primary/Moss2024.md) — Reverse faults, normalized displacement
     - [Petersen et al. (2011)](models/primary/Petersen2011.md) — Strike-slip faults, multiple functional forms
     - [Takao et al. (2013)](models/primary/Takao2013.md) — Reverse and strike-slip faults, normalized displacement

@@ -49,7 +49,7 @@ try:
     from openquake.fdha.primary_surf_displ import (
         Petersen2011PrimaryFD,
         Kuehn2024PrimaryFD,
-        Lavrentiadis2023PrimaryFD,
+        Lavrentiadis2023PrimaryFD_aggregate,
     )
     from openquake.fdha.primary_surf_displ.kuehn2024.load_data import DATA as KUEHN_COEFFICIENTS
     PFDHA_AVAILABLE = True
@@ -248,7 +248,7 @@ def collect_kuehn_results() -> List[Dict[str, Any]]:
 def collect_lavrentiadis_results() -> List[Dict[str, Any]]:
     """Collect aleatory comparison results for Lavrentiadis & Abrahamson (2023)."""
     results = []
-    pfdha_model = Lavrentiadis2023PrimaryFD()
+    pfdha_model = Lavrentiadis2023PrimaryFD_aggregate()
     
     # sigma_mu_agg tests (epistemic uncertainty formula check)
     for style in LA23_STYLES:

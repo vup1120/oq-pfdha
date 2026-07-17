@@ -140,7 +140,7 @@ Distributional choices diverge widely, but two structural families dominate:
 - **τ/φ:** Not separated.
 - **Epistemic branches:** completeness (complete / all), σ source (recommended / regression), gamma source (EQS / GIRS).
 
-### `Lavrentiadis2023PrimaryFD` — [lavrentiadis2023.py](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py)
+### `Lavrentiadis2023PrimaryFD_aggregate` — [lavrentiadis2023.py](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py)
 - **Distribution:** Normal on the **power-transformed displacement** `D^0.3`, via `norm.sf` ([lines 94–96](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L94-L96)). The transformation is applied as `D = μ_prime^(1/0.3)` ([line 345](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L345)), so probability statements live in the "prime" (Box–Cox-like) space.
 - **σ — full τ/φ decomposition, both magnitude-dependent** ([lines 329–340](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L329-L340)):
   - between-event `τ_agg = clip(0.115 + 0.060·(M−6), [0.115, 0.205])`;

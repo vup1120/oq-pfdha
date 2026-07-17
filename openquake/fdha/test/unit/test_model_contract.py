@@ -54,7 +54,7 @@ EXPECTED_CONTRACT = {
     "Moss2022PrimaryFD": ("principal", "vertical"),
     "Moss2024PrimaryFD": ("principal", "vertical"),
     "Takao2013PrimaryFD": ("principal", "net"),
-    "Lavrentiadis2023PrimaryFD": ("aggregate", "net"),
+    "Lavrentiadis2023PrimaryFD_aggregate": ("aggregate", "net"),
     "Lavrentiadis2023PrimaryFD_principal": ("sum-of-principal", "net"),
     "Kuehn2024PrimaryFD": ("aggregate", "net"),
     "Chiou2025PrimaryFD": ("sum-of-principal", "net"),
@@ -122,7 +122,7 @@ def test_lavrentiadis_two_classes_static_contracts():
     serves the aggregate variants, the _principal subclass the
     sum-of-principal disp_prnc_prime metric. Contracts are static — no
     parameter can re-route them."""
-    parent = primary_surf_displ.Lavrentiadis2023PrimaryFD
+    parent = primary_surf_displ.Lavrentiadis2023PrimaryFD_aggregate
     principal = primary_surf_displ.Lavrentiadis2023PrimaryFD_principal
     assert effective_displacement_definition(parent) == "aggregate"
     assert effective_displacement_definition(principal) == "sum-of-principal"
@@ -133,7 +133,7 @@ def test_lavrentiadis_two_classes_static_contracts():
 def test_lavrentiadis_parent_rejects_prnc_output_type():
     """The aggregate class refuses to evaluate the sum-of-principal metric;
     the error names the class to use instead."""
-    model = primary_surf_displ.Lavrentiadis2023PrimaryFD()
+    model = primary_surf_displ.Lavrentiadis2023PrimaryFD_aggregate()
     with pytest.raises(ValueError,
                        match="Lavrentiadis2023PrimaryFD_principal"):
         model.get_prob(d=np.array([0.1]), X_L_ratio=np.array([0.5]),
@@ -159,7 +159,7 @@ def test_lavrentiadis_principal_numerical_identity():
     single-class disp_prnc_prime evaluation EXACTLY (the IAEA L23 chains
     were converted to the new class on this guarantee). Compared against
     the shared implementation the parent evaluates for its own variants."""
-    parent = primary_surf_displ.Lavrentiadis2023PrimaryFD()
+    parent = primary_surf_displ.Lavrentiadis2023PrimaryFD_aggregate()
     principal = primary_surf_displ.Lavrentiadis2023PrimaryFD_principal()
     d = np.array([0.01, 0.1, 0.5, 2.0, 10.0])
     for mag in (6.0, 7.0, 7.8):

@@ -8,7 +8,7 @@ C4 model-contract logic-tree guards:
   (no cross-definition conversion, Sarmiento et al. 2025 Table 1);
 - FDLT-105 (warning): mixed DISPLACEMENT_COMPONENT within one FD branch set;
 - FDLT-015 (error): wrong-class output_type -- the class choice IS the
-  definition (Lavrentiadis2023PrimaryFD is aggregate-only; the _principal
+  definition (Lavrentiadis2023PrimaryFD_aggregate is aggregate-only; the _principal
   variant class pins output_type and accepts no explicit value).
 """
 import pytest
@@ -107,7 +107,7 @@ def test_lavrentiadis_principal_class_groups_with_sum_of_principal():
 
     bad = _spec(_fd_set(
         "fdhaPrimaryFDModel",
-        "Lavrentiadis2023PrimaryFD",  # aggregate
+        "Lavrentiadis2023PrimaryFD_aggregate",  # aggregate
         "Chiou2025PrimaryFD",         # sum-of-principal
     ))
     assert "FDLT-014" in _codes(validate_spec(bad))
@@ -218,7 +218,7 @@ def test_lavrentiadis_principal_class_with_secondary_passes():
 
 def test_lavrentiadis_aggregate_variant_with_secondary_fails():
     eb = _end_branch(
-        primary_surf_displ=_choice("Lavrentiadis2023PrimaryFD"),
+        primary_surf_displ=_choice("Lavrentiadis2023PrimaryFD_aggregate"),
         secondary_surf_displ=_choice("Youngs2003SecondaryFD"),
     )
     assert "FDLT-013" in _codes(validate_end_branch_chains([eb]))
@@ -243,7 +243,7 @@ def test_prnc_output_type_on_aggregate_class_is_an_error():
     _principal variant class."""
     spec = _spec(_fd_set(
         "fdhaPrimaryFDModel",
-        "[Lavrentiadis2023PrimaryFD]\noutput_type = disp_prnc_prime\n"
+        "[Lavrentiadis2023PrimaryFD_aggregate]\noutput_type = disp_prnc_prime\n"
         "include_zero_slip = True",
     ))
     report = validate_spec(spec)
@@ -272,8 +272,8 @@ def test_explicit_output_type_on_principal_class_is_an_error(output_type):
 def test_aggregate_output_types_on_aggregate_class_pass_fdlt015():
     spec = _spec(_fd_set(
         "fdhaPrimaryFDModel",
-        "[Lavrentiadis2023PrimaryFD]\noutput_type = disp_agg_seg",
-        "Lavrentiadis2023PrimaryFD",
+        "[Lavrentiadis2023PrimaryFD_aggregate]\noutput_type = disp_agg_seg",
+        "Lavrentiadis2023PrimaryFD_aggregate",
     ))
     assert "FDLT-015" not in _codes(validate_spec(spec))
 

@@ -75,7 +75,7 @@ def _write_job(tmp_path: Path, with_secondary: bool) -> Path:
     <logicTreeBranchingLevel branchingLevelID="bl2">
       <logicTreeBranchSet branchSetID="bs2" uncertaintyType="fdhaPrimaryFDModel" applyToBranches="SR1">
         <logicTreeBranch branchID="FD">
-          <uncertaintyModel>[Lavrentiadis2023PrimaryFD]</uncertaintyModel>
+          <uncertaintyModel>[Lavrentiadis2023PrimaryFD_aggregate]</uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
@@ -108,7 +108,7 @@ def test_aggregate_chain_with_secondary_halts_at_fdlt013(tmp_path, monkeypatch):
         FdhaLogicTree.from_ini(str(ini)).run(outdir=tmp_path / "out")
     msg = str(excinfo.value)
     assert "FDLT-013" in msg
-    assert "Lavrentiadis2023PrimaryFD" in msg
+    assert "Lavrentiadis2023PrimaryFD_aggregate" in msg
 
 
 def test_aggregate_chain_runs_single_bucket(tmp_path):

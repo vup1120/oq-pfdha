@@ -219,7 +219,7 @@ Table 1). Two axes matter when assembling a logic tree:
 
 The contract is **static class metadata: the model class you select IS the
 definition**. Papers that publish several definitions get one model class
-per definition — e.g. `Lavrentiadis2023PrimaryFD` (aggregate) vs
+per definition — e.g. `Lavrentiadis2023PrimaryFD_aggregate` (aggregate) vs
 `Lavrentiadis2023PrimaryFD_principal` (sum-of-principal), following the
 same variant idiom as `Petersen2011PrimaryFD_bilinear` / `_elliptical` /
 `_quadratic`. No model parameter can re-route a class to another
@@ -235,7 +235,7 @@ definition (FDLT-015 below).
 | `Takao2013PrimaryFD` | principal | net | — |
 | `Chiou2025PrimaryFD` | sum-of-principal | net | — |
 | `Kuehn2024PrimaryFD` | **aggregate** | net | — |
-| `Lavrentiadis2023PrimaryFD` | **aggregate** (`output_type` `disp_agg_prime` default / `disp_agg_seg`) | net | — |
+| `Lavrentiadis2023PrimaryFD_aggregate` | **aggregate** (`output_type` `disp_agg_prime` default / `disp_agg_seg`) | net | — |
 | `Lavrentiadis2023PrimaryFD_principal` | sum-of-principal (`disp_prnc_prime`, pinned by the class) | net | — |
 | `Youngs2003SecondaryFD` | distributed | vertical | r ≤ 15 km |
 | `Takao2013SecondaryFD` | distributed | net | r ≤ 20 km |
@@ -272,7 +272,7 @@ The contract is enforced by the validator and the calculator:
   not an error.
 - **FDLT-015 (error)** — wrong-class `output_type`. The class choice is
   the definition, so `output_type = disp_prnc_prime` on
-  `Lavrentiadis2023PrimaryFD` is rejected (select
+  `Lavrentiadis2023PrimaryFD_aggregate` is rejected (select
   `Lavrentiadis2023PrimaryFD_principal` instead), and any explicit
   `output_type` on `Lavrentiadis2023PrimaryFD_principal` is rejected (the
   class pins it). The model classes raise the same errors when called
@@ -283,7 +283,7 @@ The contract is enforced by the validator and the calculator:
   regression extrapolates there; results are still computed unchanged.
 
 !!! note "Lavrentiadis 2023: two classes, one per definition"
-    `Lavrentiadis2023PrimaryFD` serves the paper's aggregate variants
+    `Lavrentiadis2023PrimaryFD_aggregate` serves the paper's aggregate variants
     (`output_type` `disp_agg_prime`, the default, or `disp_agg_seg`); as
     an aggregate model it runs single-bucket and forbids secondary slots
     (FDLT-013). `Lavrentiadis2023PrimaryFD_principal` serves the

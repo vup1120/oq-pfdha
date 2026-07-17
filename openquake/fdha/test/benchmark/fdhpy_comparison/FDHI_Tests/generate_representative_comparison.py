@@ -57,7 +57,7 @@ try:
         Petersen2011PrimaryFD,
         Moss2024PrimaryFD,
         Kuehn2024PrimaryFD,
-        Lavrentiadis2023PrimaryFD,
+        Lavrentiadis2023PrimaryFD_aggregate,
         Chiou2025PrimaryFD,
     )
 except ImportError as e:
@@ -216,7 +216,7 @@ def run_lavrentiadis2023(displacements: np.ndarray, mag: float, xl: float):
     fdhpy_probs = fdhpy_model.prob_exceed
     
     # pfdha
-    pfdha_model = Lavrentiadis2023PrimaryFD()
+    pfdha_model = Lavrentiadis2023PrimaryFD_aggregate()
     pfdha_probs = pfdha_model.get_prob(
         d=displacements,
         X_L_ratio=np.array([xl]),

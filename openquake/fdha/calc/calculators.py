@@ -74,7 +74,7 @@ class BaseFaultRuptureCalculator:
                     _m.MULTIFAULT_REFERENCE_LINE = _principal_line
         # Model-contract guard (C4): an aggregate-definition principal FD
         # model (Sarmiento et al. 2025 Table 1, e.g. Kuehn2024PrimaryFD or
-        # Lavrentiadis2023PrimaryFD -- the class choice IS the definition)
+        # Lavrentiadis2023PrimaryFD_aggregate -- the class choice IS the definition)
         # already contains the distributed contribution, so configuring a
         # secondary-slot model alongside it would double count the off-fault
         # hazard. Logic-tree jobs are rejected earlier by validator FDLT-013;
