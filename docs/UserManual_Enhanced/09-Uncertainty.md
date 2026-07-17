@@ -322,6 +322,43 @@ models (rupture models are uniformly logistic with no aleatory σ on `P`).
   `applyToSources`. This is mutually exclusive with the scalar
   `[calculation].r_sigma_km` INI key — see the conflict rule in the
   [Configuration](05-Configuration.md) chapter.
+
+  **σ provenance (Petersen et al. 2011, Tables 2–3, two-sided, p. 810–811):**
+
+  | Mapping / complexity class | Two-sided σ (m) | `r_sigma_km` |
+  | :--- | ---: | ---: |
+  | Accurate | 26.89 | 0.02689 |
+  | Approximate | 43.82 | 0.04382 |
+  | Concealed | 65.52 | 0.06552 |
+  | Inferred | 72.69 | 0.07269 |
+  | Complex, concealed / inferred | 116.2 / 116.35 | ≈0.116 |
+
+  ("All" categories, Table 2 = 52.92 m, and "Simple, concealed/inferred",
+  Table 3 = 61.92 / 49.57 m, are also published but are not the four classes
+  plotted in the paper's Fig. 9c.) Two-sided σ is √(σ₀² + μ²) from each
+  table's one-sided σ₀ and mean offset μ — the one-sided columns are never
+  fed to `r_sigma_km` directly.
+
+  **Strike-slip provenance warning.** These σ values are derived entirely
+  from strike-slip surface-rupture mapping data (p. 810). Applying them to
+  dip-slip (reverse/normal) faults is an unvalidated extrapolation — supply
+  your own mapping-accuracy statistics for dip-slip sources rather than
+  reusing Petersen's table by default.
+
+  **Text-vs-figure caveat.** The tool's Gaussian `W_p` (pinned to 1 on the
+  trace, ±2σ-truncated at the table σ above) implements the paper's
+  *stated* method. Digitizing the paper's own printed Fig. 9c and inverting
+  it through the published equations shows the **printed curves** actually
+  correspond to a wider, lower weight, `W_p ≈ 0.90 · exp(−r²/2·(1.65σ)²)` —
+  neither the 0.90 on-trace pin nor the 1.65× width factor is derivable from
+  anything stated in the paper (see
+  `openquake/fdha/test/benchmark/petersen_2011/README.md` for the full
+  digitization). The toolkit does not apply this offset automatically. If
+  you want the tool to reproduce the *printed figure* rather than the
+  paper's stated method, feed `σ × 1.65` as your `r_sigma_km` branch value —
+  the tails will then match the print, but the on-trace peak will still sit
+  ~10% *above* the printed value, because `W_p(0) = 1` for every σ and the
+  0.90 pin is not exposed as a user-facing option.
 - **Rupture-probability models carry no quantified σ.** When PSR or SSR
   dominate the hazard (typically at moderate magnitudes and long return
   periods, as noted in the context notes of the [Models](06-Models.md) chapter), epistemic
