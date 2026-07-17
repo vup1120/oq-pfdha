@@ -34,7 +34,26 @@ class Petersen2011SecondaryFD(BaseSecondarySurfDispl):
     ----------
     Petersen, M.D., et al. (2011). Fault displacement hazard for strike-slip
     faults. Bulletin of the Seismological Society of America, 101(2), 805-825.
+
+    Model contract: DISPLACEMENT_DEFINITION = "distributed",
+    DISPLACEMENT_COMPONENT = "lateral" -- distributed displacement of
+    strike-slip earthquakes, measured as the lateral component like the
+    companion principal model (Petersen et al. 2011; Sarmiento et al. 2025
+    Table 1 component convention as for PEA11). Declared applicability:
+    r up to 2 km from the principal fault -- the paper's distributed
+    dataset is explicitly "limited to 2 km distance from principal fault"
+    (ibid., data description for eq. 18 / Tables 4-5); beyond that the
+    power law extrapolates.
     """
+
+    DISPLACEMENT_DEFINITION = "distributed"
+    DISPLACEMENT_COMPONENT = "lateral"
+
+    APPLICABILITY_RANGE = {
+        "r_max_km": 2.0,
+        "source": "Petersen et al. (2011) BSSA 101(2): distributed dataset "
+                  "limited to 2 km from the principal fault",
+    }
 
     # Eqn 18 (Page 818) is a power law in ln(r) with no near-field definition:
     # the mean displacement diverges as r -> 0 (ln r -> -inf). The tool floors

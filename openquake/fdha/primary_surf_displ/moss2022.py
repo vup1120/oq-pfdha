@@ -62,7 +62,16 @@ class Moss2022PrimaryFD(BasePrimarySurfDispl):
     Earthquake Spectra Table 2 normalized-displacement alpha/beta parameters.
 
     Reference: GIRS-2022-05 (Revised 1/17/2024). DOI: 10.34948/N3F595
+
+    Model contract: DISPLACEMENT_DEFINITION = "principal",
+    DISPLACEMENT_COMPONENT = "vertical" -- GIRS-2022-05 Section 4 regresses
+    principal reverse-fault displacement (D/MD, D/AD) from vertical-offset
+    measurements on the principal scarp; component per the reverse-fault
+    convention summarised in Valentini et al. (2025, Rev. Geophys.) Table 4.
     """
+
+    DISPLACEMENT_DEFINITION = "principal"
+    DISPLACEMENT_COMPONENT = "vertical"
 
     def get_prob(self, d, X_L_ratio, mag,
                  version="MD", completeness="complete",

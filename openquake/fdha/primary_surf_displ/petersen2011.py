@@ -35,7 +35,18 @@ from openquake.fdha.primary_surf_displ.base import BasePrimarySurfDispl
 class Petersen2011PrimaryFD(BasePrimarySurfDispl):
     """
     Implements the Petersen et al. (2011) primary fault displacement model.
+
+    Model contract: DISPLACEMENT_DEFINITION = "principal",
+    DISPLACEMENT_COMPONENT = "lateral" -- Petersen et al. (2011) regress
+    principal strike-slip displacement measured as the lateral (horizontal
+    fault-parallel) component; Sarmiento et al. (2025, Earthquake Spectra)
+    Table 1 lists PEA11 as D_P,L (principal, lateral). Inherited by the
+    bilinear / elliptical / quadratic shape variants below (same dataset,
+    same metric).
     """
+
+    DISPLACEMENT_DEFINITION = "principal"
+    DISPLACEMENT_COMPONENT = "lateral"
 
     _ACCEPTED_VERSIONS = frozenset(["quadratic", "bilinear", "elliptical"])
 

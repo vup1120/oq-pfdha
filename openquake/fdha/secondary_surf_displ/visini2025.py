@@ -64,7 +64,36 @@ class Visini2025SecondaryFD(BaseSecondarySurfDispl):
     - combination: 'A', 'B', or 'C'.
     - scaling_model: 'WC1994' | 'THINGBAIJAM2017' | 'LEONARD2010'
     - n_sigma: half-width of ln(Y) truncation in σ units (MATLAB scripts use 3).
+
+    Model contract: DISPLACEMENT_DEFINITION = "distributed",
+    DISPLACEMENT_COMPONENT = "vertical" -- the predicted quantity Y is the
+    vertical throw of Rank 2 distributed ruptures (Visini et al. 2025;
+    the regression's TPFm predictor is likewise a throw). Declared
+    applicability (in the model's own segments-r metric, see
+    MULTIFAULT_REFERENCE_LINE): the paper excludes data closer than 5 m to
+    the principal rupture (Visini et al. 2025, pp. 11, 20 -- such
+    near-trace scarps are not distinguishable from principal faulting), so
+    r_min = 5 m; the outer edges are 10 km on the hanging wall and 8 km on
+    the footwall, the dataset range summarised in Valentini et al. (2025,
+    Rev. Geophys., Table 4). The paper further differentiates its
+    recommended ranges per Combination A/B/C (Visini et al. 2025, p. 14 and
+    Conclusion; e.g. Combination B is only meaningful within ~1 km of a
+    declared Rank 1.5 trace, cf. the user-manual model page); the values
+    declared here are the outermost HW/FW envelope, which is what the
+    once-per-run extrapolation warning needs.
     """
+
+    DISPLACEMENT_DEFINITION = "distributed"
+    DISPLACEMENT_COMPONENT = "vertical"
+
+    APPLICABILITY_RANGE = {
+        "r_min_km": 0.005,
+        "r_max_hw_km": 10.0,
+        "r_max_fw_km": 8.0,
+        "source": "Visini et al. (2025) pp. 11, 20 (5 m exclusion); "
+                  "Valentini et al. (2025) Rev. Geophys. Table 4 "
+                  "(HW 10 km / FW 8 km dataset envelope)",
+    }
 
     # The Visini regressions are calibrated on distances to the ACTUAL
     # segmented principal rupture, so on multi-fault ruptures s must be the

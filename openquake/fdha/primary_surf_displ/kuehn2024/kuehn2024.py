@@ -38,10 +38,11 @@ MAG_BREAK = 7.0
 DELTA = 0.1
 
 class Kuehn2024PrimaryFD(BasePrimarySurfDispl):
-    """Principal fault-displacement model of Kuehn et al. (2024).
+    """Aggregate fault-displacement model of Kuehn et al. (2024), run in the
+    principal (primary_surf_displ) slot.
 
-    Bayesian hierarchical model of principal fault displacement as a function
-    of magnitude, normalized along-strike position, and faulting style, with
+    Bayesian hierarchical model of fault displacement as a function of
+    magnitude, normalized along-strike position, and faulting style, with
     optional epistemic-uncertainty sampling over the posterior coefficients.
 
     References
@@ -49,7 +50,21 @@ class Kuehn2024PrimaryFD(BasePrimarySurfDispl):
     Kuehn, N. M., Kottke, A. R., Sarmiento, A. C., Madugo, C. M., &
     Bozorgnia, Y. (2024). A fault displacement model based on the FDHI
     database.
+
+    Model contract: DISPLACEMENT_DEFINITION = "aggregate",
+    DISPLACEMENT_COMPONENT = "net" -- Kuehn et al. (2024) fit the FDHI
+    *aggregate* net displacement (total slip across principal and
+    distributed ruptures within the measurement aperture); Sarmiento et al.
+    (2025, Earthquake Spectra) Table 1 lists KEA24 under the aggregate
+    definition, and there is no cross-definition conversion (ibid.). Because
+    the prediction already contains the distributed contribution, the hazard
+    kernel runs this model as a single bucket (rate * P_sr * P_fd_aggregate
+    * W_p) and any secondary-slot model in the same chain is rejected
+    (FDLT-013; docs/design/rupture_location_uncertainty.md, D8).
     """
+
+    DISPLACEMENT_DEFINITION = "aggregate"
+    DISPLACEMENT_COMPONENT = "net"
 
     _ACCEPTED_STYLES = frozenset(["strike-slip", "reverse", "normal"])
 

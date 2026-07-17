@@ -70,7 +70,19 @@ class Chiou2025PrimaryFD(BasePrimarySurfDispl):
     np.ndarray
         Exceedance probability(s). Shape follows broadcasting of (n_sites, n_displacements)
         when X_L_ratio is a vector and d is a vector; otherwise reduced appropriately.
+
+    Model contract: DISPLACEMENT_DEFINITION = "sum-of-principal",
+    DISPLACEMENT_COMPONENT = "net" -- Chiou et al. (2025, Earthquake
+    Spectra, "Fault displacement model for surface principal rupture of
+    strike-slip faults") predict displacement summed across the PRINCIPAL
+    strands crossed by a profile (distributed ruptures excluded, so the
+    secondary slot remains legitimate alongside this model); Sarmiento et
+    al. (2025) Table 1 lists CEA25 as D_SP,N* (sum-of-principal,
+    pseudo-net component).
     """
+
+    DISPLACEMENT_DEFINITION = "sum-of-principal"
+    DISPLACEMENT_COMPONENT = "net"
 
     # Chiou et al. (2025) define displacement position along their ECS
     # (equivalent continuous surface-rupture) line, so multi-fault ruptures

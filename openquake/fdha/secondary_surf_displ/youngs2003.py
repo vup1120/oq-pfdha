@@ -34,7 +34,24 @@ class Youngs2003SecondaryFD(BaseSecondarySurfDispl):
     ----------
     Youngs, R.R., et al. (2003). A methodology for probabilistic fault
     displacement hazard analysis (PFDHA). Earthquake Spectra, 19(1), 191-219.
+
+    Model contract: DISPLACEMENT_DEFINITION = "distributed",
+    DISPLACEMENT_COMPONENT = "vertical" -- distributed (off-fault) vertical
+    separation of normal-faulting earthquakes, normalised by the principal
+    maximum displacement (Youngs et al. 2003; Sarmiento et al. 2025 Table 1
+    component convention as for YEA03). Declared applicability: r up to
+    15 km from the principal fault (dataset range summarised in Valentini
+    et al. 2025, Rev. Geophys., Table 4).
     """
+
+    DISPLACEMENT_DEFINITION = "distributed"
+    DISPLACEMENT_COMPONENT = "vertical"
+
+    APPLICABILITY_RANGE = {
+        "r_max_km": 15.0,
+        "source": "Valentini et al. (2025) Rev. Geophys. Table 4 "
+                  "(Youngs et al. 2003 dataset range)",
+    }
 
     # Constants for Wells & Coppersmith (1994) formulas for normal faulting
     _WC94_MD_INTERCEPT = -5.90

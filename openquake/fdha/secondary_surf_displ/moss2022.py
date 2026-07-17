@@ -51,7 +51,18 @@ class Moss2022SecondaryFD(BaseSecondarySurfDispl):
     ``ctx.r``).  Envelope Eq. 5.8 operates in km directly.
 
     Reference: GIRS-2022-05, Sections 5.3–5.4. DOI: 10.34948/N3F595
+
+    Model contract: DISPLACEMENT_DEFINITION = "distributed",
+    DISPLACEMENT_COMPONENT = "vertical" -- distributed reverse-fault
+    displacement normalised by the principal MD/AD, from vertical-offset
+    measurements (GIRS-2022-05 Section 5). No APPLICABILITY_RANGE is
+    declared: the report documents its envelopes per Section 5 without a
+    single distance limit comparable to the Valentini et al. (2025)
+    Table 4 entries (report-specific validity).
     """
+
+    DISPLACEMENT_DEFINITION = "distributed"
+    DISPLACEMENT_COMPONENT = "vertical"
 
     def get_prob(self, d, mag, r, rx,
                  version="MD", completeness="complete",

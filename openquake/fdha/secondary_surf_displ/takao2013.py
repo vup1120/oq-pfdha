@@ -57,7 +57,23 @@ class Takao2013SecondaryFD(BaseSecondarySurfDispl):
     The PMD/PAD lognormal is integrated over ``mean ± n_sigma·sigma`` (log10
     space); ``n_sigma`` defaults to 3 and may be overridden from the logic
     tree via ``[Takao2013SecondaryFD] n_sigma = <value>``.
+
+    Model contract: DISPLACEMENT_DEFINITION = "distributed",
+    DISPLACEMENT_COMPONENT = "net" -- distributed displacement normalised by
+    the principal-fault PMD/PAD net-slip scaling (Takao et al. 2013, Eqs.
+    15-17; component convention per Valentini et al. 2025, Rev. Geophys.,
+    Table 4). Declared applicability: r up to 20 km (ibid., dataset range
+    of the Eqs. 15-16 regressions).
     """
+
+    DISPLACEMENT_DEFINITION = "distributed"
+    DISPLACEMENT_COMPONENT = "net"
+
+    APPLICABILITY_RANGE = {
+        "r_max_km": 20.0,
+        "source": "Valentini et al. (2025) Rev. Geophys. Table 4 "
+                  "(Takao et al. 2013 dataset range)",
+    }
 
     _N_INTEGRATION = 1000
     _GAMMA_SHAPE = 2.5

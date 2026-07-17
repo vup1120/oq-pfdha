@@ -30,5 +30,6 @@ from openquake.fdha.primary_surf_displ.moss2024 import Moss2024PrimaryFD
 from openquake.fdha.primary_surf_displ.moss2022 import Moss2022PrimaryFD
 from openquake.fdha.primary_surf_displ.takao2013 import Takao2013PrimaryFD
 from openquake.fdha.primary_surf_displ.lavrentiadis2023 import Lavrentiadis2023PrimaryFD
+from openquake.fdha.primary_surf_displ.lavrentiadis2023 import Lavrentiadis2023PrimaryFD_principal
 from openquake.fdha.primary_surf_displ.kuehn2024.kuehn2024 import Kuehn2024PrimaryFD
 from openquake.fdha.primary_surf_displ.chiou2025 import Chiou2025PrimaryFD

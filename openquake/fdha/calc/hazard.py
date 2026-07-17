@@ -25,6 +25,88 @@ VISINI_SR_NAMES = {'Visini2025SecondarySR'}
 VISINI_FD_NAMES = {'Visini2025SecondaryFD'}
 
 
+class ApplicabilityTracker:
+    """Track sites evaluated outside a distributed FD model's declared
+    applicability range and emit ONE ``logging.warning`` per model per run.
+
+    Distributed displacement models declare their calibrated distance range
+    as the ``APPLICABILITY_RANGE`` class attribute (see
+    ``primary_surf_displ.base.BaseSecondarySurfDispl``), expressed in the
+    model's OWN distance metric (``MULTIFAULT_REFERENCE_LINE``). The tracker
+    accumulates, across all ruptures of a run, the ids of sites whose
+    distributed contribution was computed at a distance outside that range
+    (i.e. an extrapolation of the regression), then reports the offending
+    site count once at the end of the run. Purely advisory: results are
+    still computed, nothing changes numerically.
+
+    Sites where the distributed term carries zero weight are NOT counted:
+    on the sigma = 0 (complementary) W_p path the distributed component is
+    masked inside ``|r| <= r_threshold_km``, so e.g. an on-trace site below
+    Visini's 5 m data floor is not an extrapolation -- the model is never
+    used there.
+    """
+
+    def __init__(self, r_threshold_km: float, r_sigma_km: float):
+        self._r_threshold_km = float(r_threshold_km)
+        self._r_sigma_km = float(r_sigma_km)
+        self._offending: Dict[str, set] = {}
+        self._sources: Dict[str, str] = {}
+
+    def observe(self, model: Any, ctx: 'FDHAContext') -> None:
+        """Record ``ctx`` sites outside ``model``'s declared range."""
+        if model is None:
+            return
+        rng = getattr(model, 'APPLICABILITY_RANGE', None)
+        if not rng:
+            return
+        method = getattr(model, 'MULTIFAULT_REFERENCE_LINE', 'lcp')
+        r_sel, _x_L, _L = ctx.metrics_for(method)
+        r = np.abs(np.asarray(r_sel, dtype=np.float64))
+
+        outside = np.zeros(r.shape, dtype=bool)
+        if 'r_min_km' in rng:
+            outside |= r < float(rng['r_min_km'])
+        if 'r_max_km' in rng:
+            outside |= r > float(rng['r_max_km'])
+        if 'r_max_hw_km' in rng or 'r_max_fw_km' in rng:
+            # Tool-wide wall convention (cf. Visini2025SecondaryFD):
+            # rx < 0 = footwall, rx >= 0 = hanging wall.
+            fw = np.asarray(ctx.rx, dtype=np.float64) < 0.0
+            if 'r_max_hw_km' in rng:
+                outside |= (~fw) & (r > float(rng['r_max_hw_km']))
+            if 'r_max_fw_km' in rng:
+                outside |= fw & (r > float(rng['r_max_fw_km']))
+
+        # Only count sites where the distributed term actually contributes:
+        # sigma = 0 -> complementary split masks distributed inside the
+        # boxcar (G = 1 - W_p = 0 there); sigma > 0 -> additive, G = 1
+        # everywhere (docs/design/rupture_location_uncertainty.md, D1).
+        if self._r_sigma_km == 0.0:
+            outside &= np.abs(np.asarray(ctx.r, dtype=np.float64)) \
+                > self._r_threshold_km
+
+        if not outside.any():
+            return
+        name = model.__class__.__name__
+        sids = np.asarray(ctx.sids)[outside]
+        self._offending.setdefault(name, set()).update(
+            int(s) for s in sids)
+        self._sources.setdefault(name, str(rng.get('source', '')))
+
+    def emit(self) -> None:
+        """Emit the once-per-model warnings (call after the rupture loop)."""
+        for name in sorted(self._offending):
+            n = len(self._offending[name])
+            src = self._sources.get(name, '')
+            logger.warning(
+                "%s: %d site(s) were evaluated outside the model's declared "
+                "applicability range (%s). The distributed regression is "
+                "extrapolating beyond its calibration data there; results "
+                "are still computed unchanged.",
+                name, n, src or 'declared range',
+            )
+
+
 def calculate_fdha_hazard(
     calculator: 'BaseFaultRuptureCalculator',
     sitecol: Optional[SiteCollection] = None,
@@ -106,6 +188,14 @@ def calculate_fdha_hazard(
     # See docs/design/rupture_location_uncertainty.md, section 2.
     r_sigma_km = calculator.r_sigma_km
 
+    # Applicability advisory (C4): distributed FD models declare their
+    # calibrated distance range; sites evaluated beyond it are collected
+    # across the whole run and reported ONCE per model after the loop.
+    # No behaviour change -- warning only.
+    applicability_tracker = ApplicabilityTracker(
+        r_threshold_km=r_threshold_km, r_sigma_km=r_sigma_km)
+    secondary_fd_model = calculator.secondary_surf_displ_model
+
     # PMF time span for non-parametric (multiFaultSource) ruptures:
     # get_ctx converts their probs_occur into a Poisson-equivalent annual
     # rate over this investigation time. Parametric ruptures ignore it.
@@ -144,7 +234,10 @@ def calculate_fdha_hazard(
             ctx = cmaker.get_ctx(rup, investigation_time=investigation_time)
             if ctx is None:
                 continue
-            
+
+            # Advisory extrapolation bookkeeping (once-per-run warning).
+            applicability_tracker.observe(secondary_fd_model, ctx)
+
             # Calculate hazard contribution for this rupture
             principal_contrib, distributed_contrib = _compute_rupture_contribution(
                 ctx=ctx,
@@ -204,6 +297,9 @@ def calculate_fdha_hazard(
         
         each_fault[f"fault_{src.name}"] = fault_rate.tolist()
     
+    # Applicability advisory: one warning per model per run (C4).
+    applicability_tracker.emit()
+
     # Log cache statistics
     stats = cmaker.get_cache_stats()
     logger.info(
@@ -407,6 +503,43 @@ def _compute_rupture_contribution(
     else:
         P_fd_primary = np.zeros((N_ctx, n_displ), dtype=np.float64)
     
+    # =========================================================================
+    # AGGREGATE-DEFINITION PRIMARY MODEL: single-bucket path
+    # =========================================================================
+    # An aggregate-definition model (Sarmiento et al. 2025 Table 1: total
+    # displacement across principal AND distributed ruptures in the
+    # measurement aperture, e.g. Kuehn2024PrimaryFD or
+    # Lavrentiadis2023PrimaryFD -- the contract is STATIC, the class choice
+    # IS the definition) already contains the distributed contribution, so
+    # the split above does not apply:
+    #
+    #     lambda_total = rate * P_sr * P_fd_aggregate * W_p(r)
+    #
+    # -- ONE bucket, NO distributed term, W_p per the same two-path kernel
+    # as below (docs/design/rupture_location_uncertainty.md, D8). Adding a
+    # secondary-slot model on top would double count the off-fault hazard;
+    # such chains are rejected up-front (logic-tree validator FDLT-013,
+    # calculator guard in calculators._initialize_models), so by the time we
+    # get here the secondary slot is empty and skipping it is a no-op.
+    # OUTPUT BUCKETS: the aggregate contribution deliberately flows through
+    # the existing principal bucket/columns (rate_principal, *_principal
+    # outputs) and the distributed bucket stays exactly zero -- no new output
+    # schema; consumers read the total as usual (principal + 0).
+    if 'primary_fd' in adapters:
+        from openquake.fdha.calc.model_adapter import (
+            effective_displacement_definition)
+        _pfd = adapters['primary_fd']
+        if effective_displacement_definition(_pfd.model) == 'aggregate':
+            W_p = location_weight(
+                ctx.r,
+                r_threshold_km=r_threshold_km,
+                r_sigma_km=r_sigma_km,
+            )
+            principal_contrib = (
+                rate * P_sr[:, np.newaxis] * P_fd_primary * W_p[:, np.newaxis]
+            )
+            return principal_contrib, distributed_contrib
+
     # =========================================================================
     # SECONDARY (DISTRIBUTED) CONTRIBUTION
     # =========================================================================

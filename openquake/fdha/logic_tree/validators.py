@@ -45,6 +45,52 @@ def _primary_fd_metadata() -> dict[str, dict]:
     return {str(k): (v or {}) for k, v in out.items() if isinstance(v, dict)}
 
 
+# Branch-set uncertainty types whose branches select FD *displacement* model
+# classes -- the classes carrying the C4 model contract
+# (DISPLACEMENT_DEFINITION / DISPLACEMENT_COMPONENT class attributes, see
+# openquake/fdha/primary_surf_displ/base.py).
+_FD_DISPL_UTYPES = {"fdhaPrimaryFDModel", "fdhaSecondaryFDModel"}
+
+
+def _resolve_model_class(class_name: str):
+    """Return the registered FDHA model class for ``class_name`` or None."""
+    try:
+        from openquake.fdha import (
+            primary_surf_rup,
+            primary_surf_displ,
+            secondary_surf_rup,
+            secondary_surf_displ,
+        )
+    except Exception:
+        return None
+    for pkg in (primary_surf_rup, primary_surf_displ,
+                secondary_surf_rup, secondary_surf_displ):
+        cls = getattr(pkg, class_name, None)
+        if cls is not None:
+            return cls
+    return None
+
+
+def _contract_of(class_name: str):
+    """(definition, component) declared by a registered FD model class.
+
+    The contract is STATIC class metadata -- the class choice IS the
+    definition (e.g. ``Lavrentiadis2023PrimaryFD`` [aggregate] vs
+    ``Lavrentiadis2023PrimaryFD_principal`` [sum-of-principal]); no model
+    parameter can change it. Returns ``(None, None)`` for unresolvable
+    classes (already an FDLT-006 error) and for classes without the
+    contract attributes.
+    """
+    cls = _resolve_model_class(class_name)
+    if cls is None:
+        return None, None
+    from openquake.fdha.calc.model_adapter import (
+        effective_displacement_definition)
+    definition = effective_displacement_definition(cls)
+    component = getattr(cls, "DISPLACEMENT_COMPONENT", None)
+    return definition, component
+
+
 def validate_spec(spec: LogicTreeSpec, source_ids: Optional[set[str]] = None) -> ValidatorReport:
     issues: list[ValidatorIssue] = []
 
@@ -99,6 +145,10 @@ def validate_spec(spec: LogicTreeSpec, source_ids: Optional[set[str]] = None) ->
             disp_def_entries: list[tuple[str, str]] = []
             # parsed r_sigma_km values seen in this branch set
             bs_r_sigma_values: list[float] = []
+            # C4 model contract seen in this FD branch set:
+            # (value, class_name, branch_id) triples
+            contract_defs: list[tuple[str, str, str]] = []
+            contract_comps: list[tuple[str, str, str]] = []
 
             for br in bs.branches:
                 declared_branch_ids.add(br.branch_id)
@@ -175,7 +225,7 @@ def validate_spec(spec: LogicTreeSpec, source_ids: Optional[set[str]] = None) ->
                     continue
 
                 # FDLT-006 class resolves
-                class_name, _ = parse_uncertainty_model(br.uncertainty_model)
+                class_name, br_params = parse_uncertainty_model(br.uncertainty_model)
                 if not _class_is_registered(class_name):
                     issues.append(
                         ValidatorIssue(
@@ -193,6 +243,67 @@ def validate_spec(spec: LogicTreeSpec, source_ids: Optional[set[str]] = None) ->
                     if dd:
                         disp_def_entries.append((str(dd), str(src)))
 
+                # FDLT-015: wrong-class output_type. The class choice IS the
+                # displacement definition (static contract), so the branch
+                # parameters may never re-route a class to another published
+                # definition: Lavrentiadis2023PrimaryFD serves ONLY the
+                # aggregate variants (disp_agg_prime / disp_agg_seg), the
+                # sum-of-principal disp_prnc_prime metric lives in
+                # Lavrentiadis2023PrimaryFD_principal -- which in turn pins
+                # output_type and accepts no explicit value at all.
+                # Fail-early-and-loud (cf. commit d541dbc3); the model
+                # classes raise the same errors at evaluation time.
+                _ot = (br_params or {}).get("output_type")
+                if class_name == "Lavrentiadis2023PrimaryFD" \
+                        and str(_ot) == "disp_prnc_prime":
+                    issues.append(
+                        ValidatorIssue(
+                            code="FDLT-015",
+                            level="error",
+                            message=(
+                                f"Branch {br.branch_id} in "
+                                f"{bs.branch_set_id} configures "
+                                "output_type = disp_prnc_prime on "
+                                "Lavrentiadis2023PrimaryFD, which serves "
+                                "only the AGGREGATE variants. The sum-of-"
+                                "principal metric is a different "
+                                "displacement definition: select the "
+                                "Lavrentiadis2023PrimaryFD_principal model "
+                                "class instead (and drop the output_type "
+                                "line)."
+                            ),
+                        )
+                    )
+                elif class_name == "Lavrentiadis2023PrimaryFD_principal" \
+                        and _ot is not None:
+                    issues.append(
+                        ValidatorIssue(
+                            code="FDLT-015",
+                            level="error",
+                            message=(
+                                f"Branch {br.branch_id} in "
+                                f"{bs.branch_set_id} passes output_type = "
+                                f"'{_ot}' to "
+                                "Lavrentiadis2023PrimaryFD_principal; "
+                                "output_type is fixed by the class choice "
+                                "(disp_prnc_prime). Remove the output_type "
+                                "line, or select Lavrentiadis2023PrimaryFD "
+                                "for the aggregate variants."
+                            ),
+                        )
+                    )
+
+                # Collect the C4 model contract declared by the class itself
+                # (static class attributes) for FDLT-014/FDLT-105.
+                if bs.uncertainty_type in _FD_DISPL_UTYPES:
+                    c_def, c_comp = _contract_of(class_name)
+                    if c_def is not None:
+                        contract_defs.append(
+                            (str(c_def), class_name, br.branch_id))
+                    if c_comp is not None:
+                        contract_comps.append(
+                            (str(c_comp), class_name, br.branch_id))
+
             # FDLT-001 weights sum
             if weights:
                 s = sum(weights)
@@ -204,6 +315,61 @@ def validate_spec(spec: LogicTreeSpec, source_ids: Optional[set[str]] = None) ->
                             message=f"Weights in {bs.branch_set_id} sum to {s} (expected 1.0 ± 1e-6)",
                         )
                     )
+
+            # FDLT-014 (error): mixed DISPLACEMENT_DEFINITION within one FD
+            # branch set. Definitions (principal / sum-of-principal /
+            # aggregate / distributed, Sarmiento et al. 2025 Table 1) are
+            # different physical quantities with NO conversion between them
+            # (ibid.), so weighting or taking fractiles across branches that
+            # predict different definitions is meaningless. Driven by the
+            # models' own class contract (parameter-resolved), unlike the
+            # coarser metadata-YAML advisory FDLT-101 below.
+            uniq_c_defs = sorted({d for d, _, _ in contract_defs})
+            if len(uniq_c_defs) > 1:
+                frags = []
+                seen_defs: set[str] = set()
+                for d, cname, bid in contract_defs:
+                    if d not in seen_defs:
+                        seen_defs.add(d)
+                        frags.append(f"{d} ({cname}, branch {bid})")
+                issues.append(
+                    ValidatorIssue(
+                        code="FDLT-014",
+                        level="error",
+                        message=(
+                            f"Mixed displacement definitions in "
+                            f"{bs.branch_set_id}: " + "; ".join(frags)
+                            + ". Branches of one FD branch set must share "
+                            "one definition (Sarmiento et al. 2025 Table 1: "
+                            "no cross-definition conversion exists)."
+                        ),
+                    )
+                )
+
+            # FDLT-105 (advisory): mixed DISPLACEMENT_COMPONENT within one FD
+            # branch set. Components (vertical / lateral / net) measure the
+            # same event differently, so mixing them is a modelling choice
+            # worth flagging but not an error.
+            uniq_c_comps = sorted({c for c, _, _ in contract_comps})
+            if len(uniq_c_comps) > 1:
+                frags = []
+                seen_comps: set[str] = set()
+                for c, cname, bid in contract_comps:
+                    if c not in seen_comps:
+                        seen_comps.add(c)
+                        frags.append(f"{c} ({cname}, branch {bid})")
+                issues.append(
+                    ValidatorIssue(
+                        code="FDLT-105",
+                        level="warning",
+                        message=(
+                            f"Mixed displacement components in "
+                            f"{bs.branch_set_id}: " + "; ".join(frags)
+                            + ". The branches predict different slip "
+                            "components; check that this is intended."
+                        ),
+                    )
+                )
 
             # FDLT-101 (advisory): mixed displacement definitions within one Primary FD branch set.
             # Driven by model_metadata.yaml; entries missing from the file are UNKNOWN and skipped.
@@ -329,6 +495,66 @@ def check_r_sigma_conflict(
             "(single value) or the branch set (epistemic alternatives), "
             "not both."
         )
+
+
+def validate_end_branch_chains(end_branches) -> ValidatorReport:
+    """Cross-slot guards on enumerated end branches (C4 model contract).
+
+    FDLT-013 (error): an AGGREGATE-definition primary FD model combined with
+    a non-empty secondary slot in the same branch chain. Aggregate models
+    (Sarmiento et al. 2025 Table 1, e.g. Kuehn2024PrimaryFD or
+    Lavrentiadis2023PrimaryFD) already predict the total of principal AND
+    distributed displacement, so an additional secondary-slot model double
+    counts the off-fault hazard
+    (docs/design/rupture_location_uncertainty.md, D8). The definition is
+    the STATIC class contract -- the class choice IS the definition:
+    e.g. the sum-of-principal ``Lavrentiadis2023PrimaryFD_principal``
+    variant class may legitimately carry secondary models.
+
+    Runs after :func:`enumerate_end_branches` (the check needs the
+    combined chains, which branch-set scoping rules assemble), wired into
+    the same driver flow as :func:`validate_spec`.
+    """
+    issues: list[ValidatorIssue] = []
+    seen: set[tuple[str, ...]] = set()
+    for eb in end_branches:
+        pfd = eb.selections.get("primary_surf_displ")
+        if pfd is None:
+            continue
+        definition, _ = _contract_of(pfd.class_name)
+        if definition != "aggregate":
+            continue
+        sec = [
+            (slot, eb.selections[slot])
+            for slot in ("secondary_surf_rup", "secondary_surf_displ")
+            if eb.selections.get(slot) is not None
+        ]
+        if not sec:
+            continue
+        key = (pfd.branch_id,) + tuple(ch.branch_id for _, ch in sec)
+        if key in seen:  # dedupe across sources/styles sharing the chain
+            continue
+        seen.add(key)
+        sec_desc = ", ".join(
+            f"{ch.class_name} (branch {ch.branch_id})" for _, ch in sec)
+        issues.append(
+            ValidatorIssue(
+                code="FDLT-013",
+                level="error",
+                message=(
+                    f"Branch chain combines the AGGREGATE-definition "
+                    f"primary FD model {pfd.class_name} (branch "
+                    f"{pfd.branch_id}) with secondary model(s) {sec_desc}. "
+                    "An aggregate model already contains the distributed "
+                    "contribution (Sarmiento et al. 2025 Table 1); adding "
+                    "secondary models double counts the off-fault hazard. "
+                    "Remove the secondary branching levels from this chain "
+                    "(aggregate chains run as a single bucket: "
+                    "rate * P_sr * P_fd_aggregate * W_p)."
+                ),
+            )
+        )
+    return ValidatorReport(issues=tuple(issues))
 
 
 def _class_is_registered(class_name: str) -> bool:

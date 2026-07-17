@@ -44,7 +44,17 @@ class Takao2013PrimaryFD(BasePrimarySurfDispl):
     truncation range of ``mean ± n_sigma·sigma`` (in log10 space). The
     truncation level ``n_sigma`` defaults to 3 and may be overridden from the
     logic tree via ``[Takao2013PrimaryFD] n_sigma = <value>``.
+
+    Model contract: DISPLACEMENT_DEFINITION = "principal",
+    DISPLACEMENT_COMPONENT = "net" -- Takao et al. (2013, JAEE 13) model
+    displacement on the principal fault only (their nu_p1 term, distributed
+    faulting handled by the separate nu_d2 chain), normalised by the Wells &
+    Coppersmith AD/MD which are net (resultant) slip measures; component per
+    the summary in Valentini et al. (2025, Rev. Geophys.) Table 4.
     """
+
+    DISPLACEMENT_DEFINITION = "principal"
+    DISPLACEMENT_COMPONENT = "net"
 
     _N_INTEGRATION = 1000
 

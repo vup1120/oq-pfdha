@@ -24,7 +24,15 @@ class Moss2024PrimaryFD(BasePrimarySurfDispl):
     coefficients from Moss et al. (2024) Table 3 / GIRS-2022-05 Table 4.4. Use
     Moss2022PrimaryFD if you need ``gamma_mode='global'``, the incomplete MD
     subset, or the ``sigma_type`` selector.
+
+    Model contract: DISPLACEMENT_DEFINITION = "principal",
+    DISPLACEMENT_COMPONENT = "vertical" -- same principal reverse-fault
+    vertical-offset dataset and metric as the GIRS-2022-05 formulation (see
+    Moss2022PrimaryFD); Moss et al. (2024, Earthquake Spectra) Tables 2-3.
     """
+
+    DISPLACEMENT_DEFINITION = "principal"
+    DISPLACEMENT_COMPONENT = "vertical"
 
     # Load parameter tables
     path = os.path.dirname(__file__)

@@ -23,6 +23,26 @@ logger = logging.getLogger(__name__)
 NEAR_FIELD_FLOOR_KM = 0.0125
 
 
+def effective_displacement_definition(model):
+    """Return a model's declared displacement definition (C4 contract).
+
+    FDHA displacement models declare their Sarmiento et al. (2025, Table 1)
+    displacement definition as the ``DISPLACEMENT_DEFINITION`` class
+    attribute. The contract is STATIC -- the class choice IS the definition
+    (papers publishing several definitions expose one class per definition,
+    e.g. ``Lavrentiadis2023PrimaryFD`` vs
+    ``Lavrentiadis2023PrimaryFD_principal``); no model parameter may change
+    it. This helper is the single lookup point used by the hazard kernel
+    (single-bucket routing of aggregate models), by the calculator
+    configuration guard, and by the logic-tree validators (FDLT-013/014).
+
+    :param model: model instance or class (may be a duck-typed stub).
+    :returns: one of ``primary_surf_displ.base.DISPLACEMENT_DEFINITIONS``
+        or ``None`` when the model declares no contract (non-FD stubs).
+    """
+    return getattr(model, 'DISPLACEMENT_DEFINITION', None)
+
+
 class LegacyModelAdapter:
     """
     Wraps legacy FDHA models for use with FDHAContext.
@@ -238,7 +258,34 @@ class LegacyModelAdapter:
                 f"  [models.primary_surf_displ.parameters]\n"
                 f"  style = all"
             )
-        
+
+        # Wrong-class output_type misconfiguration (C4 contract): raise HERE,
+        # before _call_safely, which would otherwise swallow the model's own
+        # ValueError into silent zero hazard (same pre-call pattern as the
+        # Youngs2003 style check above; cf. commit d541dbc3). The class
+        # choice IS the displacement definition — Lavrentiadis2023PrimaryFD
+        # serves only the aggregate variants; the sum-of-principal
+        # disp_prnc_prime metric lives in Lavrentiadis2023PrimaryFD_principal
+        # (which in turn accepts no explicit output_type at all). Logic-tree
+        # jobs are already rejected at validation time (FDLT-015).
+        _output_type = self.model_params.get('output_type')
+        if model_name == 'Lavrentiadis2023PrimaryFD' \
+                and str(_output_type) == 'disp_prnc_prime':
+            raise ValueError(
+                "Lavrentiadis2023PrimaryFD is the AGGREGATE-definition model; "
+                "output_type = disp_prnc_prime (sum-of-principal) is served "
+                "by the Lavrentiadis2023PrimaryFD_principal model class. "
+                "Select that class instead of passing output_type."
+            )
+        if model_name == 'Lavrentiadis2023PrimaryFD_principal' \
+                and _output_type is not None:
+            raise ValueError(
+                "Lavrentiadis2023PrimaryFD_principal evaluates the "
+                "disp_prnc_prime (sum-of-principal) metric; output_type is "
+                f"fixed by the class choice (got '{_output_type}'). Remove "
+                "the output_type parameter."
+            )
+
         # Build kwargs with vectorized arrays; x_L follows the model's
         # declared multi-fault reference line (e.g. Chiou2025 -> ECS).
         _r_sel, x_L_sel, _L_sel = self._ctx_metrics(ctx)

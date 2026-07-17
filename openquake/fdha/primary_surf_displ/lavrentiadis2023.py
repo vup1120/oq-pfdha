@@ -18,7 +18,14 @@
 
 """
 Module :mod:`openquake.fdha.primary_surf_displ.lavrentiadis2023` implements
-the model of Lavrentiadis and Abrahamson (2023) in :class:`Lavrentiadis2023PrimaryFD`
+the model of Lavrentiadis and Abrahamson (2023) in two classes, one per
+displacement definition (the class choice IS the definition, following the
+Petersen2011PrimaryFD_bilinear/_elliptical/_quadratic variant idiom):
+
+- :class:`Lavrentiadis2023PrimaryFD` — the AGGREGATE-definition variants
+  (``output_type`` ``disp_agg_prime`` (default) or ``disp_agg_seg``);
+- :class:`Lavrentiadis2023PrimaryFD_principal` — the sum-of-principal
+  variant (``disp_prnc_prime``, hard-pinned by the class).
 """
 
 import numpy as np
@@ -36,7 +43,27 @@ class Lavrentiadis2023PrimaryFD(BasePrimarySurfDispl):
 	----------
 	Lavrentiadis, G., and Abrahamson, N.A. (2023). A fault displacement model
 	for probabilistic fault displacement hazard analysis.
+
+	Model contract: DISPLACEMENT_DEFINITION = "aggregate",
+	DISPLACEMENT_COMPONENT = "net" -- STATIC, the class choice IS the
+	definition. Lavrentiadis & Abrahamson (2023) develop their model on the
+	FDHI aggregate displacement (net slip summed across principal and
+	distributed ruptures in the measurement aperture); Sarmiento et al.
+	(2025, Earthquake Spectra) Table 1 lists LA23 under the aggregate
+	definition. This class serves ONLY the aggregate-definition variants:
+	``output_type = "disp_agg_prime"`` (default, full rupture) or
+	``"disp_agg_seg"`` (single segment). The paper's third variant,
+	``disp_prnc_prime`` (principal-strand slip summed within the aperture,
+	WITHOUT distributed ruptures -- a sum-of-principal definition), is a
+	different physical quantity and lives in its own class,
+	:class:`Lavrentiadis2023PrimaryFD_principal`; requesting it here raises
+	ValueError (and is rejected at logic-tree validation time, FDLT-015).
+	As an aggregate model, this class runs single-bucket and forbids
+	secondary-slot models (FDLT-013).
 	"""
+
+	DISPLACEMENT_DEFINITION = "aggregate"
+	DISPLACEMENT_COMPONENT = "net"
 
 	def __init__(self, style=None, output_type=None, include_zero_slip=None):
 		"""
@@ -58,8 +85,8 @@ class Lavrentiadis2023PrimaryFD(BasePrimarySurfDispl):
 	def get_prob(self, d, X_L_ratio, mag, style=None, output_type=None, include_zero_slip=None):
 		"""
 		Probability of exceeding displacement thresholds for the
-		Lavrentiadis et al. (2023) model.
-		
+		Lavrentiadis et al. (2023) model (aggregate-definition variants).
+
 		:param d:
 		    Target displacement in meters.
 		:param X_L_ratio:
@@ -70,15 +97,17 @@ class Lavrentiadis2023PrimaryFD(BasePrimarySurfDispl):
 		:param style:
 		    Style of faulting ("normal", "strike-slip" or "reverse").
 		:param output_type:
-		    Displacement metric to evaluate. Options are ``"disp_agg_prime"``,
-		    ``"disp_prnc_prime"`` or ``"disp_agg_seg"``.
+		    Displacement metric to evaluate: ``"disp_agg_prime"`` (default) or
+		    ``"disp_agg_seg"``. The sum-of-principal ``"disp_prnc_prime"``
+		    metric is served by
+		    :class:`Lavrentiadis2023PrimaryFD_principal` and is rejected here.
 		:param include_zero_slip:
 		    If ``True`` the probability accounts for zero slip and gap
 		    probabilities.
 		:returns:
 		    Probability of exceeding ``d`` for the selected ``output_type``.
 		:raises ValueError:
-		    If ``output_type`` is invalid.
+		    If ``output_type`` is invalid or is ``"disp_prnc_prime"``.
 		"""
 		# Fall back to constructor-pinned values, then legacy defaults
 		if style is None:
@@ -89,6 +118,23 @@ class Lavrentiadis2023PrimaryFD(BasePrimarySurfDispl):
 		if include_zero_slip is None:
 			include_zero_slip = (self.include_zero_slip
 				if self.include_zero_slip is not None else False)
+		if output_type == "disp_prnc_prime":
+			raise ValueError(
+				"Lavrentiadis2023PrimaryFD is the AGGREGATE-definition "
+				"model (disp_agg_prime / disp_agg_seg); the sum-of-"
+				"principal metric disp_prnc_prime is a different "
+				"displacement definition (Sarmiento et al. 2025, Table 1). "
+				"Select the Lavrentiadis2023PrimaryFD_principal model "
+				"class instead of passing output_type = disp_prnc_prime."
+			)
+		return self._evaluate(
+			d, X_L_ratio, mag, style=style, output_type=output_type,
+			include_zero_slip=include_zero_slip)
+
+	def _evaluate(self, d, X_L_ratio, mag, style, output_type,
+			include_zero_slip):
+		"""Shared implementation for all published output_type variants
+		(the public classes pin/restrict output_type; this does not)."""
 
 		(
 			disp_agg_prime,
@@ -592,3 +638,51 @@ class Lavrentiadis2023PrimaryFD(BasePrimarySurfDispl):
 
 		# Replace negative values with NaN and compute mean
 		return np.nanmean(np.where(s >= 0, s, np.nan) ** (10 / 3), axis=1)
+
+
+class Lavrentiadis2023PrimaryFD_principal(Lavrentiadis2023PrimaryFD):
+	"""Sum-of-principal variant of Lavrentiadis and Abrahamson (2023).
+
+	Identical regression machinery as :class:`Lavrentiadis2023PrimaryFD`,
+	hard-pinned to the paper's ``disp_prnc_prime`` metric: the principal-
+	strand slip summed within the measurement aperture, WITHOUT distributed
+	ruptures. Following the Petersen2011PrimaryFD_* variant idiom, the class
+	choice IS the definition -- ``output_type`` is fixed by this class and
+	passing any explicit value raises ValueError (also rejected at
+	logic-tree validation time, FDLT-015).
+
+	Model contract: DISPLACEMENT_DEFINITION = "sum-of-principal",
+	DISPLACEMENT_COMPONENT = "net" -- Lavrentiadis & Abrahamson (2023)
+	derive the principal-prime profile from the aggregate one (their b_2
+	offset and zero-slip probability); like Chiou et al. (2025)'s D_SP it
+	excludes distributed ruptures, so secondary-slot models remain
+	legitimate alongside this class (it is NOT aggregate; FDLT-013 does not
+	apply).
+	"""
+
+	DISPLACEMENT_DEFINITION = "sum-of-principal"
+	DISPLACEMENT_COMPONENT = "net"
+
+	def get_prob(self, d, X_L_ratio, mag, style="normal",
+			include_zero_slip=False, output_type=None):
+		"""
+		Probability of exceeding sum-of-principal (``disp_prnc_prime``)
+		displacement thresholds; parameters as in
+		:meth:`Lavrentiadis2023PrimaryFD.get_prob`.
+
+		:param output_type:
+		    Must be left unset -- the metric is fixed by the class choice.
+		:raises ValueError:
+		    If an explicit ``output_type`` is passed.
+		"""
+		if output_type is not None:
+			raise ValueError(
+				"Lavrentiadis2023PrimaryFD_principal evaluates the "
+				"disp_prnc_prime (sum-of-principal) metric; output_type "
+				f"is fixed by the class choice (got '{output_type}'). "
+				"Remove the output_type parameter, or select "
+				"Lavrentiadis2023PrimaryFD for the aggregate variants."
+			)
+		return self._evaluate(
+			d, X_L_ratio, mag, style=style, output_type="disp_prnc_prime",
+			include_zero_slip=include_zero_slip)

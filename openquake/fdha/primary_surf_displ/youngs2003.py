@@ -27,8 +27,17 @@ class Youngs2003PrimaryFD(BasePrimarySurfDispl):
     Reference:
         Youngs, R. R., et al. (2003). A methodology for probabilistic fault
         displacement hazard analysis (PFDHA). Earthquake Spectra, 19(1), 191-219.
+
+    Model contract: DISPLACEMENT_DEFINITION = "principal",
+    DISPLACEMENT_COMPONENT = "vertical" -- Youngs et al. (2003) predict
+    principal-fault displacement of normal-faulting earthquakes measured as
+    vertical separation; Sarmiento et al. (2025, Earthquake Spectra) Table 1
+    lists YEA03 as D_P,V (principal, vertical).
     """
-    
+
+    DISPLACEMENT_DEFINITION = "principal"
+    DISPLACEMENT_COMPONENT = "vertical"
+
     # Wells & Coppersmith (1994) coefficients for "All styles"
     # (recommended - consistent with Youngs et al. 2003 paper and fdhpy)
     _WC94_ALL = {

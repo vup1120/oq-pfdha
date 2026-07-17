@@ -278,7 +278,7 @@ Supported FDHA branch-set filters in the parser/validator are:
 - `applyToBranches`
 - `applyToStyle`, with allowed values `strike-slip`, `reverse`, or `normal`
 
-Validator checks include supported uncertainty types, weight sums of 1.0 per branch set, valid `applyToBranches` references, valid source IDs when available, registered model classes, and advisory warnings for mixed primary displacement definitions where citation-traced metadata exists.
+Validator checks include supported uncertainty types, weight sums of 1.0 per branch set, valid `applyToBranches` references, valid source IDs when available, registered model classes, and advisory warnings for mixed primary displacement definitions where citation-traced metadata exists. The model contract adds four cross-model guards: FDLT-013 (error — aggregate-definition primary FD model combined with a non-empty secondary slot in the same branch chain), FDLT-014 (error — mixed displacement definitions within one FD branch set are denied), FDLT-105 (warning — mixed displacement components within one FD branch set are allowed but flagged), and FDLT-015 (error — wrong-class `output_type`: the class choice is the definition, e.g. use `Lavrentiadis2023PrimaryFD_principal` instead of `output_type = disp_prnc_prime`). See the model-contract table in [Input Files](03-Inputs.md) for the per-model definitions, components, and applicability ranges.
 
 ---
 

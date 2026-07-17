@@ -43,6 +43,7 @@ from openquake.fdha.logic_tree.source_model_lt import (
 )
 from openquake.fdha.logic_tree.validators import (
     check_r_sigma_conflict,
+    validate_end_branch_chains,
     validate_spec,
 )
 
@@ -162,11 +163,26 @@ class FdhaLogicTree:
             merged, self.base_config, self.ini_path, self.logic_tree_files
         )
         merged_report = validate_spec(merged, source_ids=source_ids)
+        if merged_report.errors:
+            # A spec with errors cannot be safely enumerated; persist the
+            # report and halt here (pre-C4 behaviour).
+            all_reports = [(merged, merged_report)]
+            _write_validator_files(outdir_path, all_reports)
+            merged_report.raise_if_errors()
+
+        end_branches = enumerate_end_branches(merged, sources)
+
+        # Cross-slot chain guards (C4 model contract, e.g. FDLT-013:
+        # aggregate primary FD + non-empty secondary slot) need the
+        # enumerated chains, so they run after enumeration and merge into
+        # the same persisted report / halt flow as the spec-level checks.
+        chain_report = validate_end_branch_chains(end_branches)
+        from openquake.fdha.logic_tree.types import ValidatorReport
+        merged_report = ValidatorReport(
+            issues=tuple(merged_report.issues) + tuple(chain_report.issues))
         all_reports = [(merged, merged_report)]
         _write_validator_files(outdir_path, all_reports)
         merged_report.raise_if_errors()
-
-        end_branches = enumerate_end_branches(merged, sources)
 
         # Dedup by selection-only fingerprint (sum weights of duplicates).
         # When a source file contains multiple same-style sources, the

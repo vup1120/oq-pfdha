@@ -36,7 +36,17 @@ class MossRoss2011PrimaryFD(BasePrimarySurfDispl):
     with the other primary FD models (Takao 2013, Youngs 2003). The truncation
     level ``n_sigma`` defaults to 3 and may be overridden from the logic tree
     via ``[MossRoss2011PrimaryFD] n_sigma = <value>``.
+
+    Model contract: DISPLACEMENT_DEFINITION = "principal",
+    DISPLACEMENT_COMPONENT = "vertical" -- Moss & Ross (2011, BSSA 101)
+    regress principal reverse-fault displacement measured as vertical
+    separation (their D/AD, D/MD data are vertical offsets on the principal
+    scarp); component per the reverse-fault convention summarised in
+    Valentini et al. (2025, Rev. Geophys.) Table 4.
     """
+
+    DISPLACEMENT_DEFINITION = "principal"
+    DISPLACEMENT_COMPONENT = "vertical"
 
     _ACCEPTED_DISP_TYPES = frozenset(["AD", "MD"])
     _N_INTEGRATION = 1000

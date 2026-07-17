@@ -72,6 +72,42 @@ class BaseFaultRuptureCalculator:
                 if _m is not None and getattr(
                         _m, 'MULTIFAULT_REFERENCE_LINE', 'lcp') != 'segments':
                     _m.MULTIFAULT_REFERENCE_LINE = _principal_line
+        # Model-contract guard (C4): an aggregate-definition principal FD
+        # model (Sarmiento et al. 2025 Table 1, e.g. Kuehn2024PrimaryFD or
+        # Lavrentiadis2023PrimaryFD -- the class choice IS the definition)
+        # already contains the distributed contribution, so configuring a
+        # secondary-slot model alongside it would double count the off-fault
+        # hazard. Logic-tree jobs are rejected earlier by validator FDLT-013;
+        # this guard covers direct [models.*] configurations, failing loudly
+        # rather than silently dropping the configured secondary models (cf.
+        # the silently-ignored-parameters precedent, commit d541dbc3).
+        if self.primary_surf_displ_model is not None and (
+                self.secondary_surf_rup_model is not None
+                or self.secondary_surf_displ_model is not None):
+            from openquake.fdha.calc.model_adapter import (
+                effective_displacement_definition)
+            _dd = effective_displacement_definition(
+                self.primary_surf_displ_model)
+            if _dd == 'aggregate':
+                _sec = [m.__class__.__name__ for m in (
+                    self.secondary_surf_rup_model,
+                    self.secondary_surf_displ_model) if m is not None]
+                raise ValueError(
+                    f"Primary FD model "
+                    f"{self.primary_surf_displ_model.__class__.__name__} "
+                    f"predicts AGGREGATE displacement (principal + "
+                    f"distributed, Sarmiento et al. 2025 Table 1), but the "
+                    f"job also configures secondary model(s) {_sec}. This "
+                    f"double counts the distributed hazard: aggregate "
+                    f"chains run as a single bucket "
+                    f"(rate * P_sr * P_fd_aggregate * W_p) and must leave "
+                    f"the secondary slots empty. Remove the "
+                    f"[models.secondary_surf_rup] / "
+                    f"[models.secondary_surf_displ] sections, or select a "
+                    f"principal-definition primary FD model (e.g. the "
+                    f"Lavrentiadis2023PrimaryFD_principal sum-of-principal "
+                    f"variant)."
+                )
         logger.debug(f"Models: primary_surf_rup={self.primary_surf_rup_model}, primary_surf_displ={self.primary_surf_displ_model}, "
                      f"secondary_surf_rup={self.secondary_surf_rup_model}, secondary_surf_displ={self.secondary_surf_displ_model}")
 
