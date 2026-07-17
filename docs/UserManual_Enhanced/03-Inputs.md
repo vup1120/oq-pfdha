@@ -171,7 +171,7 @@ The FDHA model logic tree selects the scientific models. The supported FDHA unce
 - `fdhaPrimaryFDModel`
 - `fdhaSecondarySRModel`
 - `fdhaSecondaryFDModel`
-- `fdhaCalcRThreshold` — a calculation-parameter uncertainty: each branch's `<uncertaintyModel>` carries an alternative value of the `r_threshold_km` distance threshold (in km) rather than a model class. A job must choose one mechanism: either the scalar `[calculation].r_threshold_km` in the INI or an `fdhaCalcRThreshold` branch set — defining both is a configuration error. See [Configuration](05-Configuration.md) for details.
+- `fdhaCalcRSigma` — a calculation-parameter uncertainty: each branch's `<uncertaintyModel>` carries an alternative value of the `r_sigma_km` mapping-accuracy sigma (in km, `0` allowed) rather than a model class. A job must choose one mechanism: either the scalar `[calculation].r_sigma_km` in the INI or `fdhaCalcRSigma` branch set(s) — defining both is a configuration error. See [Configuration](05-Configuration.md) for details.
 
 !!! note "primary = principal, secondary = distributed"
     The `Primary*` uncertainty types model **principal** rupture and

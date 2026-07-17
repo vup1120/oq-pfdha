@@ -182,38 +182,39 @@ def test_apply_to_sources_restricts_branchset():
     assert w2 == pytest.approx([0.4, 0.6])
 
 
-def test_calc_r_threshold_combines_cartesian():
-    # fdhaCalcRThreshold branches multiply into the realisation weights like
-    # any model branch but land in the calc pseudo-slot.
-    thr_bs = BranchSet(
-        branch_set_id="bs_thr",
-        uncertainty_type="fdhaCalcRThreshold",
-        branches=(Branch("T05", "0.5", "0.3"), Branch("T20", "2.0", "0.7")),
+def test_calc_r_sigma_combines_cartesian():
+    # fdhaCalcRSigma branches multiply into the realisation weights like
+    # any model branch but land in the calc pseudo-slot. sigma = 0 (the
+    # boxcar path) is a legal branch value.
+    sig_bs = BranchSet(
+        branch_set_id="bs_sig",
+        uncertainty_type="fdhaCalcRSigma",
+        branches=(Branch("S00", "0.0", "0.3"), Branch("S07", "0.0727", "0.7")),
     )
-    spec = _spec(_sr_branchset([("A1", 0.5, 0.4), ("A2", 1.0, 0.6)]), thr_bs)
+    spec = _spec(_sr_branchset([("A1", 0.5, 0.4), ("A2", 1.0, 0.6)]), sig_bs)
     ebs = enumerate_end_branches(spec, [SS_SOURCE])
     assert len(ebs) == 4
 
     got = {
         (
             eb.selections["primary_surf_rup"].branch_id,
-            eb.selections["calc_r_threshold"].branch_id,
+            eb.selections["calc_r_sigma"].branch_id,
         ): (
             _weight_of(eb),
-            eb.selections["calc_r_threshold"].params["r_threshold_km"],
+            eb.selections["calc_r_sigma"].params["r_sigma_km"],
         )
         for eb in ebs
     }
     expected = {
-        ("A1", "T05"): (0.4 * 0.3, 0.5),
-        ("A1", "T20"): (0.4 * 0.7, 2.0),
-        ("A2", "T05"): (0.6 * 0.3, 0.5),
-        ("A2", "T20"): (0.6 * 0.7, 2.0),
+        ("A1", "S00"): (0.4 * 0.3, 0.0),
+        ("A1", "S07"): (0.4 * 0.7, 0.0727),
+        ("A2", "S00"): (0.6 * 0.3, 0.0),
+        ("A2", "S07"): (0.6 * 0.7, 0.0727),
     }
     assert got.keys() == expected.keys()
-    for key, (w, thr) in expected.items():
+    for key, (w, sig) in expected.items():
         assert got[key][0] == pytest.approx(w, rel=1e-12)
-        assert got[key][1] == thr
+        assert got[key][1] == sig
     assert sum(w for w, _ in got.values()) == pytest.approx(1.0, rel=1e-12)
 
 

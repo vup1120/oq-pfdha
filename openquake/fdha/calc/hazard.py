@@ -365,9 +365,12 @@ def _compute_rupture_contribution(
             boxcar path; > 0 selects Petersen's pure Gaussian path (pinned,
             fixed +-2 sigma truncation; r_threshold_km plays no role there).
 
-    Principal and distributed are independent contributions of the same
-    surface-rupturing event (both carry rate * P_sr) and are SUMMED by the
-    caller (Petersen et al. 2011 eq. 1 + eq. 2; Fig. 10a "total hazard").
+    The combination follows the W_p path: at sigma = 0 the historical
+    COMPLEMENTARY boxcar split (inside h principal only, outside distributed
+    only — Youngs 2003 / Takao 2013 either/or); at sigma > 0 principal and
+    distributed are independent contributions of the same surface-rupturing
+    event and are SUMMED (Petersen et al. 2011 eq. 1 + eq. 2; Fig. 10a
+    "total hazard").
 
     Returns:
         Tuple of (principal_contrib, distributed_contrib) arrays, each shape (N_ctx, n_displ)
@@ -465,26 +468,37 @@ def _compute_rupture_contribution(
         P_dist_combined = P_sr_sec[:, np.newaxis] * P_fd_sec
     
     # =========================================================================
-    # COMBINE CONTRIBUTIONS: PRINCIPAL * W_p + DISTRIBUTED
+    # COMBINE CONTRIBUTIONS: per W_p path
     # =========================================================================
-    # Both contributions belong to the same surface-rupturing event and are
-    # independent, so they are summed (Petersen et al. 2011, eq. 1 + eq. 2;
-    # Fig. 10a "total hazard" = sum of its two contribution curves):
-    #     lambda_principal   = rate * P_sr * P_fd_primary * W_p(r)
-    #     lambda_distributed = rate * P_sr * P_dist_combined(r)
+    #     lambda_principal   = rate * P_sr * P_fd_primary       * W_p(r)
+    #     lambda_distributed = rate * P_sr * P_dist_combined(r) * G(r)
     #
     # W_p(r) is the probability that the site sits on the principal rupture
-    # at across-strike distance r. Two separate paths (location_weight):
-    # sigma=0 -> the boxcar |r| <= h (h = r_threshold_km); sigma>0 ->
-    # Petersen's pure Gaussian exp(-r^2/2 sigma^2), pinned, truncated at
-    # +-2 sigma (fixed), with h playing no role. abs() inside the helper
-    # keeps r symmetric about the trace, matching the old np.abs(ctx.r)
-    # test bit-for-bit at sigma=0.
+    # at across-strike distance r. Two separate paths (location_weight), each
+    # with its own distributed weight G:
+    #
+    #   sigma = 0 -> W_p = boxcar |r| <= h (h = r_threshold_km) and
+    #                G = 1 - W_p: the historical COMPLEMENTARY split — inside
+    #                the principal zone only the principal component counts,
+    #                outside it only the distributed component (Youngs 2003 /
+    #                Takao 2013 per-fault either/or bookkeeping).
+    #   sigma > 0 -> W_p = Petersen's pure Gaussian exp(-r^2/2 sigma^2),
+    #                pinned, truncated at +-2 sigma (fixed; h plays no role)
+    #                and G = 1: principal and distributed are independent and
+    #                SUMMED (Petersen et al. 2011, eq. 1 + eq. 2; Fig. 10a
+    #                "total hazard" = sum of its two contribution curves).
+    #
+    # abs() inside the helper keeps r symmetric about the trace, matching the
+    # old np.abs(ctx.r) test bit-for-bit at sigma=0.
     W_p = location_weight(
         ctx.r,
         r_threshold_km=r_threshold_km,
         r_sigma_km=r_sigma_km,
     )
+    if float(r_sigma_km) == 0.0:
+        G = 1.0 - W_p           # complementary (legacy boxcar split, exact)
+    else:
+        G = np.ones_like(W_p)   # additive (Petersen eq. 1 + eq. 2)
 
     # Principal zone: uses primary SR and primary FD.
     # rate * P(SR_primary) * P(FD_primary | SR_primary) * W_p(r)
@@ -502,7 +516,7 @@ def _compute_rupture_contribution(
     # contribution (Visini et al. 2025 explicitly excludes both P_sr and the
     # earthquake rate from their worked example for this reason).
     distributed_contrib = (
-        rate * P_sr[:, np.newaxis] * P_dist_combined
+        rate * P_sr[:, np.newaxis] * P_dist_combined * G[:, np.newaxis]
     )
 
     return principal_contrib, distributed_contrib

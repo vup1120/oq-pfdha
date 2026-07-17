@@ -42,7 +42,7 @@ from openquake.fdha.logic_tree.source_model_lt import (
     load_source_model_branches,
 )
 from openquake.fdha.logic_tree.validators import (
-    check_r_threshold_conflict,
+    check_r_sigma_conflict,
     validate_spec,
 )
 
@@ -156,9 +156,9 @@ class FdhaLogicTree:
 
         specs = [parse_nrml(Path(self.config_dir) / f) for f in self.logic_tree_files]
         merged = _merge_specs(specs)
-        # Conflict rule: the INI scalar r_threshold_km and a
-        # fdhaCalcRThreshold branch set are mutually exclusive.
-        check_r_threshold_conflict(
+        # Conflict rule: the INI scalar r_sigma_km and a
+        # fdhaCalcRSigma branch set are mutually exclusive.
+        check_r_sigma_conflict(
             merged, self.base_config, self.ini_path, self.logic_tree_files
         )
         merged_report = validate_spec(merged, source_ids=source_ids)
@@ -1417,7 +1417,7 @@ def _manifest_models(eb) -> dict[str, str]:
 def _manifest_calc_params(eb) -> dict[str, Any]:
     """Calculation parameters chosen by calc-param branches (may be empty).
 
-    Empty for jobs without a fdhaCalcRThreshold branch set, in which case the
+    Empty for jobs without a fdhaCalcRSigma branch set, in which case the
     manifest key is omitted entirely so MODE A manifests stay unchanged.
     """
     from openquake.fdha.logic_tree.config_builder import CALC_SLOTS

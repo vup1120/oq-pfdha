@@ -309,13 +309,18 @@ models (rupture models are uniformly logistic with no aleatory σ on `P`).
   parameter setting. Logic trees should enumerate the named alternatives
   documented above (style, dataset version, completeness, σ source, method,
   pixel size, HW/FW), each with an explicit weight.
-- **The principal/distributed distance threshold can itself be an epistemic
-  branch.** The hard-step split at `r_threshold_km` is a simplification of the
-  rupture-location term fr(r) of Petersen et al. (2011, p. 810); the toolkit
-  exposes the threshold choice as weighted `fdhaCalcRThreshold` logic-tree
-  branches (each `<uncertaintyModel>` a bare value in km), following
-  IAEA-TECDOC-2092 (2025, §3.3). This is mutually exclusive with the scalar
-  `[calculation].r_threshold_km` INI key — see the conflict rule in the
+- **The rupture-location mapping accuracy is an epistemic branch.** The
+  rupture-location term fr(r) of Petersen et al. (2011) enters the
+  calculator as the weight W_p: a boxcar of half-width `r_threshold_km` when
+  `r_sigma_km` is 0 (with the historical complementary principal/distributed
+  split), or a pinned ±2σ Gaussian when σ > 0, summed with the full
+  distributed term (Tables 2–3 give the two-sided σ per mapping-accuracy
+  class). The toolkit exposes the class
+  choice as weighted `fdhaCalcRSigma` logic-tree branches (each
+  `<uncertaintyModel>` a bare value in km, `0` allowed), following Petersen
+  et al. (2011, p. 811); sets can be scoped per correlation group via
+  `applyToSources`. This is mutually exclusive with the scalar
+  `[calculation].r_sigma_km` INI key — see the conflict rule in the
   [Configuration](05-Configuration.md) chapter.
 - **Rupture-probability models carry no quantified σ.** When PSR or SSR
   dominate the hazard (typically at moderate magnitudes and long return

@@ -379,14 +379,14 @@ class TestHazardEndToEnd:
         assert np.asarray(results['rate_principal']).max() > 0.0
         total_rate = 10 ** (4.0 - 1.0 * 6.5) - 10 ** (4.0 - 1.0 * 7.0)
         assert poes.max() <= total_rate * 1.0001
-        # regression anchor: re-frozen 2026-07-16 under the always-additive
-        # total (principal + distributed summed, Petersen eq. 1 + eq. 2).
-        # +4.4% vs the old complementary-era anchor = the distributed term
-        # now added at this on-trace site. Plateau = 11.5% of the
-        # 2.1623e-3/yr GR total rate, and within 5% of the simpleFaultSource
-        # twin — see the equivalence test below.
+        # regression anchor: the sigma = 0 path uses the historical
+        # COMPLEMENTARY boxcar split (this job sets no r_sigma_km), so the
+        # on-trace site carries the principal component only — the original
+        # pre-additive anchor values (plateau = 11% of the 2.1623e-3/yr GR
+        # total rate, and within 5% of the simpleFaultSource twin — see the
+        # equivalence test below).
         expected = np.array(
-            [2.48974281e-04, 2.48222942e-04, 2.28080354e-04, 8.81459808e-05])
+            [2.38460639e-04, 2.38002779e-04, 2.22840039e-04, 8.79603903e-05])
         np.testing.assert_allclose(poes[0], expected, rtol=1e-6)
 
     def test_complex_matches_simple_twin(self, tmp_path):
@@ -406,25 +406,19 @@ class TestHazardEndToEnd:
         np.testing.assert_allclose(poes_c, poes_s, rtol=0.05)
 
     def test_hazard_curve_characteristic_complex(self, tmp_path):
-        """Single characteristic rupture at 1e-3/yr: the PRINCIPAL on-trace
-        plateau is bounded by rate x P_sr(M7); the total (principal +
-        distributed summed, Petersen eq. 1 + eq. 2) may exceed that gate by
-        the distributed contribution — a documented property of the additive
-        total (docs/design/rupture_location_uncertainty.md, section 3)."""
+        """Single characteristic rupture at 1e-3/yr: the on-trace plateau is
+        bounded by (and close to) rate x P_sr(M7). At sigma = 0 the
+        complementary split leaves only the principal component on-trace, so
+        the total respects the event-rate gate exactly."""
         results = _run_calc(
             tmp_path, CHAR_COMPLEX_XML, "charcomplex",
             rupture_mesh_spacing=1.0, complex_fault_mesh_spacing=1.0,
             width_of_mfd_bin=0.1)
         poes = np.asarray(results['poes'])
         assert poes.shape == (1, 4)
-        rate_principal = np.asarray(results['rate_principal'])
-        assert rate_principal.max() > 0.0
+        assert np.asarray(results['rate_principal']).max() > 0.0
         # Youngs2003 normal-style P(SR|M7) gate
         from openquake.fdha.primary_surf_rup import Youngs2003PrimarySR
         p_sr = float(Youngs2003PrimarySR().get_prob(7.0, style="normal"))
-        # principal alone respects the event-rate gate exactly
-        assert rate_principal.max() <= 0.001 * p_sr * 1.0001
-        # the additive total adds the (small) on-trace distributed term:
-        # observed 1.068x the gate for this fixed scenario; keep headroom
-        assert poes.max() <= 0.001 * p_sr * 1.10
+        assert poes.max() <= 0.001 * p_sr * 1.0001
         assert poes.max() > 0.5 * 0.001 * p_sr

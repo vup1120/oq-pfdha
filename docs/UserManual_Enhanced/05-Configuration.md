@@ -73,7 +73,8 @@ Engine's statistics.
 | `investigation_time` | float | `1.0` | No | Investigation time in years. |
 | `return_period` | float | `100000.0` | Hazard map only | Return period used to invert each site hazard curve into map displacement. |
 | `max_distance_km` | float | `10.0` | Hazard map optional | Maximum distance from fault traces used when building hazard-map sites. The loader also accepts this in `[geometry]`. |
-| `r_threshold_km` | float | implementation default | No | Distance threshold used by hazard calculations to separate principal/near-trace behavior where applicable. Mutually exclusive with an `fdhaCalcRThreshold` branch set in the FDHA logic tree (see below): defining both is a configuration error. |
+| `r_threshold_km` | float | `0.1` | No | Boxcar half-width of the principal zone, used only when `r_sigma_km` is 0 (the mapped trace is trusted): inside it only the principal component counts, outside it only the distributed component (the historical complementary split). A fixed calculation parameter — never part of the logic tree. |
+| `r_sigma_km` | float | `0.0` | No | Two-sided mapping-accuracy sigma of the rupture-location weight (Petersen et al. 2011, Tables 2–3). `0` selects the boxcar path with the complementary principal/distributed split; `> 0` selects the pure-Gaussian path (pinned, ±2σ; `r_threshold_km` plays no role there), whose weighted principal is summed with the full distributed term (Petersen eq. 1 + eq. 2). Mutually exclusive with `fdhaCalcRSigma` branch set(s) in the FDHA logic tree (see below): defining both is a configuration error. |
 | `near_far_threshold_km` | float | implementation default | No | Copied into runtime parameters when supplied. |
 | `rank1p5_traces_file` | string | none | No | Optional XML file of rank-1.5 traces. If the file exists and parses, traces are added to runtime configuration. |
 
@@ -206,7 +207,7 @@ The FDHA logic tree selects the four model categories:
 | `fdhaPrimaryFDModel` | `primary_surf_displ` |
 | `fdhaSecondarySRModel` | `secondary_surf_rup` |
 | `fdhaSecondaryFDModel` | `secondary_surf_displ` |
-| `fdhaCalcRThreshold` | `calc_r_threshold` (calculation parameter) |
+| `fdhaCalcRSigma` | `calc_r_sigma` (calculation parameter) |
 
 For the four model uncertainty types, each branch's `<uncertaintyModel>` text is an INI-like block. The first bracketed name is the model class; following lines are model parameters.
 
@@ -223,39 +224,51 @@ For the four model uncertainty types, each branch's `<uncertaintyModel>` text is
 </logicTreeBranchSet>
 ```
 
-### Calculation-parameter branches: `fdhaCalcRThreshold`
+### Calculation-parameter branches: `fdhaCalcRSigma`
 
-`fdhaCalcRThreshold` branch sets express **epistemic uncertainty on the
-`r_threshold_km` calculation parameter** instead of on a model class.
-Following the OpenQuake convention for scalar uncertainty types, each
-`<uncertaintyModel>` contains a single bare positive float — the
-principal/distributed distance threshold in kilometers:
+`fdhaCalcRSigma` branch sets express **epistemic uncertainty on the
+`r_sigma_km` calculation parameter** (the two-sided mapping-accuracy sigma of
+the rupture-location weight, Petersen et al. 2011, Tables 2–3) instead of on
+a model class. Following the OpenQuake convention for scalar uncertainty
+types, each `<uncertaintyModel>` contains a single bare non-negative float in
+kilometers. **Zero is a legal branch value** — it selects the boxcar path
+(the mapped trace is trusted; complementary principal/distributed split),
+so a tree can weigh that against Gaussian mapping-error alternatives
+(whose weighted principal is summed with the full distributed term):
 
 ```xml
-<logicTreeBranchSet branchSetID="bs_r_threshold"
-                    uncertaintyType="fdhaCalcRThreshold">
-  <logicTreeBranch branchID="RT_0p1">
-    <uncertaintyModel>0.1</uncertaintyModel>
+<logicTreeBranchSet branchSetID="bs_r_sigma"
+                    uncertaintyType="fdhaCalcRSigma">
+  <logicTreeBranch branchID="RS_ACCURATE">
+    <uncertaintyModel>0.0269</uncertaintyModel>
     <uncertaintyWeight>0.6</uncertaintyWeight>
   </logicTreeBranch>
-  <logicTreeBranch branchID="RT_0p2">
-    <uncertaintyModel>0.2</uncertaintyModel>
+  <logicTreeBranch branchID="RS_CONCEALED">
+    <uncertaintyModel>0.0655</uncertaintyModel>
     <uncertaintyWeight>0.4</uncertaintyWeight>
   </logicTreeBranch>
 </logicTreeBranchSet>
 ```
 
-Treating the threshold choice as weighted branches follows Petersen et al.
-(2011, p. 810) and IAEA-TECDOC-2092 (2025, Section 3.3). Threshold branches
-multiply into the realization count like any other branch set and appear in
-the manifest branch paths.
+Treating the mapping-accuracy class as weighted branches follows Petersen et
+al. (2011, p. 811). Sigma branches multiply into the realization count like
+any other branch set and appear in the manifest branch paths (the chosen
+value is recorded under `fdha_calc_params`).
+
+Branch sets may be **scoped per correlation group of sources** with
+`applyToSources` (faults mapped together share one set). Each source may be
+covered by at most one `fdhaCalcRSigma` set; overlapping scopes — including a
+second set without `applyToSources`, which covers every source — are a
+validation error (FDLT-012). Values above 0.5 km trigger a unit-slip warning
+(FDLT-104): Petersen's largest two-sided class is 0.116 km.
 
 !!! warning "Conflict rule: INI scalar vs. logic-tree branches"
     A job must choose **one** mechanism: either the scalar
-    `[calculation].r_threshold_km` in the job INI **or** an
-    `fdhaCalcRThreshold` branch set in the FDHA logic tree. Defining both
-    raises a configuration error naming both locations — there is no silent
-    precedence.
+    `[calculation].r_sigma_km` in the job INI **or** `fdhaCalcRSigma`
+    branch set(s) in the FDHA logic tree. Defining both raises a
+    configuration error naming both locations — there is no silent
+    precedence. The fixed `r_threshold_km` scalar is *not* part of this
+    rule and may coexist with sigma branches.
 
 ### Branch-set filters
 

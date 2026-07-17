@@ -5,8 +5,8 @@ from typing import Any, Iterable
 
 from openquake.fdha.calc.contexts import classify_style
 from openquake.fdha.logic_tree.param_parser import (
-    R_THRESHOLD_KM_KEY,
-    parse_r_threshold_model,
+    R_SIGMA_KM_KEY,
+    parse_r_sigma_model,
     parse_uncertainty_model,
 )
 from openquake.fdha.logic_tree.types import (
@@ -53,9 +53,9 @@ def enumerate_end_branches(spec: LogicTreeSpec, sources: Iterable[SourceInfo]) -
                             # Cartesian-combines like any model branch but
                             # materialises into [calculation], not [models.*].
                             slot = calc_slot
-                            value = parse_r_threshold_model(br.uncertainty_model)
-                            class_name = R_THRESHOLD_KM_KEY
-                            params = {R_THRESHOLD_KM_KEY: value}
+                            value = parse_r_sigma_model(br.uncertainty_model)
+                            class_name = R_SIGMA_KM_KEY
+                            params = {R_SIGMA_KM_KEY: value}
                         else:
                             class_name, params = parse_uncertainty_model(br.uncertainty_model)
                         try:

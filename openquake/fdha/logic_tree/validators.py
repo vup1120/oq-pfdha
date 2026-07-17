@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from openquake.fdha.logic_tree.param_parser import (
-    parse_r_threshold_model,
+    parse_r_sigma_model,
     parse_uncertainty_model,
 )
 from openquake.fdha.logic_tree.types import (
@@ -45,35 +45,22 @@ def _primary_fd_metadata() -> dict[str, dict]:
     return {str(k): (v or {}) for k, v in out.items() if isinstance(v, dict)}
 
 
-def _secondary_distance_applicability() -> dict[str, dict]:
-    """Machine-readable distance-applicability metadata, if any.
-
-    Read from ``model_metadata.yaml`` key
-    ``secondary_model_distance_applicability`` (entries must carry a
-    primary-source citation, like every entry in that file). As of this
-    writing no such metadata exists, so callers fall back to the single
-    "applicability-range metadata unavailable" advisory warning. Ranges are
-    never hardcoded here.
-    """
-    md = _load_model_metadata()
-    out = md.get("secondary_model_distance_applicability") or {}
-    return {str(k): (v or {}) for k, v in out.items() if isinstance(v, dict)}
-
-
 def validate_spec(spec: LogicTreeSpec, source_ids: Optional[set[str]] = None) -> ValidatorReport:
     issues: list[ValidatorIssue] = []
 
     declared_branch_ids: set[str] = set()
     pfd_meta = _primary_fd_metadata()
-    # fdhaCalcRThreshold bookkeeping: (branch_set_id, parsed branch values)
-    r_threshold_branch_sets: list[str] = []
-    r_threshold_values: list[float] = []
+    # fdhaCalcRSigma bookkeeping for the per-source coverage rule (FDLT-012):
+    # (branch_set_id, apply_to_sources or None == all sources)
+    r_sigma_branch_sets: list[tuple[str, Optional[str]]] = []
 
     for level in spec.branching_levels:
         for bs in level.branch_sets:
             is_calc_param = bs.uncertainty_type in FDHA_CALC_PARAM_UTYPES
-            if bs.uncertainty_type == "fdhaCalcRThreshold":
-                r_threshold_branch_sets.append(bs.branch_set_id)
+            if bs.uncertainty_type == "fdhaCalcRSigma":
+                r_sigma_branch_sets.append(
+                    (bs.branch_set_id, bs.apply_to_sources)
+                )
             # FDLT-005 uncertaintyType
             if bs.uncertainty_type not in FDHA_UNCERTAINTY_TYPES:
                 issues.append(
@@ -110,8 +97,8 @@ def validate_spec(spec: LogicTreeSpec, source_ids: Optional[set[str]] = None) ->
             weights: list[float] = []
             # (displacement_definition, source_citation) tuples seen in this branch set
             disp_def_entries: list[tuple[str, str]] = []
-            # parsed r_threshold_km values seen in this branch set
-            bs_r_threshold_values: list[float] = []
+            # parsed r_sigma_km values seen in this branch set
+            bs_r_sigma_values: list[float] = []
 
             for br in bs.branches:
                 declared_branch_ids.add(br.branch_id)
@@ -139,11 +126,11 @@ def validate_spec(spec: LogicTreeSpec, source_ids: Optional[set[str]] = None) ->
                     )
 
                 if is_calc_param:
-                    # FDLT-010: type-specific grammar (one line
-                    # `r_threshold_km = <positive float>`); the model-class
-                    # check (FDLT-006) does not apply to parameter branches.
+                    # FDLT-010: type-specific grammar (single bare float
+                    # >= 0, km); the model-class check (FDLT-006) does not
+                    # apply to parameter branches.
                     try:
-                        value = parse_r_threshold_model(br.uncertainty_model)
+                        value = parse_r_sigma_model(br.uncertainty_model)
                     except ValueError as exc:
                         issues.append(
                             ValidatorIssue(
@@ -154,18 +141,37 @@ def validate_spec(spec: LogicTreeSpec, source_ids: Optional[set[str]] = None) ->
                         )
                     else:
                         # FDLT-011: duplicate values within one branch set
-                        if value in bs_r_threshold_values:
+                        if value in bs_r_sigma_values:
                             issues.append(
                                 ValidatorIssue(
                                     code="FDLT-011",
                                     level="error",
                                     message=(
-                                        f"Duplicate r_threshold_km value {value} in "
+                                        f"Duplicate r_sigma_km value {value} in "
                                         f"{bs.branch_set_id} (branch {br.branch_id})"
                                     ),
                                 )
                             )
-                        bs_r_threshold_values.append(value)
+                        bs_r_sigma_values.append(value)
+                        # FDLT-104 (advisory): suspiciously large sigma.
+                        # Petersen's largest two-sided class is 0.116 km
+                        # (complex, Table 3); an order of magnitude above
+                        # that usually means metres were typed where
+                        # kilometres are expected.
+                        if value > 0.5:
+                            issues.append(
+                                ValidatorIssue(
+                                    code="FDLT-104",
+                                    level="warning",
+                                    message=(
+                                        f"r_sigma_km = {value} km is far above "
+                                        "Petersen's largest two-sided mapping "
+                                        "error (0.116 km, Table 3) — check "
+                                        "the unit (km, not m) (branch "
+                                        f"{br.branch_id} in {bs.branch_set_id})"
+                                    ),
+                                )
+                            )
                     continue
 
                 # FDLT-006 class resolves
@@ -199,8 +205,6 @@ def validate_spec(spec: LogicTreeSpec, source_ids: Optional[set[str]] = None) ->
                         )
                     )
 
-            r_threshold_values.extend(bs_r_threshold_values)
-
             # FDLT-101 (advisory): mixed displacement definitions within one Primary FD branch set.
             # Driven by model_metadata.yaml; entries missing from the file are UNKNOWN and skipped.
             unique_defs = {dd for dd, _ in disp_def_entries}
@@ -222,58 +226,48 @@ def validate_spec(spec: LogicTreeSpec, source_ids: Optional[set[str]] = None) ->
                     )
                 )
 
-    # FDLT-012: at most one fdhaCalcRThreshold branch set per (merged) tree
-    if len(r_threshold_branch_sets) > 1:
-        issues.append(
-            ValidatorIssue(
-                code="FDLT-012",
-                level="error",
-                message=(
-                    "More than one fdhaCalcRThreshold branch set is not allowed; "
-                    f"found {r_threshold_branch_sets}"
-                ),
-            )
-        )
-
-    # FDLT-102/FDLT-103 (advisory): cross-check branch values against
-    # machine-readable distance-applicability metadata of the registered
-    # secondary/distributed models. No such metadata is currently published
-    # in model_metadata.yaml, so the FDLT-102 fallback fires; ranges are
-    # never hardcoded here.
-    if r_threshold_branch_sets:
-        applicability = _secondary_distance_applicability()
-        if not applicability:
-            issues.append(
-                ValidatorIssue(
-                    code="FDLT-102",
-                    level="warning",
-                    message=(
-                        "applicability-range metadata unavailable: cannot "
-                        "cross-check fdhaCalcRThreshold branch values against "
-                        "secondary-model distance-applicability ranges"
-                    ),
-                )
-            )
-        else:
-            for model, entry in sorted(applicability.items()):
-                min_km = entry.get("min_km")
-                max_km = entry.get("max_km")
-                src = entry.get("source", "")
-                for value in r_threshold_values:
-                    below = min_km is not None and value < float(min_km)
-                    above = max_km is not None and value > float(max_km)
-                    if below or above:
-                        issues.append(
-                            ValidatorIssue(
-                                code="FDLT-103",
-                                level="warning",
-                                message=(
-                                    f"r_threshold_km = {value} lies outside the "
-                                    f"stated distance-applicability range "
-                                    f"[{min_km}, {max_km}] km of {model} [{src}]"
-                                ),
-                            )
+    # FDLT-012: per-source sigma coverage — each source may be covered by at
+    # most one fdhaCalcRSigma branch set (D5 of
+    # docs/design/rupture_location_uncertainty.md). Sets are scoped via
+    # applyToSources (correlation groups: bound faults share one set); a set
+    # without applyToSources covers ALL sources, so it cannot coexist with
+    # any other sigma set.
+    if len(r_sigma_branch_sets) > 1:
+        for i in range(len(r_sigma_branch_sets)):
+            for j in range(i + 1, len(r_sigma_branch_sets)):
+                id_i, scope_i = r_sigma_branch_sets[i]
+                id_j, scope_j = r_sigma_branch_sets[j]
+                if scope_i is None or scope_j is None:
+                    unscoped = id_i if scope_i is None else id_j
+                    issues.append(
+                        ValidatorIssue(
+                            code="FDLT-012",
+                            level="error",
+                            message=(
+                                f"fdhaCalcRSigma branch set '{unscoped}' has no "
+                                "applyToSources (covers every source) and "
+                                "therefore overlaps branch set "
+                                f"'{id_j if scope_i is None else id_i}'; each "
+                                "source may be covered by at most one sigma "
+                                "branch set"
+                            ),
                         )
+                    )
+                    continue
+                shared = sorted(set(scope_i.split()) & set(scope_j.split()))
+                if shared:
+                    issues.append(
+                        ValidatorIssue(
+                            code="FDLT-012",
+                            level="error",
+                            message=(
+                                f"Sources {shared} are covered by both "
+                                f"fdhaCalcRSigma branch sets '{id_i}' and "
+                                f"'{id_j}'; each source may be covered by at "
+                                "most one sigma branch set"
+                            ),
+                        )
+                    )
 
     # FDLT-002 applyToBranches resolves
     for level in spec.branching_levels:
@@ -293,17 +287,17 @@ def validate_spec(spec: LogicTreeSpec, source_ids: Optional[set[str]] = None) ->
     return ValidatorReport(issues=tuple(issues))
 
 
-def check_r_threshold_conflict(
+def check_r_sigma_conflict(
     spec: LogicTreeSpec,
     base_config: dict,
     ini_path: str,
     logic_tree_files: list[str],
 ) -> None:
-    """Enforce the r_threshold_km conflict rule (no silent precedence).
+    """Enforce the r_sigma_km conflict rule (no silent precedence).
 
     A job must choose ONE mechanism: either the scalar
-    ``[calculation].r_threshold_km`` in the job INI (MODE A) or a
-    ``fdhaCalcRThreshold`` branch set in the FDHA logic tree (MODE B).
+    ``[calculation].r_sigma_km`` in the job INI (MODE A) or
+    ``fdhaCalcRSigma`` branch set(s) in the FDHA logic tree (MODE B).
     Defining both raises ConfigurationError naming both locations.
 
     Only the user's job INI is checked (materialised ``branch_configs/``
@@ -315,7 +309,7 @@ def check_r_threshold_conflict(
         bs.branch_set_id
         for level in spec.branching_levels
         for bs in level.branch_sets
-        if bs.uncertainty_type == "fdhaCalcRThreshold"
+        if bs.uncertainty_type == "fdhaCalcRSigma"
     ]
     if not bs_ids:
         return
@@ -323,13 +317,13 @@ def check_r_threshold_conflict(
     scalar_sections = []
     for section in ("calculation", "parameters"):
         body = base_config.get(section)
-        if isinstance(body, dict) and "r_threshold_km" in body:
+        if isinstance(body, dict) and "r_sigma_km" in body:
             scalar_sections.append(f"[{section}]")
     if scalar_sections:
         raise ConfigurationError(
-            "r_threshold_km is defined twice: as a scalar in "
+            "r_sigma_km is defined twice: as a scalar in "
             f"{' and '.join(scalar_sections)} of {ini_path} AND as "
-            f"fdhaCalcRThreshold branch set(s) {bs_ids} in the FDHA logic "
+            f"fdhaCalcRSigma branch set(s) {bs_ids} in the FDHA logic "
             f"tree file(s) {list(logic_tree_files)}. These mechanisms are "
             "mutually exclusive with no precedence rule: keep the scalar "
             "(single value) or the branch set (epistemic alternatives), "

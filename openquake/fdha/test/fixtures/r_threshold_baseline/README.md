@@ -1,10 +1,12 @@
 # r_threshold_km MODE A regression baseline
 
-Golden fixtures freezing the current (pre-epistemic-r_threshold) outputs of
-the two public example jobs. They pin MODE A behaviour: a job using the
-scalar `[calculation].r_threshold_km` (or relying on the implementation
-default when the key is absent) must keep producing these outputs
-bit-identically after the `fdhaCalcRThreshold` logic-tree feature lands.
+Golden fixtures freezing the outputs of the two public example jobs. They
+pin MODE A behaviour: a job using the scalar `[calculation].r_threshold_km`
+(or relying on the implementation default when the key is absent) must keep
+producing these outputs bit-identically. Historically frozen for the
+epistemic-threshold feature (since replaced by `fdhaCalcRSigma`, whose
+sigma-0 branch is byte-checked against these same fixtures in
+`test_r_sigma_epistemic.py`).
 
 Consumed by
 `openquake/fdha/test/integration/logic_tree/test_r_threshold_baseline.py`.
@@ -57,6 +59,17 @@ lowered the trace-site count 98 -> 68, so all six displacement-map CSVs and
 surgical before re-freezing: the 1565 distributed *grid* sites are
 byte-identical (max |Δ| = 0 on displ_mean/principal/distributed); only the
 on-trace rows changed. ``curve_explicit/`` is unaffected.
+
+**`map_default/` restored on 2026-07-17 to the pre-additive freeze** (the
+2026-07-13 state): the combination rule became **per W_p path** — sigma = 0
+returned to the historical **complementary** boxcar split (inside
+`r_threshold_km` only principal, outside only distributed), while sigma > 0
+sums the Gaussian-weighted principal with the full distributed term. These
+MODE A fixtures run at sigma = 0, so the 2026-07-15 additive re-freeze was
+reverted and the earlier complementary outputs are canonical again
+(byte-verified: the per-path kernel reproduces them exactly).
+`curve_explicit/` needed no change (its site lies outside the principal
+band, where both rules coincide).
 
 - `curve_explicit/` — `examples/hazard_curve_minimal.ini`
   (sets `r_threshold_km = 0.1` explicitly in `[calculation]`):

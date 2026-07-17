@@ -200,18 +200,21 @@ class BaseFaultRuptureCalculator:
         # (docs/design/rupture_location_uncertainty.md, section 3).
         #
         #   r_sigma_km   two-sided mapping-accuracy sigma (Petersen Tables
-        #                2-3). Selects one of the two SEPARATE W_p paths:
-        #                0  -> boxcar 1{|r| <= r_threshold_km};
+        #                2-3). Selects one of the two SEPARATE W_p paths,
+        #                each with its own combination rule:
+        #                0  -> boxcar 1{|r| <= r_threshold_km}, COMPLEMENTARY
+        #                      split (inside h only principal, outside only
+        #                      distributed) — the historical behaviour;
         #                >0 -> Petersen's pure Gaussian exp(-r^2/2 sigma^2),
         #                      pinned, truncated at +-2 sigma (fixed, not
-        #                      user-configurable); r_threshold_km plays no
-        #                      role on this path.
+        #                      user-configurable), SUMMED with the full
+        #                      distributed term (Petersen eq.1 + eq.2);
+        #                      r_threshold_km plays no role on this path.
         #
-        # Principal and distributed are always independent and SUMMED
-        # (Petersen eq.1 + eq.2, Fig. 10a). The near-field displacement floor
-        # is a fixed kernel constant (model_adapter.NEAR_FIELD_FLOOR_KM); the
-        # distributed occurrence cell size is the secondary model's own
-        # pixel_size from the FD logic tree. Neither is a job parameter.
+        # The near-field displacement floor is a fixed kernel constant
+        # (model_adapter.NEAR_FIELD_FLOOR_KM); the distributed occurrence
+        # cell size is the secondary model's own pixel_size from the FD
+        # logic tree. Neither is a job parameter.
         self.r_sigma_km = float(
             self.config.get('calculation', {}).get('r_sigma_km') or
             self.config.get('parameters', {}).get('r_sigma_km', 0.0)
