@@ -40,13 +40,21 @@ of that trade:
 Petersen et al. (2011, p. 811). All values are demo inputs, **not**
 recommendations.
 
-Six runs:
+Seven runs:
 
 | Run      | Mechanism | r_sigma_km                              |
 |----------|-----------|-----------------------------------------|
 | baseline | MODE A    | absent (default 0 = boxcar)             |
 | case 1   | MODE B    | one branch `0.0`, weight 1.0            |
 | classes  | MODE B    | one branch each: Accurate `0.02689`, Approximate `0.04382`, Concealed `0.06552`, Inferred `0.07269` (Petersen Tables 2–3, Fig.-9c-style greys) |
+| weighted | MODE B    | **all four classes in ONE branch set, weight 0.25 each** — the propagation case |
+
+The **weighted** run is the point of the epistemic mechanism: the driver
+enumerates the `fdhaCalcRSigma` branches, runs every end branch, and
+aggregates a weighted-mean curve plus the canonical fractiles
+(5/16/50/84/95%). The manifest records each realization's composed branch
+id, its `r_sigma_km` value (under `fdha_calc_params`), and the combined
+weights.
 
 MODE B variants append a `fdhaCalcRSigma` branch set to the FDHA logic tree;
 the INI never carries an `r_sigma_km` scalar (the scalar and a branch set are
@@ -59,8 +67,13 @@ Checks asserted by the script:
 1. case 1 == baseline **bit-for-bit** (branch value 0 == the σ=0 default;
    MODE A and MODE B share one consumption point).
 2. the widest class (Inferred) must genuinely differ from σ=0 at both sites.
+3. **V7 linearity**: the weighted tree's aggregated mean equals
+   `0.25 × Σ(single-class runs)` at machine precision (~2e-16 observed) —
+   the mean is linear in the branch rates, so propagation through one tree
+   and averaging independent runs are the same number.
+4. the weighted tree's combined branch weights sum to 1.
 
-(The weighted-mean linearity anchor lives in
+(The same linearity anchor is enforced in CI by
 `test/integration/logic_tree/test_r_sigma_epistemic.py`, V7 of the design
 doc.)
 
@@ -70,7 +83,12 @@ Run:
 python openquake/fdha/demo/r_sigma_epistemic/run_demo.py
 ```
 
-Outputs (job variants, per-case results, and the four-panel PNG
-`out/r_sigma_epistemic_demo.png`: fault-and-sites map | site A curves |
-site B curves | consistency checks) are written to `out/` next to this
-file.
+Outputs are written to `out/` next to this file: the job variants,
+per-case results, and two PNGs —
+
+- `out/r_sigma_epistemic_demo.png`: fault-and-sites map | site A curves |
+  site B curves (one curve per σ treatment, side by side);
+- `out/r_sigma_epistemic_propagation.png`: the **weighted tree** per site —
+  four branch curves, the aggregated weighted mean, and the 5–95% fractile
+  band. This is the figure to look at for "how does the σ epistemic
+  uncertainty propagate into the hazard".

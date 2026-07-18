@@ -35,6 +35,16 @@ near ~1e-4/yr. The two sites bracket the 50 m boxcar edge:
       classes: W_p = 0 (Accurate, beyond its 2 sigma) / 0.19 / 0.48 / 0.55
       x principal + distributed.
 
+PROPAGATION (the point of the epistemic mechanism): the ``weighted`` run
+carries ALL FOUR classes in ONE ``fdhaCalcRSigma`` branch set (weight 0.25
+each). The driver enumerates the branches, runs each end branch, and
+aggregates: the weighted-mean curve plus the canonical fractiles
+(5/16/50/84/95%). Because the mean is linear in the branch rates, the
+aggregated mean must equal 0.25 x the sum of the four single-class runs at
+machine precision (verification V7 of the design doc) - asserted below.
+A second figure (``out/r_sigma_epistemic_propagation.png``) shows the four
+branch curves, the weighted mean and the 5-95% fractile band per site.
+
 All values are demo inputs, not recommendations.
 """
 from __future__ import annotations
@@ -138,8 +148,13 @@ def run(name: str, branches=None):
     res = FdhaLogicTree.from_ini(str(ini)).run(outdir=OUT / name / "out")
     d0 = np.asarray(res.d0, dtype=float)
     mean = np.asarray(res.mean_rates, dtype=float)          # (n_sites, D)
+    fractiles = {
+        float(q): np.asarray(v, dtype=float)                # (n_sites, D)
+        for q, v in (res.fractiles or {}).items()
+    }
     manifest = json.loads((OUT / name / "out" / "manifest.json").read_text())
-    return {"d0": d0, "mean": mean, "manifest": manifest}
+    return {"d0": d0, "mean": mean, "fractiles": fractiles,
+            "manifest": manifest}
 
 
 def rel_diff(a, b):
@@ -189,6 +204,14 @@ def main():
         class_res[name] = run(
             name.lower(), [(f"RS_{name.upper()}", sig, "1.0")])
 
+    # PROPAGATION: all four classes in ONE weighted branch set. The driver
+    # enumerates the end branches, runs each one, and aggregates the weighted
+    # mean and the canonical fractiles across them.
+    print("Running weighted (MODE B: four classes, w=0.25 each, ONE tree)...")
+    weighted = run("weighted", [
+        (f"RS_{name.upper()}", sig, "0.25") for name, sig, _col in CLASSES
+    ])
+
     d0 = baseline["d0"]
     e_equiv = rel_diff(case1["mean"], baseline["mean"]).max()
     print()
@@ -204,6 +227,26 @@ def main():
         spread = rel_diff(
             class_res["Inferred"]["mean"][i], case1["mean"][i]).max()
         assert spread > 0.1, f"Inferred must differ from sigma=0 at site {i}"
+
+    # V7 linearity: the aggregated mean of the weighted tree must equal the
+    # weighted sum of the four independent single-class runs.
+    lin_expected = 0.25 * sum(
+        class_res[name]["mean"] for name, _sig, _col in CLASSES)
+    e_lin = rel_diff(weighted["mean"], lin_expected).max()
+    print(f"weighted tree mean vs 0.25*sum(single runs): "
+          f"max rel diff = {e_lin:.3e}")
+    assert e_lin < 1e-12, "aggregated mean must be linear in the branch rates"
+
+    # The manifest documents the propagated branches: composed branch ids,
+    # the sigma value each realization ran with, and the combined weights.
+    print("weighted tree realizations (from out/weighted/out/manifest.json):")
+    for b in weighted["manifest"]["branches"]:
+        sig_val = b["fdha_calc_params"]["r_sigma_km"]
+        print(f"  {b['fdha_branch_id'].split('|')[0]:<15} "
+              f"r_sigma_km={sig_val:<8} w={b['combined_branch_weight']}")
+    w_sum = sum(b["combined_branch_weight"]
+                for b in weighted["manifest"]["branches"])
+    assert abs(w_sum - 1.0) < 1e-12, "combined weights must sum to 1"
 
     # ------------------------------------------------------------- figure
     import matplotlib
@@ -288,6 +331,42 @@ def main():
     png = OUT / "r_sigma_epistemic_demo.png"
     fig.savefig(png, dpi=150)
     print(f"\nFigure written to {png}")
+
+    # -- Figure 2: propagation through the weighted tree --------------------
+    # Per site: the four branch curves (the enumerated end branches of the
+    # ONE weighted tree - identical to the single-class runs by V7), the
+    # aggregated weighted mean, and the 5-95% fractile band.
+    q_lo, q_hi = 0.05, 0.95
+    fig2, axes = plt.subplots(1, 2, figsize=(12.5, 5.2), sharey=True)
+    for i, (ax, label, site) in enumerate((
+        (axes[0], "A", SITE_A), (axes[1], "B", SITE_B),
+    )):
+        for name, sig, col in CLASSES:
+            ax.loglog(d0, class_res[name]["mean"][i], color=col, lw=1.4,
+                      zorder=2, label=f"branch {name} "
+                      f"($\\sigma$={float(sig)*1000:.2f} m, w=0.25)")
+        if q_lo in weighted["fractiles"] and q_hi in weighted["fractiles"]:
+            ax.fill_between(
+                d0, weighted["fractiles"][q_lo][i],
+                weighted["fractiles"][q_hi][i],
+                color="#c6dbef", alpha=0.6, zorder=1,
+                label=f"{int(q_lo*100)}-{int(q_hi*100)}% fractile band")
+        ax.loglog(d0, weighted["mean"][i], color="#b2182b", lw=3.2,
+                  solid_capstyle="round", zorder=3, label="weighted mean")
+        ax.set_xlabel("Displacement $D_0$ [m]")
+        ax.set_title(
+            f"Site {label} at {int(site[2]*1000)} m: one tree, "
+            "four $\\sigma$ branches", fontsize=10.5)
+        ax.grid(True, which="both", alpha=0.25)
+        ax.legend(fontsize=8, loc="lower left")
+    axes[0].set_ylabel("Annual rate of exceedance")
+    fig2.suptitle(
+        "Propagating the mapping-accuracy class as fdhaCalcRSigma branches",
+        fontsize=12)
+    fig2.tight_layout(rect=(0, 0, 1, 0.96))
+    png2 = OUT / "r_sigma_epistemic_propagation.png"
+    fig2.savefig(png2, dpi=150)
+    print(f"Figure written to {png2}")
 
 
 if __name__ == "__main__":
