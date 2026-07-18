@@ -22,9 +22,6 @@ fault displacement prediction models
 """
 from openquake.fdha.primary_surf_displ.youngs2003 import Youngs2003PrimaryFD
 from openquake.fdha.primary_surf_displ.petersen2011 import Petersen2011PrimaryFD
-from openquake.fdha.primary_surf_displ.petersen2011 import Petersen2011PrimaryFD_bilinear
-from openquake.fdha.primary_surf_displ.petersen2011 import Petersen2011PrimaryFD_elliptical
-from openquake.fdha.primary_surf_displ.petersen2011 import Petersen2011PrimaryFD_quadratic
 from openquake.fdha.primary_surf_displ.moss_ross2011 import MossRoss2011PrimaryFD
 from openquake.fdha.primary_surf_displ.moss2024 import Moss2024PrimaryFD
 from openquake.fdha.primary_surf_displ.moss2022 import Moss2022PrimaryFD

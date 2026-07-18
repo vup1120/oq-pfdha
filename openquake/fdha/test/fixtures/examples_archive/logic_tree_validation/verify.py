@@ -1,4 +1,4 @@
-"""Logic Tree Validation demo — verification script.
+"""Logic Tree Validation demo - verification script.
 
 Runs the three sibling ``job.ini`` configs (single_bilinear, single_elliptical,
 blend_50_50) through ``FdhaLogicTree`` if their outputs are missing, then
@@ -82,7 +82,7 @@ def _load_manifest(run_dir: Path) -> dict:
 
 
 def main() -> int:
-    _banner("Logic Tree Validation demo — verify.py")
+    _banner("Logic Tree Validation demo - verify.py")
 
     _ensure_runs()
 
@@ -159,11 +159,14 @@ def main() -> int:
     weights = sorted(b["weight"] for b in branches)
     if not np.allclose(weights, [0.5, 0.5], atol=1e-12):
         raise CheckFailed(f"blend_50_50 branch weights = {weights} (expected [0.5, 0.5])")
+    # Both branches now use the single Petersen2011PrimaryFD class,
+    # distinguished by the `version` parameter (bilinear vs elliptical)
+    # rather than by separate subclasses.
     pfd_classes = {b["models"]["primary_surf_displ"] for b in branches}
-    if pfd_classes != {"Petersen2011PrimaryFD_bilinear", "Petersen2011PrimaryFD_elliptical"}:
+    if pfd_classes != {"Petersen2011PrimaryFD"}:
         raise CheckFailed(
             f"blend_50_50 primary_surf_displ classes = {pfd_classes} "
-            "(expected both Petersen aliases)"
+            "(expected both branches to be Petersen2011PrimaryFD)"
         )
     print(f"  [PASS] 2 branches, weights = {weights}, PFDs = {sorted(pfd_classes)}")
 

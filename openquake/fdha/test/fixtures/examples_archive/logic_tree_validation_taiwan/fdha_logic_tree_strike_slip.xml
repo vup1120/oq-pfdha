@@ -11,10 +11,10 @@
 
     BL2 PFD  : 5 primary-FD branches (equal 0.2 each)
       Youngs2003 [AD], Youngs2003 [MD],
-      Petersen2011 (bilinear — representative of "Petersen2011 AD" in image),
+      Petersen2011 (bilinear - representative of "Petersen2011 AD" in image),
       Takao2013   [AD], Takao2013  [MD]
 
-    BL3+BL4  : Cartesian secondary — 3 SSR x 2 SFD = 6 pairs
+    BL3+BL4  : Cartesian secondary - 3 SSR x 2 SFD = 6 pairs
       SSR = {Youngs2003, Petersen2011, Takao2014} (equal 1/3)
       SFD = {Youngs2003, Petersen2011}            (equal 0.5)
       Pairs: Y+Y, Y+P, P+Y, P+P, T+Y, T+P
@@ -73,7 +73,7 @@
       </logicTreeBranchSet>
     </logicTreeBranchingLevel>
 
-    <!-- ====== BL2: PRIMARY-FD (strike-slip) — 5 branches ==================== -->
+    <!-- ====== BL2: PRIMARY-FD (strike-slip) - 5 branches ==================== -->
     <logicTreeBranchingLevel branchingLevelID="bl2_ss_pfd">
       <logicTreeBranchSet branchSetID="bs2_ss_pfd"
                           uncertaintyType="fdhaPrimaryFDModel"
@@ -98,7 +98,10 @@
           <uncertaintyWeight>0.2</uncertaintyWeight>
         </logicTreeBranch>
         <logicTreeBranch branchID="SS_PFD_PETERSEN2011">
-          <uncertaintyModel>Petersen2011PrimaryFD_bilinear</uncertaintyModel>
+          <uncertaintyModel>
+            [Petersen2011PrimaryFD]
+            version = bilinear
+          </uncertaintyModel>
           <uncertaintyWeight>0.2</uncertaintyWeight>
         </logicTreeBranch>
         <logicTreeBranch branchID="SS_PFD_TAKAO2013_AD">
@@ -118,7 +121,7 @@
       </logicTreeBranchSet>
     </logicTreeBranchingLevel>
 
-    <!-- ============ BL3: SECONDARY-SR (strike-slip) — 3 branches ============ -->
+    <!-- ============ BL3: SECONDARY-SR (strike-slip) - 3 branches ============ -->
     <logicTreeBranchingLevel branchingLevelID="bl3_ss_ssr">
       <logicTreeBranchSet branchSetID="bs3_ss_ssr"
                           uncertaintyType="fdhaSecondarySRModel"
@@ -146,7 +149,7 @@
       </logicTreeBranchSet>
     </logicTreeBranchingLevel>
 
-    <!-- BL4: SECONDARY-FD (strike-slip) — 2 branches, Cartesian with BL3 -->
+    <!-- BL4: SECONDARY-FD (strike-slip) - 2 branches, Cartesian with BL3 -->
     <logicTreeBranchingLevel branchingLevelID="bl4_ss_sfd">
       <logicTreeBranchSet branchSetID="bs4_ss_sfd"
                           uncertaintyType="fdhaSecondaryFDModel"

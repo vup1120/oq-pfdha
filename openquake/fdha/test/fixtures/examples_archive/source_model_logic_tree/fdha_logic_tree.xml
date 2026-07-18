@@ -33,7 +33,10 @@
                           applyToBranches="PSR"
                           applyToStyle="strike-slip">
         <logicTreeBranch branchID="PFD">
-          <uncertaintyModel>Petersen2011PrimaryFD_bilinear</uncertaintyModel>
+          <uncertaintyModel>
+            [Petersen2011PrimaryFD]
+            version = bilinear
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>

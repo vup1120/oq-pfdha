@@ -213,7 +213,10 @@
           <uncertaintyWeight>0.2</uncertaintyWeight>
         </logicTreeBranch>
         <logicTreeBranch branchID="SS_PFD_PETERSEN2011">
-          <uncertaintyModel>Petersen2011PrimaryFD_bilinear</uncertaintyModel>
+          <uncertaintyModel>
+            [Petersen2011PrimaryFD]
+            version = bilinear
+          </uncertaintyModel>
           <uncertaintyWeight>0.2</uncertaintyWeight>
         </logicTreeBranch>
         <logicTreeBranch branchID="SS_PFD_TAKAO2013_AD">

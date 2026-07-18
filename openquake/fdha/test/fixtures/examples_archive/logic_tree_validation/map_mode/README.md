@@ -1,4 +1,4 @@
-# Logic Tree Validation — map mode
+# Logic Tree Validation - map mode
 
 Map-mode analogue of the sibling curve-mode demo (`../`). Goal: **verify
 that the logic-tree framework produces the same hazard map as running
@@ -23,8 +23,8 @@ observable and testable.
 |------|------|
 | `../source_model_ss.xml` | Shared strike-slip source (one fault, rake = 0°). The same source the curve-mode demo uses. |
 | `geometry_4x4.ini` | Reference `[geometry]` block; duplicated verbatim in the three scenario INIs so the grid, D0 axis, and site ordering match exactly. |
-| `single_bilinear_map/job.ini` | Weight-1.0 LT on `Petersen2011PrimaryFD_bilinear` (reuses `../single_bilinear/fdha_logic_tree.xml`). |
-| `single_elliptical_map/job.ini` | Weight-1.0 LT on `Petersen2011PrimaryFD_elliptical` (reuses `../single_elliptical/fdha_logic_tree.xml`). |
+| `single_bilinear_map/job.ini` | Weight-1.0 LT on `Petersen2011PrimaryFD` (version=bilinear) (reuses `../single_bilinear/fdha_logic_tree.xml`). |
+| `single_elliptical_map/job.ini` | Weight-1.0 LT on `Petersen2011PrimaryFD` (version=elliptical) (reuses `../single_elliptical/fdha_logic_tree.xml`). |
 | `blend_50_50_map/job.ini` | 50/50 LT over both models (reuses `../blend_50_50/fdha_logic_tree.xml`). |
 
 Each LT XML is shared with the curve-mode sibling, so the weights and
@@ -72,14 +72,14 @@ python plot_hazard_maps.py
 `verify_map.py` runs five checks. The interesting ones from a
 "framework == post-processing" point of view are:
 
-- **Step 3** — rate-space 50/50 identity on every site and every D0:
+- **Step 3** - rate-space 50/50 identity on every site and every D0:
 
       lambda_blend_LT(i, j) == 0.5 * lambda_A(i, j) + 0.5 * lambda_B(i, j)
 
   Tolerance 1e-12. This is the map-mode counterpart of the rate-space
   check done in the curve-mode `verify.py`.
 
-- **Step 5** — end-to-end post-processing check in displacement space.
+- **Step 5** - end-to-end post-processing check in displacement space.
   Runs A alone and B alone, takes their `rates_mean.h5` grids,
   computes the analytical blend `0.5·lambda_A + 0.5·lambda_B`, inverts
   it at RP = 2475 yr with
@@ -112,7 +112,7 @@ STEP 5  End-to-end post-processing check
     OK: LT blend hazard map matches per-model runs + analytical weighted average.
 ```
 
-The exact `0.000e+00` max differences are by design — the LT framework
+The exact `0.000e+00` max differences are by design - the LT framework
 and the post-processing share the same rate samples and the same
 log-log inversion, so any non-zero gap would indicate a real bug.
 
@@ -131,5 +131,5 @@ restatement of the Step-5 numerical result.
 The pytest versions of the checks above live under
 `openquake/fdha/test/integration/logic_tree/`:
 
-- `test_map_per_site_arithmetic.py` — Step 3 (per-site 50/50).
-- `test_map_inversion_consistency.py` — Step 4 (single-scenario inversion).
+- `test_map_per_site_arithmetic.py` - Step 3 (per-site 50/50).
+- `test_map_inversion_consistency.py` - Step 4 (single-scenario inversion).

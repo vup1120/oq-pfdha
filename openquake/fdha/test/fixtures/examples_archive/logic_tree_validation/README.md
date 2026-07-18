@@ -1,14 +1,14 @@
 # Logic Tree Validation Demo
 
 Self-contained demo that verifies `FdhaLogicTree` aggregates per-branch hazard
-results correctly. Matches the design memo (`Logic Tree Validation Demo —
+results correctly. Matches the design memo (`Logic Tree Validation Demo -
 Design v1`) and is the runnable companion to Phase G integration tests 1 and 2
 of the v3 FDHA Logic Tree Integration prompt.
 
 What it proves, by construction:
 
 1. **Regression.** Two single-branch trees (weight = 1.0) on
-   `Petersen2011PrimaryFD_bilinear` and `Petersen2011PrimaryFD_elliptical`
+   `Petersen2011PrimaryFD` (version=bilinear) and `Petersen2011PrimaryFD` (version=elliptical)
    exercise the "weight-1.0 tree ≡ pre-logic-tree calculator" path.
 2. **Aggregation arithmetic.** A 50/50 blend of those two branches produces
    `λ_mean(D₀) = 0.5·λ_A(D₀) + 0.5·λ_B(D₀)` at every D₀, within 1e-12.

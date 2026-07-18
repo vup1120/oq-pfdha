@@ -22,7 +22,7 @@ rupture-location kernel (roadmap stage C5).
 Setup (paper's worked example, p. 819): characteristic M 7.0 every 140 yr
 (alpha = 1/140/yr), P(sr != 0 | m) from eq. 5 (``WC1993PrimarySR``), bilinear
 principal displacement at the mid-rupture branch l/L = 0.5 >= 0.3
-(``Petersen2011PrimaryFD_bilinear``, eq. 8), distributed occurrence + eq. 18
+(``Petersen2011PrimaryFD`` version=bilinear, eq. 8), distributed occurrence + eq. 18
 displacement at 25-m cells (``Petersen2011SecondarySR``,
 ``Petersen2011SecondaryFD``, near-field floored per D7 at
 ``NEAR_FIELD_FLOOR_KM``), rupture-location weight ``W_p(r)`` from
@@ -37,7 +37,7 @@ D0(r) is solved by bisection for lambda_total(D0, r) == lambda* = -ln(0.9)/50
 (10% in 50 yr). This is exactly ``v4_fig9c.py`` / ``peak_audit.py``'s
 "pin+comp" analytic construction, but built from the tool's own model classes
 and kernel (``location_weight``, ``WC1993PrimarySR``,
-``Petersen2011PrimaryFD_bilinear``, ``Petersen2011SecondarySR``,
+``Petersen2011PrimaryFD`` version=bilinear, ``Petersen2011SecondarySR``,
 ``Petersen2011SecondaryFD``) instead of re-implementing the formulas locally.
 
 See README.md in this directory for the digitization provenance and the
@@ -58,7 +58,7 @@ import pytest
 
 from openquake.fdha.calc.location_weight import location_weight
 from openquake.fdha.calc.model_adapter import NEAR_FIELD_FLOOR_KM
-from openquake.fdha.primary_surf_displ import Petersen2011PrimaryFD_bilinear
+from openquake.fdha.primary_surf_displ import Petersen2011PrimaryFD
 from openquake.fdha.primary_surf_rup import WC1993PrimarySR
 from openquake.fdha.secondary_surf_displ import Petersen2011SecondaryFD
 from openquake.fdha.secondary_surf_rup import Petersen2011SecondarySR
@@ -101,7 +101,7 @@ FIGURE_OFFSET_KSIG = 1.65
 # Tool model instances (real kernel + real Petersen model pieces)
 # ---------------------------------------------------------------------------
 _PSR_MODEL = WC1993PrimarySR()
-_PFD_MODEL = Petersen2011PrimaryFD_bilinear()
+_PFD_MODEL = Petersen2011PrimaryFD(version="bilinear")
 _SSR_MODEL = Petersen2011SecondarySR()
 _SFD_MODEL = Petersen2011SecondaryFD()
 

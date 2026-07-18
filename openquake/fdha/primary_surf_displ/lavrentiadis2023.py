@@ -19,12 +19,12 @@
 """
 Module :mod:`openquake.fdha.primary_surf_displ.lavrentiadis2023` implements
 the model of Lavrentiadis and Abrahamson (2023) in two classes, one per
-displacement definition (the class choice IS the definition, following the
-Petersen2011PrimaryFD_bilinear/_elliptical/_quadratic variant idiom):
+displacement definition (the class choice IS the definition -- unlike a mere
+shape/parameter selection, which is passed as a model parameter):
 
-- :class:`Lavrentiadis2023PrimaryFD_aggregate` — the AGGREGATE-definition variants
+- :class:`Lavrentiadis2023PrimaryFD_aggregate` - the AGGREGATE-definition variants
   (``output_type`` ``disp_agg_prime`` (default) or ``disp_agg_seg``);
-- :class:`Lavrentiadis2023PrimaryFD_principal` — the sum-of-principal
+- :class:`Lavrentiadis2023PrimaryFD_principal` - the sum-of-principal
   variant (``disp_prnc_prime``, hard-pinned by the class).
 """
 

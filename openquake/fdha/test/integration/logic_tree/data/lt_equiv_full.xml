@@ -22,7 +22,10 @@
                           applyToBranches="SS_PSR_PIZZA2023"
                           applyToStyle="strike-slip">
         <logicTreeBranch branchID="SS_PFD_BILINEAR">
-          <uncertaintyModel>Petersen2011PrimaryFD_bilinear</uncertaintyModel>
+          <uncertaintyModel>
+            [Petersen2011PrimaryFD]
+            version = bilinear
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>

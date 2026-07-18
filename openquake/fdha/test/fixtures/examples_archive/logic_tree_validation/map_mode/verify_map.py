@@ -3,8 +3,8 @@
 One-fault validation mirroring ``../verify.py`` (curve mode). Runs the
 three sibling map-mode configs::
 
-    single_bilinear_map       - weight-1.0 tree on Petersen2011PrimaryFD_bilinear
-    single_elliptical_map     - weight-1.0 tree on Petersen2011PrimaryFD_elliptical
+    single_bilinear_map       - weight-1.0 tree on Petersen2011PrimaryFD (version=bilinear)
+    single_elliptical_map     - weight-1.0 tree on Petersen2011PrimaryFD (version=elliptical)
     blend_50_50_map           - 50/50 LT over both models
 
 through ``FdhaLogicTree`` (if outputs are missing) and checks:

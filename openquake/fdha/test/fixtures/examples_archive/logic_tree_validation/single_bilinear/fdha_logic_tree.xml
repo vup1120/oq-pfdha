@@ -3,7 +3,7 @@
     Logic Tree Validation demo - single_bilinear.
 
     One Primary-SR branch (Pizza2023PrimarySR, style="all", weight=1.0)
-    and one Primary-FD branch (Petersen2011PrimaryFD_bilinear, weight=1.0).
+    and one Primary-FD branch (Petersen2011PrimaryFD version=bilinear, weight=1.0).
     No Secondary branches (principal-only demo, r=0 on the trace).
 -->
 <nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
@@ -29,7 +29,10 @@
                           applyToBranches="SS_PSR_PIZZA2023"
                           applyToStyle="strike-slip">
         <logicTreeBranch branchID="SS_PFD_BILINEAR">
-          <uncertaintyModel>Petersen2011PrimaryFD_bilinear</uncertaintyModel>
+          <uncertaintyModel>
+            [Petersen2011PrimaryFD]
+            version = bilinear
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>

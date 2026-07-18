@@ -47,9 +47,6 @@ EXPECTED_CONTRACT = {
     # primary slot
     "Youngs2003PrimaryFD": ("principal", "vertical"),
     "Petersen2011PrimaryFD": ("principal", "lateral"),
-    "Petersen2011PrimaryFD_bilinear": ("principal", "lateral"),
-    "Petersen2011PrimaryFD_elliptical": ("principal", "lateral"),
-    "Petersen2011PrimaryFD_quadratic": ("principal", "lateral"),
     "MossRoss2011PrimaryFD": ("principal", "vertical"),
     "Moss2022PrimaryFD": ("principal", "vertical"),
     "Moss2024PrimaryFD": ("principal", "vertical"),
@@ -120,7 +117,7 @@ def test_lavrentiadis_two_classes_static_contracts():
     """LA23 publishes two displacement definitions, and the class choice IS
     the definition (Petersen2011PrimaryFD_* variant idiom): the parent class
     serves the aggregate variants, the _principal subclass the
-    sum-of-principal disp_prnc_prime metric. Contracts are static — no
+    sum-of-principal disp_prnc_prime metric. Contracts are static - no
     parameter can re-route them."""
     parent = primary_surf_displ.Lavrentiadis2023PrimaryFD_aggregate
     principal = primary_surf_displ.Lavrentiadis2023PrimaryFD_principal
@@ -145,7 +142,7 @@ def test_lavrentiadis_parent_rejects_prnc_output_type():
 @pytest.mark.parametrize("output_type", [
     "disp_prnc_prime", "disp_agg_prime", "disp_agg_seg", "bogus"])
 def test_lavrentiadis_principal_rejects_any_explicit_output_type(output_type):
-    """output_type is fixed by the class choice — even the redundant
+    """output_type is fixed by the class choice - even the redundant
     disp_prnc_prime is rejected to keep configurations canonical."""
     model = primary_surf_displ.Lavrentiadis2023PrimaryFD_principal()
     with pytest.raises(ValueError, match="fixed by the class choice"):

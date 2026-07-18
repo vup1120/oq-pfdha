@@ -3,7 +3,7 @@
     Logic Tree Validation demo - single_elliptical.
 
     One Primary-SR branch (Pizza2023PrimarySR, style="all", weight=1.0)
-    and one Primary-FD branch (Petersen2011PrimaryFD_elliptical, weight=1.0).
+    and one Primary-FD branch (Petersen2011PrimaryFD version=elliptical, weight=1.0).
     No Secondary branches.
 -->
 <nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
@@ -29,7 +29,10 @@
                           applyToBranches="SS_PSR_PIZZA2023"
                           applyToStyle="strike-slip">
         <logicTreeBranch branchID="SS_PFD_ELLIPTICAL">
-          <uncertaintyModel>Petersen2011PrimaryFD_elliptical</uncertaintyModel>
+          <uncertaintyModel>
+            [Petersen2011PrimaryFD]
+            version = elliptical
+          </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>

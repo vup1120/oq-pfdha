@@ -81,11 +81,13 @@ def test_mixed_definition_in_primary_fd_set_is_an_error():
 
 
 def test_same_definition_set_passes_fdlt014():
+    # Same model, three along-strike shape variants selected by the version
+    # parameter -- all principal/lateral, so no definition/component conflict.
     spec = _spec(_fd_set(
         "fdhaPrimaryFDModel",
-        "Petersen2011PrimaryFD_bilinear",
-        "Petersen2011PrimaryFD_elliptical",
-        "Petersen2011PrimaryFD_quadratic",
+        "[Petersen2011PrimaryFD]\nversion = bilinear",
+        "[Petersen2011PrimaryFD]\nversion = elliptical",
+        "[Petersen2011PrimaryFD]\nversion = quadratic",
     ))
     report = validate_spec(spec)
     assert "FDLT-014" not in _codes(report)
