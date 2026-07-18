@@ -35,21 +35,21 @@ COLORS = {"P11": "#d62728", "T13": "#000000", "L23": "#c724c7",
 
 PANELS_FIG4 = [
     ("fig4a_kumamoto_principal.csv", "kumamoto", "principal",
-     "(a) Kumamoto — principal (single segment)"),
+     "(a) Kumamoto - principal (single segment)"),
     ("fig4b_kumamoto_principal_floating.csv", "kumamoto", "floating",
-     "(b) Kumamoto — principal (floating)"),
+     "(b) Kumamoto - principal (floating)"),
     ("fig4c_leteil_principal.csv", "le_teil", "principal",
-     "(c) Le Teil — principal"),
+     "(c) Le Teil - principal"),
     ("fig4d_norcia_principal.csv", "norcia", "principal",
-     "(d) Norcia — principal"),
+     "(d) Norcia - principal"),
 ]
 PANELS_FIG6 = [
     ("fig6a_kumamoto_distributed.csv", "kumamoto", "distributed",
-     "(a) Kumamoto — distributed (r=5.2 km)"),
+     "(a) Kumamoto - distributed (r=5.2 km)"),
     ("fig6b_leteil_distributed.csv", "le_teil", "distributed",
-     "(b) Le Teil — distributed (r=0.6 km)"),
+     "(b) Le Teil - distributed (r=0.6 km)"),
     ("fig6c_norcia_distributed.csv", "norcia", "distributed",
-     "(c) Norcia — distributed (r=7.6 km)"),
+     "(c) Norcia - distributed (r=7.6 km)"),
 ]
 
 
@@ -114,7 +114,7 @@ def main() -> None:
             ax.loglog(m11["disp_cm"], m11["M11"], color=COLORS["M11"], lw=2.2,
                       alpha=0.9, label="M11 (paper)")
             ax.legend(fontsize=6.5, ncol=2, loc="lower left")
-    fig.suptitle("IAEA PFDHA exercise — principal fault displacement "
+    fig.suptitle("IAEA PFDHA exercise - principal fault displacement "
                  "(paper Fig. 4 vs oq-pfdha)", fontsize=12)
     fig.tight_layout(rect=(0, 0, 1, 0.97))
     out = figures_dir / "iaea_fig4_principal_comparison.png"
@@ -127,7 +127,7 @@ def main() -> None:
         # paper axis is 1e-10..1e-5; extend down one decade so the Le Teil
         # V24 curve computed with the final (TECDOC) Visini model stays visible
         plot_panel(ax, csv_name, case, prefix, title, ylim=(1e-11, 1e-5))
-    fig.suptitle("IAEA PFDHA exercise — distributed fault displacement "
+    fig.suptitle("IAEA PFDHA exercise - distributed fault displacement "
                  "(paper Fig. 6 vs oq-pfdha)", fontsize=12)
     fig.tight_layout(rect=(0, 0, 1, 0.95))
     out = figures_dir / "iaea_fig6_distributed_comparison.png"

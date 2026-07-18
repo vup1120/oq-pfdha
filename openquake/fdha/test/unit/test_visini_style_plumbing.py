@@ -5,7 +5,7 @@ secondary pipeline.
 
 The Visini SR/FD coefficients are style-specific. The hazard pipeline must
 resolve the style like every other model path does (explicit model parameter
-wins, otherwise derived from the rupture rake) — it must NEVER silently fall
+wins, otherwise derived from the rupture rake) - it must NEVER silently fall
 back to 'normal' on a reverse fault: that shifts the FD median by ~1.7x
 (the e = -0.5259 style term) and swaps the SR occurrence tables.
 """

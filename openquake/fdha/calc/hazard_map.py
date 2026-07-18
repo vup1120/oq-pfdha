@@ -1,3 +1,7 @@
+"""
+Hazard-map calculation: build a site grid around the fault sources, run
+the hazard kernel and interpolate displacement at target return periods.
+"""
 import numpy as np
 import logging
 from typing import Optional, Literal
@@ -120,7 +124,7 @@ def compute_hazard_map(
             surface_cache[source_id] = surface
         else:
             logger.warning(
-                "No usable surface for source '%s' – distances will fallback to all grid sites",
+                "No usable surface for source '%s' - distances will fallback to all grid sites",
                 getattr(source, 'source_id', getattr(source, 'name', 'unknown')),
             )
     

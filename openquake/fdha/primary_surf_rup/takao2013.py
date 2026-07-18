@@ -20,7 +20,7 @@
 Module :mod:`openquake.fdha.primary_surf_rup.takao2013` implements
 the model of Takao et al. (2013) in :class:`Takao2013PrimarySR`
 
-Supported Fault Styles: Reverse & Strike‑Slip
+Supported Fault Styles: Reverse & Strike-Slip
 """
 
 import numpy as np

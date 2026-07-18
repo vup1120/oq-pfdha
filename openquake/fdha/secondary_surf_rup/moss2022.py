@@ -54,9 +54,9 @@ class Moss2022SecondarySR(BaseSecondarySurfRup):
 
     Two methods are available:
 
-    * ``'simple'`` (default) — Eq. 5.5 / Table 5.3 (85th-percentile,
+    * ``'simple'`` (default) - Eq. 5.5 / Table 5.3 (85th-percentile,
       500 m-grid calibration).
-    * ``'biexp'`` — Eqs 5.6–5.7 / Tables 5.4–5.5 (magnitude-binned
+    * ``'biexp'`` - Eqs 5.6–5.7 / Tables 5.4–5.5 (magnitude-binned
       biexponential CDF).
 
     Distance ``r`` is received in **km** (adapter convention, matching

@@ -65,5 +65,5 @@ class WC1993PrimarySR(BasePrimarySurfRup):
         m = np.asarray(mag, dtype=float)
         fx = -12.51 + 2.053 * m
         prob = np.exp(fx) / (1.0 + np.exp(fx))
-        # To handle both single‐value and vectorized calls.
+        # To handle both single-value and vectorized calls.
         return prob.item() if prob.shape == () else prob

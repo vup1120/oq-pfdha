@@ -1,4 +1,4 @@
-# Configuration guide for Youngs et al. (2003) — Secondary Displacement
+# Configuration guide for Youngs et al. (2003) - Secondary Displacement
 
 Reference: Youngs, R. R., et al. (2003). A methodology for probabilistic fault displacement hazard analysis (PFDHA). Earthquake Spectra, 19(1), 191-219.
 
@@ -25,7 +25,7 @@ The Youngs et al. (2003) secondary (distributed) surface displacement model pred
 
 | Name | Type | Units | Default | Allowed | Required? | Description |
 | --- | --- | --- | --- | --- | --- | --- |
-| `percentile` | string | – | `"85"` | `"85"`, `"95"` | No | Percentile used for scaling the distributed displacement relative to maximum displacement. Different percentiles use different scaling factors. |
+| `percentile` | string | - | `"85"` | `"85"`, `"95"` | No | Percentile used for scaling the distributed displacement relative to maximum displacement. Different percentiles use different scaling factors. |
 
 ## Notes and cautions
 

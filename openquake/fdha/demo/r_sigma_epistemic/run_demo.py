@@ -20,8 +20,8 @@ combination rule (docs/design/rupture_location_uncertainty.md, section 2):
                   term (Petersen eq. 1 + eq. 2).
 
 The sigma > 0 branches are the four Petersen (2011) Table 2-3 two-sided
-mapping-accuracy classes — Accurate 26.89 m, Approximate 43.82 m, Concealed
-65.52 m, Inferred 72.69 m — drawn in Fig.-9c-style greys (dark -> light).
+mapping-accuracy classes - Accurate 26.89 m, Approximate 43.82 m, Concealed
+65.52 m, Inferred 72.69 m - drawn in Fig.-9c-style greys (dark -> light).
 
 The source is a demo-local **single M7.0 characteristic event** at a low
 annual rate (1e-4/yr; see ``source_model_M7.xml``) so the curves plateau
@@ -59,8 +59,8 @@ OUT = HERE / "out"
 
 # Two demo sites bracketing the 50 m boxcar edge (0.04 / 0.08 km from the
 # trace) and the boxcar half-width written into the INI.
-SITE_A = (16.16186114, 39.64824366, 0.04)      # lon, lat, r (km) — inside
-SITE_B = (16.16229540, 39.64810931, 0.08)      # lon, lat, r (km) — outside
+SITE_A = (16.16186114, 39.64824366, 0.04)      # lon, lat, r (km) - inside
+SITE_B = (16.16229540, 39.64810931, 0.08)      # lon, lat, r (km) - outside
 H_BOXCAR = 0.05                                 # r_threshold_km in the INI
 S_ZERO = "0.0"
 # Petersen (2011) Tables 2-3 two-sided mapping-accuracy classes (km), with
@@ -107,7 +107,7 @@ def make_job(name: str, branches=None) -> Path:
     MODE B cases: the ``fdhaCalcRSigma`` branch set is appended to the FDHA
     logic tree. The INI never carries an ``r_sigma_km`` scalar here (the two
     mechanisms are mutually exclusive). The boxcar half-width
-    ``r_threshold_km`` stays in the INI — a fixed calculation parameter that
+    ``r_threshold_km`` stays in the INI - a fixed calculation parameter that
     only matters on the sigma = 0 branch.
     """
     workdir = OUT / name

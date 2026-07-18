@@ -64,12 +64,12 @@ The command you just ran used two main input files:
         The PFDHA toolkit uses INI format (OpenQuake-style). Source models are referenced through `[calculation].source_model_logic_tree_file`, and FDHA scientific models are selected in `[calculation].fdha_logic_tree_file`.
 
 2.  **Source Model File**:
-    This is a standard NRML XML file that describes the earthquake source—in this case, a simple fault. It defines the fault's geometry, magnitude-frequency distribution, and other seismological parameters. The path to this file is wrapped by the source-model logic tree referenced in `[calculation].source_model_logic_tree_file`. See the [Inputs](03-Inputs.md) guide for more information.
+    This is a standard NRML XML file that describes the earthquake source - in this case, a simple fault. It defines the fault's geometry, magnitude-frequency distribution, and other seismological parameters. The path to this file is wrapped by the source-model logic tree referenced in `[calculation].source_model_logic_tree_file`. See the [Inputs](03-Inputs.md) guide for more information.
 
 ## Reviewing the Outputs
 
 Like the OpenQuake engine, `fdha` writes its results to an **output directory**,
-not to a single file. The directory defaults to `out/` next to the INI file — so
+not to a single file. The directory defaults to `out/` next to the INI file - so
 for this example it is `examples/out/`. (The `--plot` argument additionally saves
 a PNG of the hazard curve to the path you gave,
 `examples/outputs/hazard_curve_minimal.png`.)
@@ -78,7 +78,7 @@ For a hazard **curve** job, the key files in the output directory are:
 
 | File | Contents |
 |------|----------|
-| `aggregate_hazard.csv` | The aggregate (mean/quantile) hazard curve — **the main result** |
+| `aggregate_hazard.csv` | The aggregate (mean/quantile) hazard curve - **the main result** |
 | `hazard_curves/branch_0000.csv` | Per-logic-tree-branch hazard curve |
 | `manifest.json` | Index of everything produced by the run |
 
@@ -87,8 +87,8 @@ additionally writes map outputs under `aggregate/` and
 `source_model_branches/.../aggregate/`:
 
 -   `displacement_map_mean.csv` and `displacement_map_quantile-0.05|0.16|0.5|0.84|0.95.csv`
-    — displacement maps as CSV.
--   `rates_mean.h5`, `rates_fractiles.h5` — the underlying rate grids in HDF5.
+    - displacement maps as CSV.
+-   `rates_mean.h5`, `rates_fractiles.h5` - the underlying rate grids in HDF5.
 
 To learn about the output format in detail, refer to the [Outputs](08-Outputs.md) chapter.
 

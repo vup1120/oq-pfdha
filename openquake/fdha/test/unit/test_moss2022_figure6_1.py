@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Reproduction of GIRS-2022-05 Figure 6.1 Hazard Curve (MD-based, principal
-displacement) — faithfully translated from the Matlab Appendix C source code.
+displacement) - faithfully translated from the Matlab Appendix C source code.
 
 Reference
 ---------
@@ -79,7 +79,7 @@ def _b_gam_md(xL):
 
 
 def _mu_md(mag):
-    """ln(MD_84th) — Appendix C, p. 122.
+    """ln(MD_84th) - Appendix C, p. 122.
 
     Matlab: muout = log(10^(a_MD + b_MD*mag + sigma_mu))
     where a_MD = -2.5, b_MD = 0.415, sigma_mu = 0.148.
@@ -324,7 +324,7 @@ def _distributed_postprocess(D_principal, nu_principal, r_dist_m,
 
 
 # ====================================================================
-# Tests — Matlab helper functions
+# Tests - Matlab helper functions
 # ====================================================================
 
 class TestMatlabHelperFunctions:
@@ -351,7 +351,7 @@ class TestMatlabHelperFunctions:
 
 
 # ====================================================================
-# Tests — MFD
+# Tests - MFD
 # ====================================================================
 
 class TestMFD:
@@ -364,7 +364,7 @@ class TestMFD:
 
 
 # ====================================================================
-# Tests — P(SR|M) model
+# Tests - P(SR|M) model
 # ====================================================================
 
 class TestPSR:
@@ -381,7 +381,7 @@ class TestPSR:
 
 
 # ====================================================================
-# Tests — Convolution sigma documentation
+# Tests - Convolution sigma documentation
 # ====================================================================
 
 class TestConvolutionSigma:
@@ -406,7 +406,7 @@ class TestConvolutionSigma:
 
 
 # ====================================================================
-# Tests — Full hazard-curve Figure 6.1
+# Tests - Full hazard-curve Figure 6.1
 # ====================================================================
 
 class TestHazardCurveFigure6_1:
@@ -479,7 +479,7 @@ class TestHazardCurveFigure6_1:
 
 
 # ====================================================================
-# Tests — Distributed displacement components (Appendix C, pp. 130–132)
+# Tests - Distributed displacement components (Appendix C, pp. 130–132)
 # ====================================================================
 
 class TestPd0:
@@ -578,7 +578,7 @@ class TestCombinedDistributedComponents:
 
 
 # ====================================================================
-# Tests — Full distributed hazard curve (Figure 6.1)
+# Tests - Full distributed hazard curve (Figure 6.1)
 # ====================================================================
 
 class TestDistributedHazardCurve:

@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 # Import guards
-fdhpy = pytest.importorskip("fdhpy", reason="fdhpy not installed – FDHI aleatory tests skipped")
+fdhpy = pytest.importorskip("fdhpy", reason="fdhpy not installed - FDHI aleatory tests skipped")
 
 from fdhpy import PetersenEtAl2011
 

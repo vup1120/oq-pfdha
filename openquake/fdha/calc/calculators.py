@@ -1,3 +1,7 @@
+"""
+Branch-level FDHA calculators: instantiate the four-model chain from a
+job configuration, build the site collection and invoke the hazard kernel.
+"""
 import os
 import inspect
 import logging
@@ -57,7 +61,7 @@ class BaseFaultRuptureCalculator:
         self.secondary_surf_rup_model = self._instantiate_model(models_cfg.get('secondary_surf_rup'))
         self.secondary_surf_displ_model = self._instantiate_model(models_cfg.get('secondary_surf_displ'))
         # Multi-fault reference-line consistency: the principal FD model sets
-        # the convention for the whole branch — the other models' distances
+        # the convention for the whole branch - the other models' distances
         # are measured against the same reference line so principal and
         # distributed hazard share one geometry (e.g. Chiou 2025 [ecs] pulls
         # a Petersen 2011 secondary onto the ECS line). The only exemption is
@@ -168,7 +172,7 @@ class BaseFaultRuptureCalculator:
         Cornell & Toro, 2005). The median is a legacy central-estimate
         heuristic. 'percentile' is refused because a per-rupture quantile of
         exceedance probabilities is not a fractile of any hazard
-        distribution — quantiles are only additive over the rate sum under
+        distribution - quantiles are only additive over the rate sum under
         comonotonicity (Dhaene et al., 2002). The percentile machinery in
         ``utils.probability`` is intentionally kept for non-integral uses
         (e.g. a future scenario calculator).
@@ -185,7 +189,7 @@ class BaseFaultRuptureCalculator:
                 f'[parameters] {name} = {{"method": "percentile"}} is not '
                 f'supported in hazard calculations: a quantile applied '
                 f'inside the hazard integral does not produce a hazard '
-                f'fractile of any kind. Use {{"method": "mean"}} — the '
+                f'fractile of any kind. Use {{"method": "mean"}} - the '
                 f'mean hazard curve, which incorporates within-model '
                 f'epistemic uncertainty exactly. Fractiles of within-model '
                 f'epistemic uncertainty are not currently supported; they '
@@ -240,7 +244,7 @@ class BaseFaultRuptureCalculator:
         #                each with its own combination rule:
         #                0  -> boxcar 1{|r| <= r_threshold_km}, COMPLEMENTARY
         #                      split (inside h only principal, outside only
-        #                      distributed) — the historical behaviour;
+        #                      distributed) - the historical behaviour;
         #                >0 -> Petersen's pure Gaussian exp(-r^2/2 sigma^2),
         #                      pinned, truncated at +-2 sigma (fixed, not
         #                      user-configurable), SUMMED with the full
@@ -269,7 +273,7 @@ class BaseFaultRuptureCalculator:
 
         # Union of the reference-line treatments the configured models
         # declare for multi-section (multiFaultSource) ruptures, via their
-        # MULTIFAULT_REFERENCE_LINE class attribute — the FDHA analogue of
+        # MULTIFAULT_REFERENCE_LINE class attribute - the FDHA analogue of
         # hazardlib collecting the union of the GMPEs' REQUIRES_DISTANCES.
         # The context maker computes one metric set per method in this union.
         _models = (self.primary_surf_rup_model, self.primary_surf_displ_model,
@@ -359,7 +363,7 @@ class FaultRuptureProbabilityCalculator(BaseFaultRuptureCalculator):
                     "in VectorizedRuptureDistanceCalculator."
                 )
             # SiteCollection([Site(...)]) is required (not from_points) so that
-            # the 'vs30' field is present in the structured array — FDHAContextMaker
+            # the 'vs30' field is present in the structured array - FDHAContextMaker
             # reads sitecol.vs30 and from_points omits that field.
             global_vs30 = site_cfg.get('vs30')
             oq_sites = []
@@ -373,7 +377,7 @@ class FaultRuptureProbabilityCalculator(BaseFaultRuptureCalculator):
             self.sitecol = SiteCollection(oq_sites)
             logger.debug(f"Initialized {n} sites from sites_list")
         else:
-            # Single-site path (unchanged — backward compatible)
+            # Single-site path (unchanged - backward compatible)
             lat = site_cfg.get('latitude')
             lon = site_cfg.get('longitude')
             vs30 = site_cfg.get('vs30')

@@ -97,7 +97,7 @@ class Visini2025SecondaryFD(BaseSecondarySurfDispl):
 
     # The Visini regressions are calibrated on distances to the ACTUAL
     # segmented principal rupture, so on multi-fault ruptures s must be the
-    # distance to the nearest surface-reaching section (gaps not bridged) —
+    # distance to the nearest surface-reaching section (gaps not bridged) -
     # no smoothed ECS/LCP reference line applies.
     MULTIFAULT_REFERENCE_LINE = "segments"
 
@@ -257,7 +257,7 @@ class Visini2025SecondaryFD(BaseSecondarySurfDispl):
 
         # Broadcast to (n_sites, n_displ): displacement thresholds along
         # columns, per-site medians along rows. The orientation must NEVER be
-        # inferred from shape equality — when n_sites happens to equal
+        # inferred from shape equality - when n_sites happens to equal
         # n_displ that heuristic silently produced the element-wise diagonal
         # (site i paired with threshold i) instead of the full matrix.
         ln_d_arr = np.asarray(ln_d)

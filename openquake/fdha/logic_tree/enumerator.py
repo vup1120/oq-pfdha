@@ -1,3 +1,7 @@
+"""
+Enumerate FDHA logic-tree end branches (one model chain per branch
+combination) together with their weights.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass

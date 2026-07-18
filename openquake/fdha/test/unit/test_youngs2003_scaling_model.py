@@ -4,7 +4,7 @@ Regression tests for the ``scaling_model`` parameter of Youngs2003PrimaryFD.
 
 Historical bug: logic trees could set ``scaling_model`` on a
 ``[Youngs2003PrimaryFD]`` uncertaintyModel block, but the model never
-accepted the parameter — the adapter's signature filtering dropped it
+accepted the parameter - the adapter's signature filtering dropped it
 silently, so ANY value (including ones the model cannot honour, e.g.
 ``LEONARD2010``) ran as the hardcoded Wells & Coppersmith (1994) relation.
 

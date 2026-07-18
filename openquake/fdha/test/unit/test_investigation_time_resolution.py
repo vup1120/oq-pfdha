@@ -5,7 +5,7 @@ Regression tests for the PMF investigation_time resolution.
 The PMF (``probs_occur``) of a non-parametric source is defined over the
 time span declared in its NRML header, which the engine converter stores on
 the source object (``src.investigation_time``). The hazard loop must use
-that per-source value — reading only the INI (default 1.0) silently rescales
+that per-source value - reading only the INI (default 1.0) silently rescales
 every non-parametric rate (an XML span of 50 yr read as 1 yr inflates all
 rates 50x). A conflicting INI value must be rejected loudly.
 """
@@ -106,7 +106,7 @@ def test_xml_time_span_scales_rates_without_ini_key(tmp_path):
     calc2 = _run_multifault(tmp_path, "2.0", "")
     rates1 = np.asarray(calc1.run()["poes"], dtype=float)
     rates2 = np.asarray(calc2.run()["poes"], dtype=float)
-    assert rates1.max() > 0.0, "baseline rates are zero — vacuous test"
+    assert rates1.max() > 0.0, "baseline rates are zero - vacuous test"
     np.testing.assert_allclose(rates2, rates1 * 0.5, rtol=1e-10)
 
 

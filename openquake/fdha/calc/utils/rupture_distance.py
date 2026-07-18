@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""Site-to-rupture-trace distance calculators (scalar and vectorized)."""
 import numpy as np
 from typing import List, Tuple, Optional, Any, TYPE_CHECKING
 try:
@@ -80,7 +81,7 @@ def _build_reference_line(method: str, sections_info):
     """Build the reference-line result object for a >=2-section rupture.
 
     - 'ecs' / 'lcp': smoothed representative line over ALL section traces
-      (buried sections included — their geometry still shapes the line).
+      (buried sections included - their geometry still shapes the line).
     - 'segments': raw segmentation over the surface-reaching sections only
       (top depth <= SURFACE_DEPTH_TOLERANCE_KM): r must not be attracted to
       buried top edges, which produce no surface displacement.
@@ -145,7 +146,7 @@ def _extract_fault_trace_from_mesh(surface: Any) -> np.ndarray:
     coords = np.column_stack([xs, ys])
 
     # remove consecutive exact duplicates (bitwise-identical mesh nodes only;
-    # do NOT use np.allclose here — its default rtol=1e-5 collapses fine-mesh
+    # do NOT use np.allclose here - its default rtol=1e-5 collapses fine-mesh
     # traces where adjacent nodes differ by < rtol*|lon|, e.g. 0.02 km spacing
     # at lon ~120° produces node differences of ~2e-4° < 1e-5*120 = 1.2e-3°)
     if len(coords) >= 2:
@@ -167,9 +168,9 @@ def _extract_fault_trace_from_mesh(surface: Any) -> np.ndarray:
 def trace_polyline_for_source(src: Any, surface: Any) -> Optional[np.ndarray]:
     """Return the (lon, lat) trace polyline used to place principal-zone sites.
 
-    Prefers the exact ``original_trace`` retained at parse time — it is
+    Prefers the exact ``original_trace`` retained at parse time - it is
     independent of ``rupture_mesh_spacing`` and free of the mesh top-edge
-    drift — over the mesh top-edge (which becomes coarse when the ERF mesh is
+    drift - over the mesh top-edge (which becomes coarse when the ERF mesh is
     coarse). Falls back to the mesh top-edge, then to ``src.fault_trace``.
     Returns ``None`` when no usable trace is available.
     """
@@ -235,7 +236,7 @@ def resample_polyline(coords: np.ndarray, step_km: float) -> np.ndarray:
     sub-kilometre vertex spacing; placing one principal site per native vertex
     on a map whose own grid is 10 km wide creates thousands of sites the map
     cannot resolve (48 onshore faults gave 3 246 trace sites against a 1 040
-    site grid — a ~36x cost with no added information). Sampling at the grid
+    site grid - a ~36x cost with no added information). Sampling at the grid
     step keeps the principal band consistent with the distributed grid.
 
     Endpoints are always retained, so the rupture extent is preserved.
@@ -343,7 +344,7 @@ class RuptureDistanceCalculator:
         sections = _sections_info(rup_surface)
         if sections is not None and len(sections) == 1:
             # Single-section rupture: the section top trace IS the principal
-            # trace — no reference line needed for any method.
+            # trace - no reference line needed for any method.
             lons, lats, _dep = sections[0]
             trace_points = np.column_stack([lons, lats])
         elif sections is not None:
@@ -379,7 +380,7 @@ class RuptureDistanceCalculator:
 
         .. deprecated::
             This scalar (first-site-only) method is NOT used by the production
-            hazard pipeline — ``FDHAContextMaker`` always uses
+            hazard pipeline - ``FDHAContextMaker`` always uses
             ``VectorizedRuptureDistanceCalculator.calculate_site_to_trace_distances``
             (plural, per-site array).  This method is retained for unit tests
             only; new code must use the vectorized calculator.
@@ -400,7 +401,7 @@ class RuptureDistanceCalculator:
 
         .. deprecated::
             This scalar (first-site-only) method is NOT used by the production
-            hazard pipeline — ``FDHAContextMaker`` always uses
+            hazard pipeline - ``FDHAContextMaker`` always uses
             ``VectorizedRuptureDistanceCalculator.calculate_x_l_ratios``
             (plural, per-site array).  This method is retained for unit tests
             only; new code must use the vectorized calculator.
@@ -438,7 +439,7 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
 
         'segments' reference line: r is the distance to the nearest actual
         surface-reaching section trace (inter-section gaps are NOT bridged),
-        via ``SegmentsResult.r_km`` — the treatment required by
+        via ``SegmentsResult.r_km`` - the treatment required by
         segmentation-calibrated models (Visini et al. 2025). The smoothed
         ecs/lcp lines keep the single-polyline projection below.
         """
@@ -477,8 +478,8 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
         The hanging wall is the right-hand side of the trace walked in vertex
         order, per the NRML right-hand rule (dip direction is 90° clockwise
         from the strike implied by the trace order). The sign comes from the
-        cross product against the nearest trace segment, so — unlike hazardlib
-        ``get_rx_distance``, which uses the resampled mesh top edge — it stays
+        cross product against the nearest trace segment, so - unlike hazardlib
+        ``get_rx_distance``, which uses the resampled mesh top edge - it stays
         consistent with the trace geometry used for ``r`` and does not depend
         on ``rupture_mesh_spacing``.
         """
@@ -540,7 +541,7 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
             # Defense-in-depth: EcsResult/LcpResult/SegmentsResult.x_l() each
             # already clip internally, but ``self._refline`` is a duck-typed
             # slot (any of the three reference-line implementations can sit
-            # behind it), so re-clip at this shared seam too — the same
+            # behind it), so re-clip at this shared seam too - the same
             # invariant the single-strand path below enforces explicitly.
             # GC2 'u' can land a hair outside [umin, umax] at/near a rupture
             # tip from floating-point roundoff in the along-strike
@@ -668,7 +669,7 @@ def _first_site_lonlat(sitecol) -> Tuple[float, float]:
     .. deprecated::
         First-site-only helper used solely by the deprecated scalar methods of
         ``RuptureDistanceCalculator``.  The production hazard pipeline never
-        calls this — it uses the per-site arrays from
+        calls this - it uses the per-site arrays from
         ``VectorizedRuptureDistanceCalculator``.
     """
     try:

@@ -23,8 +23,8 @@ The Chiou et al. (2025) primary surface displacement model predicts sum-of-princ
 
 | Name | Type | Units | Default | Allowed | Required? | Description |
 | --- | --- | --- | --- | --- | --- | --- |
-| `style` | string | – | `"strike-slip"` | `"strike-slip"`, `"strikeslip"`, `"ss"` (case-insensitive) | No | Fault style. Must be strike-slip; otherwise raises ValueError. |
-| `version` | string | – | `"model7"` | `"model7"`, `"model8.1"`, `"model8.2"`, `"model8.3"` (case-insensitive) | No | Model formulation version. Coefficients are loaded from `chiou_2025_coefficients.csv`. |
+| `style` | string | - | `"strike-slip"` | `"strike-slip"`, `"strikeslip"`, `"ss"` (case-insensitive) | No | Fault style. Must be strike-slip; otherwise raises ValueError. |
+| `version` | string | - | `"model7"` | `"model7"`, `"model8.1"`, `"model8.2"`, `"model8.3"` (case-insensitive) | No | Model formulation version. Coefficients are loaded from `chiou_2025_coefficients.csv`. |
 
 ### Runtime inputs
 

@@ -68,7 +68,7 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
 
     # The Visini regressions are calibrated on distances to the ACTUAL
     # segmented principal rupture, so on multi-fault ruptures r must be the
-    # distance to the nearest surface-reaching section (gaps not bridged) —
+    # distance to the nearest surface-reaching section (gaps not bridged) -
     # no smoothed ECS/LCP reference line applies.
     MULTIFAULT_REFERENCE_LINE = "segments"
 

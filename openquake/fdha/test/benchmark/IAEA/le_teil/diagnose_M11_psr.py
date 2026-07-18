@@ -10,7 +10,7 @@ probability (P_sr) effect, not a displacement-distribution effect:
 - rate = 4.6e-5 is common to all teams (K24, with P_sr = 1, plateaus at
   the rate);
 - scaling our curve down to the paper's plateau makes the two overlay
-  exactly up to ~10 cm (ratio 1.00-1.06), i.e. identical shape there —
+  exactly up to ~10 cm (ratio 1.00-1.06), i.e. identical shape there -
   the gap is a pure vertical scale = a P_sr ratio.
 
 Attribution of the ~13x plateau gap:
@@ -22,10 +22,10 @@ Attribution of the ~13x plateau gap:
 
     soft-vs-stiff soil class explains only 1.58x;
     the residual 8.1x (stiff 9.9% vs plotted 1.2%) is NOT explained by the
-    P_sr model — our Moss 2013 reproduces the value the paper reports; the
+    P_sr model - our Moss 2013 reproduces the value the paper reports; the
     paper's *plotted* curve uses an effective P_sr 8x below its own text.
 
-(Beyond ~30 cm the published curve also has a fatter tail — a separate
+(Beyond ~30 cm the published curve also has a fatter tail - a separate
 magnitude-scaling issue, see diagnose_M11.py: its normalized shape implies
 a median displacement at Mw ~6.6, not 5.5.)
 
@@ -84,7 +84,7 @@ def main():
             label=f"ours, Moss2013 stiff vs30=760 (P_sr = {psr_stiff*100:.1f}%)")
     # our stiff curve rescaled to the paper plateau: overlays through ~10 cm
     ax.plot(d * 100, c_stiff * eff_psr / psr_stiff, ":", color="0.5", lw=1.6,
-            label="ours(stiff) × (1.2%/9.9%)  — pure P_sr rescale")
+            label="ours(stiff) × (1.2%/9.9%) - pure P_sr rescale")
 
     # P_sr reference lines as horizontal plateaus (rate x P_sr)
     for psr, c in [(0.10, "tab:green")]:
@@ -97,7 +97,7 @@ def main():
     ax.set_ylim(1e-9, 1e-4)
     ax.set_xlabel("Displacement (cm)")
     ax.set_ylabel("Annual rate of exceedance")
-    ax.set_title("Le Teil M11 — the plateau gap is the P_sr term\n"
+    ax.set_title("Le Teil M11 - the plateau gap is the P_sr term\n"
                  "(identical shape ≤10 cm; fatter paper tail >30 cm is a "
                  "separate magnitude issue)")
     ax.legend(fontsize=8, loc="lower left")

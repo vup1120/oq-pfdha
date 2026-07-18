@@ -1,3 +1,7 @@
+"""
+Build the per-branch calculation configuration from an end branch and
+the base job configuration.
+"""
 from __future__ import annotations
 
 import copy

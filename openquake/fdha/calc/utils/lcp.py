@@ -26,7 +26,7 @@ Reference workflow (notebooks):
 4. Convert the path pixel indices back to UTM via the geotransform
    (``Pixel2Map``: map = origin + index * pixel, i.e. pixel corners).
 
-Runtime constraints (same as ecs.py): pure Python — numpy / scipy / pyproj
+Runtime constraints (same as ecs.py): pure Python - numpy / scipy / pyproj
 only. No GDAL, no scikit-image, no rasterio. The Dijkstra core replicates
 skimage ``MCP_Geometric`` via ``scipy.sparse.csgraph``; it is validated
 against the committed Thomas Ridgecrest outputs (cost rasters + picked
@@ -38,11 +38,11 @@ One documented optional post-step beyond the notebooks: the forward builder
 (:func:`lcp_from_traces`) can apply a cost-checked shortcut pass
 (:func:`shortcut_path`) to the raw grid path. Across a uniform-cost gap the
 8-connected optimum is a degenerate tie (every monotone staircase costs the
-same, and all overcharge the straight chord by up to ~8% — the grid-metric
+same, and all overcharge the straight chord by up to ~8% - the grid-metric
 artifact; the original workflow leaves whatever arbitrary staircase the
 router returns), so the pass collapses such bridges to the straight line
 while provably never entering more expensive cells. The DEFAULT is
-``smooth=False`` — exactly the original ``route_through_array`` behaviour
+``smooth=False`` - exactly the original ``route_through_array`` behaviour
 (project decision 2026-07-02); pass ``smooth=True`` to straighten tie
 bridges.
 """
@@ -180,7 +180,7 @@ def rasterize_traces_xy(traces_xy, pixel_size: float, start_xy, stop_xy,
     the trace bounding box and the start/end points, buffered by one pixel;
     the geotransform is corner-anchored at (left, top) with negative pixel_dy.
     Burning marks every pixel within half a pixel-diagonal sampling step of a
-    segment (dense sampling at pixel/2 spacing — 8-connected coverage like
+    segment (dense sampling at pixel/2 spacing - 8-connected coverage like
     GDAL's Bresenham line burning); marked pixels get ``cost_fault``, the rest
     ``cost_background`` (ports ``Calc_Cost_raster_from_rupture_map``).
 
@@ -282,7 +282,7 @@ def shortcut_path(cost: np.ndarray, path_rc: np.ndarray,
     under the continuous metric.
 
     :param path_rc: (n, 2) int array of (row, col) grid path nodes.
-    :param max_span: DP window — a single shortcut may skip at most this many
+    :param max_span: DP window - a single shortcut may skip at most this many
         input nodes (bounds the O(n * max_span) chord evaluations).
     :returns: (m, 2) subset of ``path_rc`` nodes (m <= n), endpoints kept.
     """
@@ -334,7 +334,7 @@ def lcp_from_traces(traces, pixel_size: float = PIXEL_SIZE_M,
     Forward multi-fault case: the section traces are projected to UTM,
     rasterized into a cost grid (fault pixels cheap, background expensive),
     and the least-cost path is routed between the two farthest-apart section
-    endpoints — it follows the traces and bridges inter-section gaps/stepovers
+    endpoints - it follows the traces and bridges inter-section gaps/stepovers
     with straight jumps, yielding one continuous representative line.
 
     :param traces: iterable of ``(lon, lat)`` arrays, one per section top edge.

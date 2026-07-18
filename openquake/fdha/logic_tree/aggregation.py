@@ -1,3 +1,4 @@
+"""Weighted aggregation of per-branch rate curves: mean and fractiles."""
 from __future__ import annotations
 
 import numpy as np

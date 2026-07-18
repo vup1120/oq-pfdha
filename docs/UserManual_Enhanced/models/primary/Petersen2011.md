@@ -23,7 +23,7 @@ The Petersen et al. (2011) primary surface displacement model predicts displacem
 
 | Name | Type | Units | Default | Allowed | Required? | Description |
 | --- | --- | --- | --- | --- | --- | --- |
-| `version` | string | – | `"quadratic"` | `"bilinear"`, `"elliptical"`, `"quadratic"` (case-insensitive) | No | Functional form for the along-strike displacement profile. `"bilinear"` uses piecewise linear (Eqns 7–9), `"elliptical"` uses elliptical profile (Eqn 13), `"quadratic"` uses quadratic profile with folding (Eqn 10). |
+| `version` | string | - | `"quadratic"` | `"bilinear"`, `"elliptical"`, `"quadratic"` (case-insensitive) | No | Functional form for the along-strike displacement profile. `"bilinear"` uses piecewise linear (Eqns 7–9), `"elliptical"` uses elliptical profile (Eqn 13), `"quadratic"` uses quadratic profile with folding (Eqn 10). |
 
 ## Notes and cautions
 

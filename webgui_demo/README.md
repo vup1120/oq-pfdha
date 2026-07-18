@@ -1,21 +1,21 @@
-# oq-pfdha — web GUI (prototype front-end)
+# oq-pfdha - web GUI (prototype front-end)
 
 A working web interface for
 [oq-pfdha](https://github.com/vup1120/oq-pfdha), the open-source
 Probabilistic Fault Displacement Hazard Analysis framework. The GUI
 assembles a complete job (INI + NRML source-model logic tree + NRML FDHA
 logic tree) from form inputs and executes the **actual engine**
-(`FdhaLogicTree.from_ini(...).run(...)`) — the same code path as the
+(`FdhaLogicTree.from_ini(...).run(...)`) - the same code path as the
 `fdha` command line.
 
-> **Prototype interface** — review configurations and verify results
+> **Prototype interface** - review configurations and verify results
 > independently before use in production hazard assessment.
 
 ## Features
 
 1. **Configure**
    - Built-in source models (Norcia Case 3 / minimal example) **or upload
-     your own NRML source model** — uploaded files are parsed and their
+     your own NRML source model** - uploaded files are parsed and their
      fault sources listed (id, name, type, rake → style).
    - Hazard curve (sites) or hazard map (region + grid) geometry, fully
      editable.
@@ -32,28 +32,28 @@ logic tree) from form inputs and executes the **actual engine**
      `nrml_reader` + `validate_spec` (FDLT rules), plus per-branch-set
      weight checks. Engine-coupled model families (e.g. the Visini et al.
      2025 distributed SR ⇔ FD models, which must co-occur in a branch) are
-     chained automatically with `applyToBranches` during serialization —
-     the four slots stay independent in the UI — and an **end-branch
+     chained automatically with `applyToBranches` during serialization -
+     the four slots stay independent in the UI - and an **end-branch
      preview** (computed with the engine's own enumerator) shows exactly
      which model combinations and weights will run.
-2. **Run** — executes the engine on a self-contained job directory under
+2. **Run** - executes the engine on a self-contained job directory under
    `webgui_demo/runs/run_<timestamp>/`; shows the generated `job.ini`,
    elapsed time, and the engine log. Errors are reported with the full
    traceback.
-3. **Results** — reads the run's actual outputs: hazard curves (weighted
+3. **Results** - reads the run's actual outputs: hazard curves (weighted
    mean + fractile band + optional per-branch spaghetti), displacement
    hazard maps (mean + fractile layers), validator reports, manifest, CSV
    downloads, and a ZIP of the complete output directory.
 
 The **default configuration is a light single-branch calculation**
 (Youngs 2003 chain on the Norcia Case 3 source, < 1 s for curves,
-~15 s for a coarse map) — ideal for a live demonstration. Add models /
+~15 s for a coarse map) - ideal for a live demonstration. Add models /
 branches / sites to scale up to full studies.
 
 ## Run locally
 
 Use a fresh virtual environment (the engine pins its own numpy/pandas
-stack — do not mix with older installs):
+stack - do not mix with older installs):
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
@@ -83,7 +83,7 @@ installs the full engine):
 3. Spaces serves the app on port 7860 automatically.
 
 Note: the image includes the OpenQuake engine stack (~2 GB). Runs execute
-inside the Space container — size CPU accordingly and keep demo
+inside the Space container - size CPU accordingly and keep demo
 configurations light.
 
 ## License & citation
@@ -93,7 +93,7 @@ configurations light.
   probabilistic fault displacement hazard analysis* (v1.0.0) [Software].
   Istituto Nazionale di Oceanografia e di Geofisica Sperimentale (OGS).
   https://github.com/vup1120/oq-pfdha (see `CITATION.cff`).
-- Built on the OpenQuake Engine — please also cite: Pagani, M., et al. (2014).
+- Built on the OpenQuake Engine - please also cite: Pagani, M., et al. (2014).
   *OpenQuake Engine: An Open Hazard (and Risk) Software for the Global
   Earthquake Model*. Seismological Research Letters, 85(3), 692–702.
   doi:10.1785/0220130087 (Global Earthquake Model, GEM).

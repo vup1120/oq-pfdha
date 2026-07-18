@@ -86,7 +86,7 @@ def test_parse_r_sigma_model_valid():
 
 def test_parse_r_sigma_model_zero_is_legal():
     """0 selects the boxcar W_p path (perfectly located trace) and must
-    parse — a tree can weigh 'trust the trace' against Gaussian classes."""
+    parse - a tree can weigh 'trust the trace' against Gaussian classes."""
     assert parse_r_sigma_model("0") == 0.0
     assert parse_r_sigma_model("0.0") == 0.0
 

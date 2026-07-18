@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 # Require fdhpy to be installed; skip entire module if not available
-fdhpy = pytest.importorskip("fdhpy", reason="fdhpy not installed – FDHI reference tests skipped")
+fdhpy = pytest.importorskip("fdhpy", reason="fdhpy not installed - FDHI reference tests skipped")
 
 from fdhpy import (
     YoungsEtAl2003,

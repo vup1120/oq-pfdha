@@ -23,7 +23,7 @@ the model of Yang et al. (2021) in :class:`Yang2021PrimarySR`
 Supported Fault Styles: Reverse only
 
 Reference:
-    Yang, H., Quigley, M., & King, T. (2021). Surface slip distributions and geometric complexity of intraplate reverse‐faulting earthquakes. GSA
+    Yang, H., Quigley, M., & King, T. (2021). Surface slip distributions and geometric complexity of intraplate reverse-faulting earthquakes. GSA
     Bulletin, 133(9–10), 1909–1929. https://doi.org/10.1130/B35809.1
 """
 

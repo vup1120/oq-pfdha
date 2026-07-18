@@ -4,7 +4,7 @@ Validation of the [parameters] primary_sr_reduction / secondary_sr_reduction
 configs for hazard calculations.
 
 These are undocumented developer knobs: jobs need not (and should not) set
-them. Inside the hazard integral only 'mean' (the default; exact —
+them. Inside the hazard integral only 'mean' (the default; exact -
 expectation commutes with the rate sum and the SR x FD product) and
 'median' (legacy central-estimate heuristic) are legal. 'percentile' is
 rejected loudly: a per-rupture quantile of exceedance probabilities is not

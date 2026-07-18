@@ -455,8 +455,8 @@ def list_sources(xml_path: Path) -> list[dict]:
     for elem in root.iter():
         tag = elem.tag.split("}")[-1]
         if tag.endswith("FaultSource"):
-            # NB: "el.find(a) or el.find(b)" would lose the match — a childless
-            # Element like <rake> is falsy — so test against None explicitly.
+            # NB: "el.find(a) or el.find(b)" would lose the match - a childless
+            # Element like <rake> is falsy - so test against None explicitly.
             rake_el = elem.find(".//n:rake", ns)
             if rake_el is None:
                 rake_el = elem.find(".//n5:rake", ns)

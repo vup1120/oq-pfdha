@@ -20,7 +20,7 @@ def parse_source_model_faults(
     """
     Parse one or more NRML source model files into a dict of fault source objects.
 
-    Internally calls OQ‑Engine's read_source_models, which handles
+    Internally calls OQ-Engine's read_source_models, which handles
     multifault HDF5, geometry fixing, etc.
 
     multiFaultSource conveniences: when the caller does not pass an
@@ -53,7 +53,7 @@ def parse_source_model_faults(
         hdf5path = os.path.join(
             tempfile.mkdtemp(prefix='fdha_sections_'), 'sections.hdf5')
 
-    # Read models via OQ‑Engine
+    # Read models via OQ-Engine
     smodels = read_source_models(files, hdf5path=hdf5path, **converterparams)
 
     # Flatten all src_groups into a dict keyed by source_id
@@ -80,14 +80,14 @@ def _attach_original_traces(files: List[str], sources: Dict[str, Any]) -> None:
     even runs ``keep_corners(1.0)`` on its ``tor`` line). That error is
     irrelevant for GMPE distances but fatal for near-fault displacement
     probabilities. Retaining the raw trace here makes the FDHA distances
-    exact and independent of the mesh spacing — the same decoupling the
+    exact and independent of the mesh spacing - the same decoupling the
     engine itself uses when it computes rx/ry0 from ``tor`` lines instead
     of the mesh.
 
     The declared ``<dip>`` is retained for the same reason:
     ``SimpleFaultSurface.get_dip()`` averages the apparent dip of the mesh
     cells, which on a wiggly trace is biased steep (cells oblique to the
-    mean strike) and drifts with the mesh spacing — e.g. a declared 15°
+    mean strike) and drifts with the mesh spacing - e.g. a declared 15°
     fault reads 17.6° at 0.02 km spacing and 16.3° at 5 km. Models that
     take dip as input (Visini 2025 FD hanging-wall term, Mammarella 2024
     P_sr) must see the modeler's declared value, not a discretization

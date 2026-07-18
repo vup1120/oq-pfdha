@@ -24,12 +24,12 @@ ecs/
 
 ## Validation gates (both must pass before any forward x/L use)
 
-- **Gate 1 — real event:** a displacement+rupture event with R's `ecs_trace`.
+- **Gate 1 - real event:** a displacement+rupture event with R's `ecs_trace`.
   Exercises the full `ecs_main` pipeline (disp + rupture weighting, MRS/PCA start,
   iteration). Confirms the GC2 reuse + iteration control + spline reconstruction
   agree with R end-to-end.
-- **Gate 2 — vertices-only:** the same pipeline fed *only* rupture vertices
-  (`abs_wt_rup` weights, `start_sol='MRS'`) — the actual forward source-model
+- **Gate 2 - vertices-only:** the same pipeline fed *only* rupture vertices
+  (`abs_wt_rup` weights, `start_sol='MRS'`) - the actual forward source-model
   path used for `multiFaultSource`.
 
 ## Fixture contract (exact columns)
@@ -44,7 +44,7 @@ ecs/
 
 ### Oracle outputs (from the R run)
 - `ecs_trace.csv`: exactly the data frame `ecs_trace` written by
-  `CalcEventCoordinateSystem.R` — columns
+  `CalcEventCoordinateSystem.R` - columns
   `EQ_ID, eq_name, REF_ID, Longitude, Latitude, ecs_u, ecs_t, ecs_curv`.
 - `lpmatrix.csv`: the `mgcv` linear-predictor (model) matrix for the **final**
   iteration's GAM fit, i.e. `predict(fit_gam_xy, type = "lpmatrix")`. This is the
@@ -74,5 +74,5 @@ write.csv(ecs_trace, file.path(out, "ecs_trace.csv"), row.names = FALSE)
   convergence threshold `flt_max_ds = 50 m` (`ecs_main`), reported in km.
 - `lpmatrix`, `penalty_S`: `assert_allclose(rtol=1e-6)` after resolving mgcv's
   basis centering/identifiability constraint (the `-1` no-intercept in the R
-  formula) — this is the precise check that the Python `tp` reconstruction is
+  formula) - this is the precise check that the Python `tp` reconstruction is
   faithful rather than merely close.

@@ -1,3 +1,7 @@
+"""
+Structural and parameter validation for FDHA logic trees (FDLT error
+codes).
+"""
 from __future__ import annotations
 
 from functools import lru_cache
@@ -216,7 +220,7 @@ def validate_spec(spec: LogicTreeSpec, source_ids: Optional[set[str]] = None) ->
                                     message=(
                                         f"r_sigma_km = {value} km is far above "
                                         "Petersen's largest two-sided mapping "
-                                        "error (0.116 km, Table 3) — check "
+                                        "error (0.116 km, Table 3) - check "
                                         "the unit (km, not m) (branch "
                                         f"{br.branch_id} in {bs.branch_set_id})"
                                     ),
@@ -392,7 +396,7 @@ def validate_spec(spec: LogicTreeSpec, source_ids: Optional[set[str]] = None) ->
                     )
                 )
 
-    # FDLT-012: per-source sigma coverage — each source may be covered by at
+    # FDLT-012: per-source sigma coverage - each source may be covered by at
     # most one fdhaCalcRSigma branch set (D5 of
     # docs/design/rupture_location_uncertainty.md). Sets are scoped via
     # applyToSources (correlation groups: bound faults share one set); a set

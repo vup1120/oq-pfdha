@@ -1,3 +1,4 @@
+"""Small planar-geometry helpers used by the distance and rupture utilities."""
 from typing import Tuple
 
 def surface_rupture_scaling_factor(mag: float) -> float:

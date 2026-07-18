@@ -8,7 +8,7 @@ Asserts the reproduction of the paper's published anchor values (see
   (observed 1-6%);
 - reverse 2%-in-50-yr anchor: within 35% (observed +28%; the paper's own
   Fig. 8 percent-difference curve is consistent with our value and
-  inconsistent with the paper's text value — see README.md);
+  inconsistent with the paper's text value - see README.md);
 - plateau shift all-slip/reverse within [1.30, 1.60] (paper: "nearly 45%",
   observed 1.48).
 """

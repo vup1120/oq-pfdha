@@ -1,3 +1,4 @@
+"""Shared logic-tree data types: branches, branch sets and end branches."""
 from __future__ import annotations
 
 from dataclasses import dataclass

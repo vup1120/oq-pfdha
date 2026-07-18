@@ -1,6 +1,6 @@
 # Configuration guide for Visini et al. (2025)
 
-> NOTICE — current scope: In this build, the Visini (2025) secondary models are wired into hazard-curve calculations only. Hazard maps or other calculators are not yet supported for Visini (2025) SR/FD.
+> NOTICE - current scope: In this build, the Visini (2025) secondary models are wired into hazard-curve calculations only. Hazard maps or other calculators are not yet supported for Visini (2025) SR/FD.
 
 The Visini secondary models are activated through the FDHA logic-tree XML referenced by the public INI job. This section lists only the public `uncertaintyModel` parameters accepted by `Visini2025SecondarySR` and `Visini2025SecondaryFD`; rupture context values such as magnitude, distance, and combination are supplied by the calculator.
 
@@ -17,39 +17,39 @@ These parameters are specified in the `[calculation]` section (INI format):
 
 | Name | Type | Units | Default | Allowed | Required? | Description | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `displacement_measure_levels` | JSON string | meters | – | positive numbers | Yes | Displacement thresholds for hazard curves. Used to size probability arrays. Use JSON format: `{"FD": [0.001, 0.01, ...]}`. | Needed for both primary and secondary displacement calls. |
-| `case` | string | – | `case1` | `case1`, `case2`, `case3` | No | User-mandated combination set: Case 1 → A/B/C, Case 2 → A/B, Case 3 → A only. Defaults to `case1` when omitted. | Drives which combinations feed the Visini probabilities. |
-| `near_far_threshold_km` | float | kilometers | `0.2` | >0 | No | Distance cutoff between "near" and "far" regimes for along‑strike Monte Carlo (SR Rank 2). | Affects `calculate_rank2_total_probability` inputs. |
-| `r_threshold_km` | float | kilometers | `0.1` | >0 | No | Distance split between principal (≤ threshold) and distributed (> threshold) branches in the hazard curve. | Only used in hazard‑curve integration. |
+| `displacement_measure_levels` | JSON string | meters | - | positive numbers | Yes | Displacement thresholds for hazard curves. Used to size probability arrays. Use JSON format: `{"FD": [0.001, 0.01, ...]}`. | Needed for both primary and secondary displacement calls. |
+| `case` | string | - | `case1` | `case1`, `case2`, `case3` | No | User-mandated combination set: Case 1 → A/B/C, Case 2 → A/B, Case 3 → A only. Defaults to `case1` when omitted. | Drives which combinations feed the Visini probabilities. |
+| `near_far_threshold_km` | float | kilometers | `0.2` | >0 | No | Distance cutoff between "near" and "far" regimes for along-strike Monte Carlo (SR Rank 2). | Affects `calculate_rank2_total_probability` inputs. |
+| `r_threshold_km` | float | kilometers | `0.1` | >0 | No | Distance split between principal (≤ threshold) and distributed (> threshold) branches in the hazard curve. | Only used in hazard-curve integration. |
 
 ## `Visini2025SecondarySR` parameters
 | Name | Type | Units | Default | Allowed | Required? | Description | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `style` | string | – | inferred from source rake when omitted | `normal`, `reverse` | No | Dip‑slip style family. Dip‑slip only. | Must match the earthquake mechanism. |
-| `pixel_size` | integer | meters | – | {10, 20, 50, 100, 200, 500} | Yes | **Across-strike width**: Site width perpendicular to the fault. Used for P(across) coefficient lookup (Table 2) and F-ratio lookup (Table 3). | Choose to reflect site/slice footprint. |
+| `style` | string | - | inferred from source rake when omitted | `normal`, `reverse` | No | Dip-slip style family. Dip-slip only. | Must match the earthquake mechanism. |
+| `pixel_size` | integer | meters | - | {10, 20, 50, 100, 200, 500} | Yes | **Across-strike width**: Site width perpendicular to the fault. Used for P(across) coefficient lookup (Table 2) and F-ratio lookup (Table 3). | Choose to reflect site/slice footprint. |
 
 ## `Visini2025SecondaryFD` parameters
 | Name | Type | Units | Default | Allowed | Required? | Description | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `style` | string | – | inferred from source rake when omitted | `normal`, `reverse` | No | Mirrors the rupture mechanism indicator (normal=1, reverse=0). | Keep consistent with rupture style. |
-| `scaling_model` | string | – | `WC1994` | `WC1994`, `THINGBAIJAM2017`, `LEONARD2010` | No | Selects the scaling relation used to compute TPFm when not provided explicitly. | Affects throw smoothing window and magnitude–slip link. |
-| `tpfm` | float or list[float] | meters | computed | >0 | No | Directly sets mean throw on the principal fault; when set, it overrides the scaler‑derived value. | If set, `scaling_model` is ignored for those sites. |
+| `style` | string | - | inferred from source rake when omitted | `normal`, `reverse` | No | Mirrors the rupture mechanism indicator (normal=1, reverse=0). | Keep consistent with rupture style. |
+| `scaling_model` | string | - | `WC1994` | `WC1994`, `THINGBAIJAM2017`, `LEONARD2010` | No | Selects the scaling relation used to compute TPFm when not provided explicitly. | Affects throw smoothing window and magnitude–slip link. |
+| `tpfm` | float or list[float] | meters | computed | >0 | No | Directly sets mean throw on the principal fault; when set, it overrides the scaler-derived value. | If set, `scaling_model` is ignored for those sites. |
 | `n_sigma` | float | standard deviations | `3.0` | >0 | No | Half-width of the truncated lognormal residual distribution. The legacy name `truncation_eps` is still accepted as an alias. | Advanced use only. |
 
 ### Units and sign conventions
 - Distances `s` (FD), `r` (SR slice minimum distance), and `rx` are in meters in the Visini regressions.
-- Internally, the hazard‑curve integrator computes site–fault distances in kilometers, but converts to meters before calling the Visini SR/FD models. The principal/distributed mask uses `r_threshold_km`.
+- Internally, the hazard-curve integrator computes site–fault distances in kilometers, but converts to meters before calling the Visini SR/FD models. The principal/distributed mask uses `r_threshold_km`.
 - In both SR and FD, `rx < 0` denotes footwall (FW); `rx ≥ 0` denotes hanging wall (HW). This toggles the FW indicator in the regressions.
 - Displacement metric Y is the vertical throw (net vertical component) of Rank 2 distributed ruptures.
 
 ### Supported rupture mechanisms
-- Dip‑slip only: `style ∈ {normal, reverse}`.
-- Not supported: strike‑slip and oblique‑slip styles.
+- Dip-slip only: `style ∈ {normal, reverse}`.
+- Not supported: strike-slip and oblique-slip styles.
 
 ## Rank 1.5 traces & Combination B (≤ 1 km)
-Combination selection follows the paper’s intent. In this implementation, users explicitly set `case` in the public INI; do not set `combination` inside the FDHA logic-tree `uncertaintyModel`. When considering Combination B (near‑site Rank 1.5 control):
+Combination selection follows the paper's intent. In this implementation, users explicitly set `case` in the public INI; do not set `combination` inside the FDHA logic-tree `uncertaintyModel`. When considering Combination B (near-site Rank 1.5 control):
 - You should declare nearby Rank 1.5 splays under `[rank1p5_ruptures]` with `trace.name` and `trace.geometry` (type `Line`, lon/lat pairs).
-- Apply Combination B as a candidate only when the site lies within about 1 km of the declared Rank 1.5 trace (per the paper’s recommended applicability ranges, cf. Fig. 7). Beyond ~1 km, prefer Combination A (Rank 1 association).
+- Apply Combination B as a candidate only when the site lies within about 1 km of the declared Rank 1.5 trace (per the paper's recommended applicability ranges, cf. Fig. 7). Beyond ~1 km, prefer Combination A (Rank 1 association).
 - Screen faults near the site as potential hosts for Rank 1.5 ruptures that can produce Rank 2 distributed rupture at the site.
 
 ### Rank 1.5 definitions (INI format)
@@ -68,7 +68,7 @@ rank1p5_traces_file = rank1p5_traces.xml
 trace = [{"name": "Splay_A", "geometry": {"type": "Line", "coords": [[16.338416, 39.640532], [16.351064, 39.653699]]}}]
 ```
 
-## Case selection (user‑specified)
+## Case selection (user-specified)
 
 Set exactly one of:
 - `case = case1` → enable combinations A, B, C
@@ -98,7 +98,7 @@ tpfm = 1.2
 style = reverse
 scaling_model = WC1994
 ```
-Internally, the scaling path computes an along‑strike mean throw profile and smooths it using a half‑window equal to ½·s (with s in km), capped by 0.5 of fault length in normalized coordinates.
+Internally, the scaling path computes an along-strike mean throw profile and smooths it using a half-window equal to ½·s (with s in km), capped by 0.5 of fault length in normalized coordinates.
 
 ## Complete Configuration Examples
 
@@ -156,7 +156,7 @@ rank1p5_traces_file = rank1p5_traces.xml
 </logicTreeBranchSet>
 ```
 
-This consolidates the configuration pathways for the Visini (2025) models and clarifies units, case selection, Rank 1.5 usage, pixel‑size binning, site geometry, and TPFm options.
+This consolidates the configuration pathways for the Visini (2025) models and clarifies units, case selection, Rank 1.5 usage, pixel-size binning, site geometry, and TPFm options.
 
 ## Site Footprint Configuration
 

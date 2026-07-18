@@ -263,7 +263,7 @@ class LegacyModelAdapter:
         # before _call_safely, which would otherwise swallow the model's own
         # ValueError into silent zero hazard (same pre-call pattern as the
         # Youngs2003 style check above; cf. commit d541dbc3). The class
-        # choice IS the displacement definition — Lavrentiadis2023PrimaryFD_aggregate
+        # choice IS the displacement definition - Lavrentiadis2023PrimaryFD_aggregate
         # serves only the aggregate variants; the sum-of-principal
         # disp_prnc_prime metric lives in Lavrentiadis2023PrimaryFD_principal
         # (which in turn accepts no explicit output_type at all). Logic-tree

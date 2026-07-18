@@ -13,8 +13,8 @@ Curves, exercising the two W_p paths:
   sigma = 0      boxcar + COMPLEMENTARY split -> box profile: full principal
                  inside +-50 m, distributed-only shoulders outside (blue);
   four Gaussians the Petersen (2011) Table 2-3 two-sided mapping-accuracy
-                 classes — Accurate 26.89 m, Approximate 43.82 m, Concealed
-                 65.52 m, Inferred 72.69 m — pure Gaussian W_p SUMMED with
+                 classes - Accurate 26.89 m, Approximate 43.82 m, Concealed
+                 65.52 m, Inferred 72.69 m - pure Gaussian W_p SUMMED with
                  distributed, in Fig.-9c-style greys (dark -> light).
 
 Run with the worktree on PYTHONPATH:
@@ -89,7 +89,7 @@ def transect_sites():
     u = (s - foot) / d0                # unit vector, trace -> S_REF side
     # Composite sampling: 2 m inside +-160 m (so the boxcar cliff at +-h and
     # every class's Gaussian toe at +-2 sigma, up to 145 m for Inferred, are
-    # resolved — with 10 m steps a vertical step is drawn as a 10 m ramp),
+    # resolved - with 10 m steps a vertical step is drawn as a 10 m ramp),
     # 20 m in the flat far field.
     fine = np.arange(-160.0, 160.0 + 0.1, 2.0)
     coarse = np.concatenate([

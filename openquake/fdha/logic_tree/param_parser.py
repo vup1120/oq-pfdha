@@ -1,3 +1,7 @@
+"""
+Parse uncertaintyModel blocks (model name plus parameters) from FDHA
+logic-tree branches.
+"""
 from __future__ import annotations
 
 import ast
@@ -69,7 +73,7 @@ def parse_r_sigma_model(text: str) -> float:
     ``uncertaintyType`` itself. Here the value is the two-sided
     mapping-accuracy sigma in kilometres and must be a finite float >= 0.
 
-    **Zero is a legal branch value** — it selects the boxcar W_p path
+    **Zero is a legal branch value** - it selects the boxcar W_p path
     (perfectly located trace), so a logic tree can weigh "trust the mapped
     trace" against Gaussian mapping-error alternatives (Petersen et al. 2011,
     Tables 2-3; the logic-tree treatment follows p. 811).

@@ -4,7 +4,7 @@ Unit tests: Horizontal trace distance (r) and consistency with x/L.
 
 Verifies that ``calculate_site_to_trace_distance(s)`` returns the
 horizontal distance from the site to the surface trace polyline (km),
-computed via the local equirectangular projection — NOT the OQ
+computed via the local equirectangular projection - NOT the OQ
 ``get_min_distance`` (Rrup) which depends on the 3-D mesh density.
 
 All expected values are hand-calculable from simple plane geometry
@@ -69,19 +69,19 @@ class TestMinDistancePointToPolylineXY:
         assert_allclose(_min_distance_point_to_polyline_xy(pxy, poly), 3.0, atol=1e-12)
 
     def test_beyond_segment_start(self):
-        """Point off the start end — closest point is the start vertex."""
+        """Point off the start end - closest point is the start vertex."""
         poly = np.array([[0.0, 0.0], [10.0, 0.0]])
         pxy = np.array([-3.0, 4.0])  # distance = sqrt(9+16) = 5
         assert_allclose(_min_distance_point_to_polyline_xy(pxy, poly), 5.0, atol=1e-12)
 
     def test_beyond_segment_end(self):
-        """Point off the end — closest point is the end vertex."""
+        """Point off the end - closest point is the end vertex."""
         poly = np.array([[0.0, 0.0], [10.0, 0.0]])
         pxy = np.array([13.0, 4.0])  # distance = sqrt(9+16) = 5
         assert_allclose(_min_distance_point_to_polyline_xy(pxy, poly), 5.0, atol=1e-12)
 
     def test_l_shaped_polyline(self):
-        """Point inside the L-bend — closest to the second segment."""
+        """Point inside the L-bend - closest to the second segment."""
         poly = np.array([[0.0, 0.0], [5.0, 0.0], [5.0, 5.0]])
         pxy = np.array([6.0, 3.0])  # 1 km from second segment
         assert_allclose(_min_distance_point_to_polyline_xy(pxy, poly), 1.0, atol=1e-12)
@@ -223,7 +223,7 @@ class TestDistanceXLConsistency:
 
 
 # ---------------------------------------------------------------------------
-# Real SimpleFaultSurface (small mesh) — optional, requires hazardlib
+# Real SimpleFaultSurface (small mesh) - optional, requires hazardlib
 # ---------------------------------------------------------------------------
 class TestWithSimpleFaultSurface:
     """Use a real OQ SimpleFaultSurface to verify trace distance vs manual calc."""

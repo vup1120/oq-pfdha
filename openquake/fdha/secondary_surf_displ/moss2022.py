@@ -40,11 +40,11 @@ class Moss2022SecondaryFD(BaseSecondarySurfDispl):
 
     Two methods:
 
-    * ``'gamma'`` — Uses the global gamma distribution (Eqs 4.2–4.3) for the
+    * ``'gamma'`` - Uses the global gamma distribution (Eqs 4.2–4.3) for the
       d/MD ratio, with its mean rescaled by the distance-dependent envelope
       (Eq. 5.8). Integrated over MD(M) uncertainty the same way as the
       primary FD model.
-    * ``'envelope'`` — Deterministic: assumes d_secondary = MD × envelope(r),
+    * ``'envelope'`` - Deterministic: assumes d_secondary = MD × envelope(r),
       then integrates over MD uncertainty to obtain P(d > d₀).
 
     Distance ``r`` is received in **km** (adapter convention, matching

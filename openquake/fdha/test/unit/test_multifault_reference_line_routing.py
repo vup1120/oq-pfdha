@@ -4,7 +4,7 @@ Per-model reference-line routing for multi-fault ruptures.
 
 Each FDHA model declares how distances must be measured when the source has
 no continuous fault trace (multiFaultSource / kite sections) via the
-``MULTIFAULT_REFERENCE_LINE`` class attribute — the FDHA analogue of
+``MULTIFAULT_REFERENCE_LINE`` class attribute - the FDHA analogue of
 hazardlib GMPEs declaring ``REQUIRES_DISTANCES``. The routing rules:
 
 - ``Chiou2025PrimaryFD``  -> 'ecs'      (model defined on the ECS line)

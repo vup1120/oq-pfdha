@@ -232,7 +232,7 @@ def validate_public_logic_tree_ini_file(config_path: Path, config: Dict[str, Any
     """Raise ConfigurationError when a user's logic-tree ``job.ini`` violates v5 layout.
 
     Branch materialised INIs (written under ``branch_configs/`` with ``[models.*]``)
-    are not passed through this function — only the top-level job the user passes
+    are not passed through this function - only the top-level job the user passes
     to ``FdhaLogicTree.from_ini`` / ``fdha job.ini``.
 
     Legacy user-facing keys are rejected during raw INI loading.

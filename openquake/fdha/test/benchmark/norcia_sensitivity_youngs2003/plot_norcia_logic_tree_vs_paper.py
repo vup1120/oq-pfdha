@@ -84,7 +84,7 @@ def main() -> None:
     plt.xlabel("Displacement, d (m)")
     plt.ylabel("Relative error (%)")
     plt.title(
-        f"Norcia vs paper — max |rel err| = {abs(rel_err[max_idx]):.3f}% at d={d0[max_idx]:g} m"
+        f"Norcia vs paper - max |rel err| = {abs(rel_err[max_idx]):.3f}% at d={d0[max_idx]:g} m"
     )
     plt.grid(True, which="both", ls=":", alpha=0.35)
     plt.tight_layout()

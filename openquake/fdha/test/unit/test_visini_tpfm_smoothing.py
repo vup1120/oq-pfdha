@@ -6,7 +6,7 @@ Visini2025SecondaryFD.compute_tpfm_from_scaling.
 The half-width of the smoothing window is r = 0.5 * distance / L(M); it
 requires a fault-length estimate from the scaling relation. WC1994 (the
 DEFAULT scaling model) exposes SRL(M) as ``get_surface_rupture_length``,
-which the probe chain historically missed — so the smoothing was silently
+which the probe chain historically missed - so the smoothing was silently
 never active with the default configuration.
 """
 import numpy as np

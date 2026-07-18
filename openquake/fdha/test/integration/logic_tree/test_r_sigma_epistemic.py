@@ -2,20 +2,20 @@
 
 Battery for r_sigma_km (mapping accuracy) as epistemic logic-tree branches:
 
-a. EQUIVALENCE — MODE B with a single sigma branch (weight 1.0, value 0) is
+a. EQUIVALENCE - MODE B with a single sigma branch (weight 1.0, value 0) is
    bit-identical to MODE A with no r_sigma_km at all (sigma = 0 is the
    default: the boxcar W_p path), compared against the frozen fixtures
    (``test/fixtures/r_threshold_baseline/``). Covered for the curve job and
    the map job.
 b. ANALYTIC AGGREGATION (mean linearity, verification V7 of
-   docs/design/rupture_location_uncertainty.md) — for two branches
+   docs/design/rupture_location_uncertainty.md) - for two branches
    (S1,w1),(S2,w2) the aggregated mean rate at EVERY displacement level
    equals ``w1*rate_single(S1) + w2*rate_single(S2)`` where
    ``rate_single(Si)`` are independent MODE A runs. Tolerance <= 1e-12
    relative.
-c. QUANTILES — fractile outputs equal weighted empirical quantiles computed
+c. QUANTILES - fractile outputs equal weighted empirical quantiles computed
    independently in this file from the per-branch rates and manifest weights.
-d. MANIFEST — all end branches listed; combined weights sum to 1.0;
+d. MANIFEST - all end branches listed; combined weights sum to 1.0;
    sigma branch IDs and values are visible under fdha_calc_params.
 Plus the end-to-end conflict rule (scalar + branch set -> ConfigurationError).
 
@@ -24,7 +24,7 @@ trace, outside the 0.1 km boxcar (sigma = 0 branch: no principal term) but
 inside the +-2 sigma support of the sigma = 0.3 km branch
 (W_p ~ exp(-0.39^2/(2*0.3^2)) ~ 0.43), so the two branches produce genuinely
 different rate curves (asserted in-test). They are not recommendations of any
-kind — Petersen's own two-sided classes are 0.027-0.116 km.
+kind - Petersen's own two-sided classes are 0.027-0.116 km.
 """
 from __future__ import annotations
 

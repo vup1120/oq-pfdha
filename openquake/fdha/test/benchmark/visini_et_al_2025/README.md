@@ -9,7 +9,7 @@ reproduction workflows, with source details recorded in
   [Figures/visini2025_fig13_all_cases_ref_vs_impl.png](Figures/visini2025_fig13_all_cases_ref_vs_impl.png)
   (published curves dashed, oq-pfdha solid; median computed/reference ratios
   0.85–1.03, per-case stats in `fig13/fig13_agreement.json`). Each curve ends
-  in a sharp roll-off to exactly zero — a genuine ±3σ truncation of the
+  in a sharp roll-off to exactly zero - a genuine ±3σ truncation of the
   `Visini2025SecondaryFD` log-normal (matching the FDHLab reference
   convention), not a modelling error; see "Reading the truncation cliff" in
   `fig13/README.md`. Regenerate with:

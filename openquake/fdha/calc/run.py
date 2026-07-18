@@ -1,3 +1,7 @@
+"""
+Run one FDHA calculation (hazard curve or hazard map) from a parsed
+configuration; used by the CLI and by the logic-tree driver per branch.
+"""
 import logging
 from .calculators import (
     BaseFaultRuptureCalculator,

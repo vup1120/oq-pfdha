@@ -4,8 +4,8 @@
 The exercise published no reference curves for the sensitivity cases, so
 these jobs are validated by
 
-1. structural checks — positive curve head, non-increasing hazard curve;
-2. regression snapshots (``reference_snapshots/``, rtol 1e-4) — update
+1. structural checks - positive curve head, non-increasing hazard curve;
+2. regression snapshots (``reference_snapshots/``, rtol 1e-4) - update
    with ``python run_sensitivity.py --update-snapshots`` after an
    intentional model change and review the diff;
 3. physical-consistency relations across jobs:
@@ -49,13 +49,13 @@ def _get(case, job):
                          ids=[f"{s.case}-{s.job}" for s in SENSITIVITY_JOBS])
 def test_structure_and_snapshot(sj):
     d0, rates = _get(sj.case, sj.job)
-    assert rates[0] > 0, "zero curve head — model chain failed"
+    assert rates[0] > 0, "zero curve head - model chain failed"
     assert np.all(np.diff(rates) <= rates[:-1] * 1e-12 + 1e-30), \
         "hazard curve must be non-increasing"
 
     snap_d, snap_r = load_snapshot(f"{sj.case}_{sj.job}")
     assert snap_d is not None, \
-        "missing snapshot — run run_sensitivity.py --update-snapshots"
+        "missing snapshot - run run_sensitivity.py --update-snapshots"
     np.testing.assert_allclose(d0, snap_d, rtol=1e-9)
     np.testing.assert_allclose(rates, snap_r, rtol=1e-4, atol=1e-30)
 

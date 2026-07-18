@@ -381,9 +381,9 @@ class TestHazardEndToEnd:
         assert poes.max() <= total_rate * 1.0001
         # regression anchor: the sigma = 0 path uses the historical
         # COMPLEMENTARY boxcar split (this job sets no r_sigma_km), so the
-        # on-trace site carries the principal component only — the original
+        # on-trace site carries the principal component only - the original
         # pre-additive anchor values (plateau = 11% of the 2.1623e-3/yr GR
-        # total rate, and within 5% of the simpleFaultSource twin — see the
+        # total rate, and within 5% of the simpleFaultSource twin - see the
         # equivalence test below).
         expected = np.array(
             [2.38460639e-04, 2.38002779e-04, 2.22840039e-04, 8.79603903e-05])

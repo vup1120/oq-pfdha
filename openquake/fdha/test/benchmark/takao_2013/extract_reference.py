@@ -15,7 +15,7 @@ axis ranges, and writes one CSV of extracted data points per figure into
 
 Each row carries the ink color (black/gray, which in Fig. 11(a)
 distinguishes the R = 3,000 yr curves (gray) from R = 30,000 yr (black))
-and the source element type. Curve identity is NOT resolved here — the
+and the source element type. Curve identity is NOT resolved here - the
 points are matched to computed curves by the reproduce_* scripts.
 
 Axis ranges (hard-coded from the figure axis labels):

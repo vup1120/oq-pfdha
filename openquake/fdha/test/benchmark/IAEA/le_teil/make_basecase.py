@@ -14,7 +14,7 @@ base case as a logic tree over the 21-km La Rouviere source:
 
 The "Moment balancing" sheet gives, for each of the 36 end branches, the
 moment-balanced event rate times the probability that the rupture covers
-the site ("Rate, rups (1/yr)" — the same site-covering-rate convention as
+the site ("Rate, rups (1/yr)" - the same site-covering-rate convention as
 the single-branch jobs, whose 4.6e-5 is its slip-0.01 / M5.52 row).
 
 This script collapses the slip-rate level (exact for the mean hazard

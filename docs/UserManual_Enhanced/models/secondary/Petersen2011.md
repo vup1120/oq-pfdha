@@ -1,4 +1,4 @@
-# Configuration guide for Petersen et al. (2011) — Secondary Displacement
+# Configuration guide for Petersen et al. (2011) - Secondary Displacement
 
 Reference: Petersen, M. D., et al. (2011). Fault displacement hazard for strike-slip faults. Bulletin of the Seismological Society of America, 101(2), 805-825. https://doi.org/10.1785/0120100035
 

@@ -49,7 +49,7 @@ than to a single file. The directory defaults to `out/` next to the INI file
 (here `examples/out/`). For this hazard-curve example the key files are:
 
 -   `examples/out/aggregate_hazard.csv`: the aggregate (mean and quantile) hazard
-    curve — the main result.
+    curve - the main result.
 -   `examples/out/hazard_curves/branch_0000.csv`: the per-logic-tree-branch curve.
 -   `examples/out/manifest.json`: an index of everything the run produced.
 
@@ -69,9 +69,6 @@ For the complete User Manual (installation, configuration, models, CLI, workflow
 -   **[Configuration File Guide](./docs/UserManual_Enhanced/05-Configuration.md)**
 -   **[Scientific Models](./docs/UserManual_Enhanced/06-Models.md)**
 
-
-
-
 ## Citing
 
 If you use this software in your research, please cite it using the metadata in
@@ -81,5 +78,3 @@ If you use this software in your research, please cite it using the metadata in
 
 This project is licensed under the GNU Affero General Public License v3.0.
 See [`LICENSE`](./LICENSE) for the full text.
-
-

@@ -61,7 +61,7 @@ MANIFEST = [
     # T13 distributed = Takao2013PrimarySR x Takao2014SecondarySR (100 m
     # cell) x Takao2013SecondaryFD (AD, n_sigma 5): the curve head matches
     # the published one to 0.1%, but the mid-range (0.1-1 m) runs up to
-    # ~35% high (Kumamoto) / ~35% low (Le Teil) — the team's aleatory
+    # ~35% high (Kumamoto) / ~35% low (Le Teil) - the team's aleatory
     # integration of the DD/PAD distribution is not documented in
     # TECDOC-2092, so the shape difference cannot be reconciled further.
     Entry("kumamoto", "distributed_T13", "fig6a_kumamoto_distributed.csv", "T13",

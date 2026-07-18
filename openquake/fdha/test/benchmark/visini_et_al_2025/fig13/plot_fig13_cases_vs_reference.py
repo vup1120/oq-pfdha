@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Visini et al. (2025) Fig. 13 — logic-tree hazard curves vs digitised reference CSVs.
+Visini et al. (2025) Fig. 13 - logic-tree hazard curves vs digitised reference CSVs.
 
 Runs each ``job_case*.ini`` via :class:`FdhaLogicTree` (same path as CLI) and plots
 mean annual exceedance rates against ``reference_data/visini2025_case*.csv``.
@@ -19,7 +19,7 @@ computed/reference ratio statistics over the same comparison window as
 Note on the 1-3 m gap in the job's displacement grid: ``job_case*.ini``'s
 ``displacement_measure_levels`` jumps straight from 1.0 m to 3.0 m. The FD
 model (``Visini2025SecondaryFD``) is a *truncated* log-normal (``n_sigma =
-3``, matching the FDHLab MATLAB reference convention) — beyond its 3-sigma
+3``, matching the FDHLab MATLAB reference convention) - beyond its 3-sigma
 bound the exceedance probability is exactly zero by construction, and for
 these scenarios that bound falls around d ~ 2.1-2.6 m depending on the case.
 Plotting only the coarse grid draws a straight (and on a log-y axis,
@@ -27,7 +27,7 @@ near-vertical) line from the last nonzero point at 1.0 m to the exact zero
 at 3.0 m, which looks like a modelling error but is a sampling artifact: the
 model matches the digitized reference right up to where the reference itself
 stops (see REFERENCE.md / README.md). ``_mean_curve_from_ini`` below inserts
-extra points across that gap for the **plot only** — it does not touch the
+extra points across that gap for the **plot only** - it does not touch the
 golden ``job_case*.ini`` files or the pytest comparison grid.
 """
 
@@ -81,7 +81,7 @@ def _mean_curve_from_ini(ini: Path, *, densify: bool = False) -> tuple[np.ndarra
     """Run ``ini`` and return its (displacement, mean-rate) curve.
 
     ``densify=True`` merges ``_PLOT_FILL_LEVELS`` into the displacement grid
-    first (see module docstring) — used only for the plotted line, never for
+    first (see module docstring) - used only for the plotted line, never for
     the reported agreement statistics, so those stay tied to the exact grid
     ``test_fig13_reproduction.py`` asserts against.
     """
@@ -134,7 +134,7 @@ def main() -> None:
             print(f"[skip] missing INI {ini_path}")
             continue
         # Coarse grid: exactly what test_fig13_reproduction.py runs and
-        # asserts against — used only for the reported agreement stats.
+        # asserts against - used only for the reported agreement stats.
         d_coarse, p_coarse = _mean_curve_from_ini(ini_path, densify=False)
         # Densified grid: fills the coarse grid's 1-3 m gap so the plotted
         # line shows the true roll-off instead of a straight line jumping to
@@ -181,7 +181,7 @@ def main() -> None:
                 "ratio_median": round(float(np.median(ratio)), 4),
                 "ratio_max": round(float(ratio.max()), 4),
             }
-            print(f"{case_key}: computed/reference ratio over d <= 2 m — "
+            print(f"{case_key}: computed/reference ratio over d <= 2 m - "
                   f"min {ratio.min():.3f}, median {np.median(ratio):.3f}, "
                   f"max {ratio.max():.3f} ({mask.sum()} points)")
 
@@ -221,7 +221,7 @@ def main() -> None:
     # conditional probability of exceedance published in Fig. 13.
     combined_ax.set_ylabel("Conditional probability of exceedance")
     combined_ax.set_title(
-        "Visini et al. (2025) Fig. 13 — decision-tree cases 1-3:\n"
+        "Visini et al. (2025) Fig. 13 - decision-tree cases 1-3:\n"
         "published curves (dashed) vs oq-pfdha (solid)")
     combined_ax.grid(True, alpha=0.3, which="both")
     combined_ax.legend(fontsize=9, loc="best")

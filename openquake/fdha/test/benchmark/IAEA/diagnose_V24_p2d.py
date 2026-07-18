@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """Decompose the V24 distributed plateau gap: it is the P2d term, and it is
-NOT reconcilable by any single scalar — unlike the M11 P_sr gap.
+NOT reconcilable by any single scalar - unlike the M11 P_sr gap.
 
 The V24 distributed chain is `FixedPrimarySR(1.0)` (gate) x
 `Visini2025SecondarySR` (P2d, the probability of a distributed rupture in
@@ -20,7 +20,7 @@ published V24 curves:
     paper effective P2d      5.59e-5                    7.39e-4
 
 The two gaps point in OPPOSITE directions: to match Le Teil our curve
-would need x0.062, to match Norcia x5.94 — a 96x spread. So no single
+would need x0.062, to match Norcia x5.94 - a 96x spread. So no single
 gate / P_sr convention can reconcile both (contrast M11, where one P_sr
 scalar explained the whole plateau gap). The discrepancy lives in the
 distance- and mechanism-dependent P2d *function*: our Visini 2025 P2d
@@ -55,9 +55,9 @@ HERE = Path(__file__).resolve().parent
 
 RATE = {"le_teil": 4.6e-5, "norcia": 4.03281e-4}
 CASES = [
-    ("le_teil", "Le Teil — distributed (r = 0.6 km, reverse, FW)",
+    ("le_teil", "Le Teil - distributed (r = 0.6 km, reverse, FW)",
      "fig6b_leteil_distributed.csv"),
-    ("norcia", "Norcia — distributed (r = 7.6 km, normal, HW)",
+    ("norcia", "Norcia - distributed (r = 7.6 km, normal, HW)",
      "fig6c_norcia_distributed.csv"),
 ]
 
@@ -100,7 +100,7 @@ def main():
     g_lt = summary["le_teil"][4]
     g_no = summary["norcia"][4]
     fig.suptitle(
-        "V24 distributed plateau = rate x P2d — the gap is the P2d function, "
+        "V24 distributed plateau = rate x P2d - the gap is the P2d function, "
         "not a scalar gate\n"
         f"(gate to match Le Teil x{g_lt:.3f}, to match Norcia x{g_no:.2f}: "
         "opposite directions ⇒ model-version difference, not P_sr)",

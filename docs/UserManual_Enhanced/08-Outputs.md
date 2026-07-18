@@ -113,7 +113,7 @@ Use `--plot output.png` to save a plot.
 
 ## Programmatic access
 
-To locate outputs from a script, read `manifest.json` in the output directory —
+To locate outputs from a script, read `manifest.json` in the output directory -
 it records the run mode, branches, weights, and output layout. The result files
 themselves have stable names (`aggregate_hazard.csv`, `aggregate/rates_mean.h5`,
 etc.) relative to the output directory documented above.

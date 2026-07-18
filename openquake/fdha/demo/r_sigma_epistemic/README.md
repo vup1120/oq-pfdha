@@ -5,8 +5,8 @@ primary/secondary models), computes **two sites bracketing the 50 m boxcar
 edge** (site A at 0.04 km, site B at 0.08 km from the trace), and swaps the
 source for a demo-local **single M7.0 characteristic event** at a
 low annual rate (`source_model_M7.xml`, 1e-4/yr). That keeps the hazard curves
-at a realistic level (plateau ~1e-4/yr) — comparable to a published
-single-scenario figure — instead of reflecting the very active
+at a realistic level (plateau ~1e-4/yr) - comparable to a published
+single-scenario figure - instead of reflecting the very active
 Gutenberg-Richter fault (~0.02/yr) in the stock example.
 
 `r_sigma_km` is the **two-sided mapping-accuracy sigma** of the
@@ -21,7 +21,7 @@ of two separate W_p paths (`docs/design/rupture_location_uncertainty.md`):
   (Petersen eq. 1 + eq. 2; `r_threshold_km` plays no role on this path).
 
 **Both branches carry the same 50 m location knowledge, treated
-differently** — hard cliff vs soft tail — and the two sites show BOTH sides
+differently** - hard cliff vs soft tail - and the two sites show BOTH sides
 of that trade:
 
 - **site A, r = 0.04 km (inside the boxcar):** σ=0 gives the **full
@@ -51,7 +51,7 @@ Six runs:
 MODE B variants append a `fdhaCalcRSigma` branch set to the FDHA logic tree;
 the INI never carries an `r_sigma_km` scalar (the scalar and a branch set are
 mutually exclusive). The boxcar half-width `r_threshold_km = 0.05` stays in
-the INI — it is a fixed calculation parameter, not part of the epistemic
+the INI - it is a fixed calculation parameter, not part of the epistemic
 tree, and it only matters on the σ = 0 branch.
 
 Checks asserted by the script:

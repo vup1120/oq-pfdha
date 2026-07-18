@@ -12,13 +12,7 @@ primary_fd_models:
   Youngs2003PrimaryFD:
     displacement_definition: D_p_V
     source: "Sarmiento et al. 2025, Table 1 (YEA03)"
-  Petersen2011PrimaryFD_bilinear:
-    displacement_definition: D_p_L
-    source: "Sarmiento et al. 2025, Table 1 (PEA11)"
-  Petersen2011PrimaryFD_elliptical:
-    displacement_definition: D_p_L
-    source: "Sarmiento et al. 2025, Table 1 (PEA11)"
-  Petersen2011PrimaryFD_quadratic:
+  Petersen2011PrimaryFD:
     displacement_definition: D_p_L
     source: "Sarmiento et al. 2025, Table 1 (PEA11)"
   Chiou2025PrimaryFD:

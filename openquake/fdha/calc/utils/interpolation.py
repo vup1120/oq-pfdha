@@ -1,3 +1,7 @@
+"""
+Hazard-curve interpolation helpers (POE and return-period lookups),
+following OpenQuake engine conventions.
+"""
 import numpy as np
 import warnings
 from typing import Union, List

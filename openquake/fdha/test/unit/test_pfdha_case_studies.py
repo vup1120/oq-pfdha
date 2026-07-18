@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-PFDHA Benchmark Test Cases — Hazard Curve Computation
+PFDHA Benchmark Test Cases - Hazard Curve Computation
 
 Computes hazard curves for both test cases from the benchmark spreadsheet
 (PFDHA_CASE_STUDIES.xlsx) using the validated Moss et al. (2022) model
@@ -165,11 +165,11 @@ def _yc1985_rates(min_mag, b_val, char_mag, total_moment_rate,
 
 
 # ====================================================================
-# Model components — Moss et al. (2022)
+# Model components - Moss et al. (2022)
 # ====================================================================
 
 def _psr_wc93(M):
-    """P(SR|M) — Wells & Coppersmith (1993), all styles."""
+    """P(SR|M) - Wells & Coppersmith (1993), all styles."""
     z = -12.51 + 2.053 * np.asarray(M, dtype=float)
     return np.exp(z) / (1 + np.exp(z))
 
@@ -299,7 +299,7 @@ def _displacement_at_return_period(D_levels, nu, return_period):
 
 
 # ====================================================================
-# Tests — Geometry
+# Tests - Geometry
 # ====================================================================
 
 class TestGeometry:
@@ -338,7 +338,7 @@ class TestGeometry:
 
 
 # ====================================================================
-# Tests — MFD
+# Tests - MFD
 # ====================================================================
 
 class TestMFD:
@@ -358,7 +358,7 @@ class TestMFD:
 
 
 # ====================================================================
-# Tests — Test 1: Principal hazard (Fault 2, on-fault)
+# Tests - Test 1: Principal hazard (Fault 2, on-fault)
 # ====================================================================
 
 class TestPrincipalHazard:
@@ -405,7 +405,7 @@ class TestPrincipalHazard:
 
 
 # ====================================================================
-# Tests — Test 2: Distributed hazard (Fault 1, HW, r ~ 254 m)
+# Tests - Test 2: Distributed hazard (Fault 1, HW, r ~ 254 m)
 # ====================================================================
 
 class TestDistributedHazard:

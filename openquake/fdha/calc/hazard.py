@@ -344,7 +344,7 @@ def _resolve_investigation_time(src, ini_time) -> float:
     inflates all rates 50x), so a mismatch is rejected loudly.
 
     Parametric sources carry no such attribute; they fall back to the INI
-    value, then 1.0 — their ruptures have explicit annual rates and ignore
+    value, then 1.0 - their ruptures have explicit annual rates and ignore
     this value anyway.
     """
     src_time = getattr(src, 'investigation_time', None)
@@ -463,7 +463,7 @@ def _compute_rupture_contribution(
 
     The combination follows the W_p path: at sigma = 0 the historical
     COMPLEMENTARY boxcar split (inside h principal only, outside distributed
-    only — Youngs 2003 / Takao 2013 either/or); at sigma > 0 principal and
+    only - Youngs 2003 / Takao 2013 either/or); at sigma > 0 principal and
     distributed are independent contributions of the same surface-rupturing
     event and are SUMMED (Petersen et al. 2011 eq. 1 + eq. 2; Fig. 10a
     "total hazard").
@@ -561,7 +561,7 @@ def _compute_rupture_contribution(
             r_sel, x_L_sel, L_sel = ctx.metrics_for(_method)
             # Style: an explicit model parameter wins; otherwise derive it
             # from the rupture rake, exactly like LegacyModelAdapter does.
-            # The Visini coefficients are style-specific — silently
+            # The Visini coefficients are style-specific - silently
             # defaulting to 'normal' on a reverse fault shifts the FD median
             # by ~1.7x and swaps the SR occurrence tables.
             style = (
@@ -611,7 +611,7 @@ def _compute_rupture_contribution(
     # with its own distributed weight G:
     #
     #   sigma = 0 -> W_p = boxcar |r| <= h (h = r_threshold_km) and
-    #                G = 1 - W_p: the historical COMPLEMENTARY split — inside
+    #                G = 1 - W_p: the historical COMPLEMENTARY split - inside
     #                the principal zone only the principal component counts,
     #                outside it only the distributed component (Youngs 2003 /
     #                Takao 2013 per-fault either/or bookkeeping).
@@ -642,7 +642,7 @@ def _compute_rupture_contribution(
     # Distributed zone: uses secondary (distributed) models.
     # Visini's DR occurrence regressions are fit on the SURE database, which
     # contains only earthquakes with a mapped Rank-1 (principal) surface
-    # rupture (Visini et al. 2025, Table 1) — i.e. P_dist_combined is already
+    # rupture (Visini et al. 2025, Table 1) - i.e. P_dist_combined is already
     # conditional on the principal fault having reached the surface. It must
     # still be gated by P(SR_primary) here, same as the non-Visini branch,
     # to turn that conditional probability into a per-rupture rate

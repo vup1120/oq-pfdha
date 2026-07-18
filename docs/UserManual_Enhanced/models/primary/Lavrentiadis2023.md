@@ -20,9 +20,9 @@ shape variants):
 - **Supported fault styles:** Normal, strike-slip, reverse
 - **Magnitude range:** 5.0–8.5
 - **Displacement metrics:** 
-  - Aggregate displacement for entire event rupture (`disp_agg_prime`) — `Lavrentiadis2023PrimaryFD_aggregate`
-  - Aggregate displacement for single segment (`disp_agg_seg`) — `Lavrentiadis2023PrimaryFD_aggregate`
-  - Principal displacement for entire event rupture (`disp_prnc_prime`) — `Lavrentiadis2023PrimaryFD_principal`
+  - Aggregate displacement for entire event rupture (`disp_agg_prime`) - `Lavrentiadis2023PrimaryFD_aggregate`
+  - Aggregate displacement for single segment (`disp_agg_seg`) - `Lavrentiadis2023PrimaryFD_aggregate`
+  - Principal displacement for entire event rupture (`disp_prnc_prime`) - `Lavrentiadis2023PrimaryFD_principal`
 - **Statistical distribution:** Normal distribution in power-normal space (m^0.3)
 - **Slip component:** Net displacement
 - **Classification:** Aggregate (`Lavrentiadis2023PrimaryFD_aggregate`) / Sum of principal (`Lavrentiadis2023PrimaryFD_principal`)
@@ -31,9 +31,9 @@ shape variants):
 
 | Name | Type | Units | Default | Allowed | Required? | Description |
 | --- | --- | --- | --- | --- | --- | --- |
-| `style` | string | – | `"normal"` | `"normal"`, `"strike-slip"`, `"reverse"` (case-insensitive) | No | Style of faulting. |
-| `output_type` | string | – | `"disp_agg_prime"` | `"disp_agg_prime"`, `"disp_agg_seg"` (`Lavrentiadis2023PrimaryFD_aggregate` only) | No | Aggregate metric to evaluate. `disp_prnc_prime` is **rejected** on this class (FDLT-015): select `Lavrentiadis2023PrimaryFD_principal` instead. On `Lavrentiadis2023PrimaryFD_principal` the metric is pinned by the class and passing any explicit `output_type` is an error. |
-| `include_zero_slip` | boolean | – | `false` | `true`, `false` | No | If `true`, the probability accounts for zero slip and gap probabilities. If `false`, uses only the displacement distribution. Accepted by both classes. |
+| `style` | string | - | `"normal"` | `"normal"`, `"strike-slip"`, `"reverse"` (case-insensitive) | No | Style of faulting. |
+| `output_type` | string | - | `"disp_agg_prime"` | `"disp_agg_prime"`, `"disp_agg_seg"` (`Lavrentiadis2023PrimaryFD_aggregate` only) | No | Aggregate metric to evaluate. `disp_prnc_prime` is **rejected** on this class (FDLT-015): select `Lavrentiadis2023PrimaryFD_principal` instead. On `Lavrentiadis2023PrimaryFD_principal` the metric is pinned by the class and passing any explicit `output_type` is an error. |
+| `include_zero_slip` | boolean | - | `false` | `true`, `false` | No | If `true`, the probability accounts for zero slip and gap probabilities. If `false`, uses only the displacement distribution. Accepted by both classes. |
 
 ## Notes and cautions
 

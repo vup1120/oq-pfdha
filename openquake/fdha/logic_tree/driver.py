@@ -1,3 +1,7 @@
+"""
+Logic-tree driver (FdhaLogicTree): enumerate end branches, run each one
+through the hazard kernel and aggregate the results.
+"""
 from __future__ import annotations
 
 import glob
@@ -587,7 +591,7 @@ class FdhaLogicTree:
         # Aggregation keys: which SMLT realisation and which source group
         # (eb.source_id) each realisation belongs to. Independent sources add
         # hazard, so multi-group jobs must be aggregated per group and summed
-        # — never pooled into one weighted mean (see _aggregate_grouped_curves).
+        # - never pooled into one weighted mean (see _aggregate_grouped_curves).
         combined_sm_ordinals: list[int] = []
         combined_group_ids: list[str] = []
         d0_ref = None
@@ -737,7 +741,7 @@ class FdhaLogicTree:
             fr = weighted_fractiles(rates_arr, w_norm, qs=self._quantiles)
         else:
             # Per-source-group LT statistics summed across groups within each
-            # SMLT realisation, then SMLT-weighted across realisations —
+            # SMLT realisation, then SMLT-weighted across realisations -
             # the same physically-correct aggregation map mode uses. The
             # component means use the same (linear) pipeline with no
             # fractiles, so principal + distributed == mean stays exact.
