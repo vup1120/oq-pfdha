@@ -80,10 +80,9 @@ class VisiniSecondaryCalculator:
 
     @staticmethod
     def _resolve_combos(case_label):
-        try:
-            return choose_combinations(case_label)
-        except Exception:
-            return ["A"]
+        # An unknown case label must fail the job: silently degrading to
+        # combination A alone would under-count the distributed hazard.
+        return choose_combinations(case_label)
 
     def _compute_secondary_distance_vectorized(self, r_km_arr, site_coords):
         """
@@ -384,10 +383,9 @@ class VisiniSecondaryCalculatorOriginal:
 
     @staticmethod
     def _resolve_combos(case_label):
-        try:
-            return choose_combinations(case_label)
-        except Exception:
-            return ["A"]
+        # An unknown case label must fail the job: silently degrading to
+        # combination A alone would under-count the distributed hazard.
+        return choose_combinations(case_label)
 
     @staticmethod
     def _point_to_segment_distance_km(p, a, b):
