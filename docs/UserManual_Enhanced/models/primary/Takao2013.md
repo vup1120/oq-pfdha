@@ -26,7 +26,7 @@ The Takao et al. (2013) primary surface displacement model predicts displacement
 
 | Name | Type | Units | Default | Allowed | Required? | Description |
 | --- | --- | --- | --- | --- | --- | --- |
-| `norm_disp_type` | string | – | – | `"AD"`, `"MD"` | Yes | Normalization displacement type. `"AD"` uses average displacement normalization (Gamma distribution), `"MD"` uses maximum displacement normalization (Beta distribution). |
+| `norm_disp_type` | string | - | - | `"AD"`, `"MD"` | Yes | Normalization displacement type. `"AD"` uses average displacement normalization (Gamma distribution), `"MD"` uses maximum displacement normalization (Beta distribution). |
 
 ## Notes and cautions
 

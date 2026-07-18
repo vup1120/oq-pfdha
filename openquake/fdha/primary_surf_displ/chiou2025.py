@@ -24,6 +24,7 @@ import logging
 import numpy as np
 from scipy import stats
 
+from openquake.fdha.params import check_style
 from openquake.fdha.primary_surf_displ.base import BasePrimarySurfDispl
 
 
@@ -69,7 +70,19 @@ class Chiou2025PrimaryFD(BasePrimarySurfDispl):
     np.ndarray
         Exceedance probability(s). Shape follows broadcasting of (n_sites, n_displacements)
         when X_L_ratio is a vector and d is a vector; otherwise reduced appropriately.
+
+    Model contract: DISPLACEMENT_DEFINITION = "sum-of-principal",
+    DISPLACEMENT_COMPONENT = "net" -- Chiou et al. (2025, Earthquake
+    Spectra, "Fault displacement model for surface principal rupture of
+    strike-slip faults") predict displacement summed across the PRINCIPAL
+    strands crossed by a profile (distributed ruptures excluded, so the
+    secondary slot remains legitimate alongside this model); Sarmiento et
+    al. (2025) Table 1 lists CEA25 as D_SP,N* (sum-of-principal,
+    pseudo-net component).
     """
+
+    DISPLACEMENT_DEFINITION = "sum-of-principal"
+    DISPLACEMENT_COMPONENT = "net"
 
     # Chiou et al. (2025) define displacement position along their ECS
     # (equivalent continuous surface-rupture) line, so multi-fault ruptures
@@ -79,7 +92,20 @@ class Chiou2025PrimaryFD(BasePrimarySurfDispl):
     # cache coefficients at class-level
     _COEFFS = _load_coefficients()
 
-    def get_prob(self, d, X_L_ratio, mag, style="strike-slip", version="model7"):
+    def __init__(self, version=None, style=None):
+        """
+        :param version: optional coefficient-set / model-variant identifier
+            pinned by the logic-tree branch; ``None`` defers to the
+            ``get_prob`` call (legacy default: 'model7').
+        :param style: optional faulting style pinned by the logic-tree
+            branch; only 'strike-slip' is supported by this model.
+        """
+        super().__init__()
+        self.version = None if version is None else str(version)
+        self.style = check_style(type(self).__name__, style,
+                                 frozenset(["strike-slip"]))
+
+    def get_prob(self, d, X_L_ratio, mag, style=None, version=None):
         """Return P(D > d) for the given displacement, position, and magnitude.
 
         Parameters
@@ -105,6 +131,11 @@ class Chiou2025PrimaryFD(BasePrimarySurfDispl):
         ValueError
             If ``style`` is not a strike-slip style.
         """
+        # Fall back to constructor-pinned values, then legacy defaults
+        if style is None:
+            style = self.style if self.style is not None else "strike-slip"
+        if version is None:
+            version = self.version if self.version is not None else "model7"
         # Validate style
         style_str = str(style).strip().lower()
         if style_str not in {"strike-slip", "strikeslip", "ss"}:

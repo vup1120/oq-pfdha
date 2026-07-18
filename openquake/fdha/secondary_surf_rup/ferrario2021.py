@@ -29,6 +29,7 @@ Reference:
 """
 
 import numpy as np
+from openquake.fdha.params import check_choice
 from openquake.fdha.secondary_surf_rup.base import BaseSecondarySurfRup
 
 
@@ -50,7 +51,19 @@ class FerrarioLivio2021SecondarySR(BaseSecondarySurfRup):
         }
     }
 
-    def get_prob(self, r, rx, version="regular"):
+    def __init__(self, version=None):
+        """
+        :param version: optional variant pinned by the logic-tree branch
+            ('regular' or 'conservative'); ``None`` defers to the
+            ``get_prob`` call (legacy default: 'regular').
+        """
+        super().__init__()
+        self.version = check_choice(
+            type(self).__name__, "version", version,
+            frozenset(["regular", "conservative"]),
+            canon=lambda v: str(v).lower())
+
+    def get_prob(self, r, rx, version=None):
         """
         Calculates probability of distributed surface rupture for normal faults.
 
@@ -70,6 +83,9 @@ class FerrarioLivio2021SecondarySR(BaseSecondarySurfRup):
         :return:
             Probability of distributed surface rupture (0-1).
         """
+        # Fall back to constructor-pinned value, then legacy default
+        if version is None:
+            version = self.version if self.version is not None else "regular"
         # Validate version
         version = version.lower()
         if version not in self.COEFFS:

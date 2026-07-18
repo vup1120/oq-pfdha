@@ -22,6 +22,7 @@ model of Moss and Ross (2011) into :class:`MossRoss2011Primary`
 """
 
 import numpy as np
+from openquake.fdha.params import check_style
 from openquake.fdha.primary_surf_rup.base import BasePrimarySurfRup
 
 
@@ -37,6 +38,17 @@ class MossRoss2011PrimarySR(BasePrimarySurfRup):
     hazard analysis for reverse faults. Bulletin of the Seismological
     Society of America, 101(4), 1542-1553.
     """
+
+    def __init__(self, style=None):
+        """
+        :param style: optional faulting style declared by the logic-tree
+            branch. Moss and Ross (2011) is a reverse-faulting model with a
+            single regression; the value does not change the numbers and is
+            stored (validated against the global style vocabulary) as a
+            declaration of the branch context.
+        """
+        super().__init__()
+        self.style = check_style(type(self).__name__, style)
 
     def get_prob(self, mag: float) -> float:
         """

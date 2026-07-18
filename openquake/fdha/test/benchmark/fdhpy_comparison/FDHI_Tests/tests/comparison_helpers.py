@@ -502,13 +502,22 @@ class ModelRunner:
         )
         fdhpy_result = fdhpy_model.prob_exceed
         
-        # Run pfdha
+        # Run pfdha. The class choice IS the displacement definition (C4
+        # model contract): the sum-of-principal disp_prnc_prime metric lives
+        # in Lavrentiadis2023PrimaryFD_principal (which hard-pins
+        # output_type), the aggregate variants in Lavrentiadis2023PrimaryFD_aggregate.
         pfdha_params = self.mapper.lavrentiadis2023_fdhpy_to_pfdha({
             "magnitude": magnitude, "xl": xl,
             "metric": metric, "version": version,
             "include_prob_zero": include_prob_zero
         })
-        pfdha_model = self.pfdha_models["Lavrentiadis2023PrimaryFD"]()
+        if pfdha_params.get("output_type") == "disp_prnc_prime":
+            from openquake.fdha.primary_surf_displ import (
+                Lavrentiadis2023PrimaryFD_principal)
+            pfdha_params.pop("output_type")
+            pfdha_model = Lavrentiadis2023PrimaryFD_principal()
+        else:
+            pfdha_model = self.pfdha_models["Lavrentiadis2023PrimaryFD_aggregate"]()
         pfdha_result = pfdha_model.get_prob(d=displacements, **pfdha_params).flatten()
         
         return fdhpy_result, pfdha_result

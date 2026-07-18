@@ -99,7 +99,7 @@ def main() -> None:
     ax.set_xlabel(r"Displacement threshold $D_0$ (m)")
     ax.set_ylabel(r"Annual rate of exceedance  $\lambda(D_0)$ (1/yr)")
     ax.set_title(
-        "Logic Tree Validation (reverse) demo — hazard curves\n"
+        "Logic Tree Validation (reverse) demo - hazard curves\n"
         "Youngs2003PrimaryFD vs Moss2024PrimaryFD, 50/50 blend\n"
         r"(reverse source, dip=45$^\circ$, on-trace site; Primary-SR = Pizza2023)"
     )

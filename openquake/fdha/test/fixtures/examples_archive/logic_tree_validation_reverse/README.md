@@ -1,4 +1,4 @@
-# Logic Tree Validation Demo — Reverse faulting
+# Logic Tree Validation Demo - Reverse faulting
 
 Style-parallel of `examples/logic_tree_validation/` for a **reverse** source.
 Same workflow (three INIs, same-structure LT XML, `verify.py`, per-branch
@@ -15,7 +15,7 @@ What it proves, by construction:
 
 ## Scenario
 
-- Single reverse characteristic fault (`rake = 90°`, `dip = 45°`) — see
+- Single reverse characteristic fault (`rake = 90°`, `dip = 45°`) - see
   `source_model_rv.xml`. Classified as `reverse` under
   `openquake.fdha.calc.contexts.classify_style` (rake ∈ [30°, 150°]).
 - Single site on the fault trace (`16.16878333, 39.66247618`), which is the
@@ -49,7 +49,7 @@ What it proves, by construction:
 3. Both FD models are queried with an **average-displacement**
    conditioning (`norm_disp_type = "AD"` for Youngs,
    `version = "AD"` for Moss) and `source = "EQS"`, `completeness = "all"`
-   for Moss 2024 — these keep the two models on a broadly comparable
+   for Moss 2024 - these keep the two models on a broadly comparable
    conditioning basis, but they are not the same physical quantity.
 
 ## Layout

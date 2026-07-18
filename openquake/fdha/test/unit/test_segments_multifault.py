@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Segmentation-direct distances for multi-section ruptures
-(``reference_line_method='segments'``): no smoothed representative line —
+(``reference_line_method='segments'``): no smoothed representative line -
 r is the distance to the nearest actual section trace (gaps NOT bridged)
 and x/L comes from raw MultiLine GC2. This is the distance treatment
 required by segmentation-calibrated distributed-FD models (Visini et al.
@@ -166,9 +166,9 @@ def test_x_l_ratios_through_calculator():
 # --------------------------------------------------------------------------- #
 def test_contextmaker_always_computes_segments_mask_r():
     """The canonical ctx.r on a multi-section rupture is ALWAYS the
-    segments (nearest surface-reaching section) distance — the
+    segments (nearest surface-reaching section) distance - the
     principal/distributed mask and the Visini near/far label must not see
-    a bridged inter-section gap — even when no configured model declared
+    a bridged inter-section gap - even when no configured model declared
     'segments' (here the union is just the 'lcp' default)."""
     from openquake.fdha.calc.contexts import FDHAContextMaker
 

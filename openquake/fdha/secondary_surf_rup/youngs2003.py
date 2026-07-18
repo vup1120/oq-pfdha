@@ -21,6 +21,7 @@ Module :mod:`openquake.fdha.secondary_surf_rup.youngs2003`
 """
 
 import numpy as np
+from openquake.fdha.params import check_choice, check_style
 from openquake.fdha.secondary_surf_rup.base import BaseSecondarySurfRup
 
 
@@ -33,7 +34,24 @@ class Youngs2003SecondarySR(BaseSecondarySurfRup):
     displacement hazard analysis (PFDHA). Earthquake Spectra, 19(1), 191-219.
     """
 
-    def get_prob(self, mag: float, rx: float, r: float, version="3"):
+    def __init__(self, version=None, style=None):
+        """
+        :param version: optional model-equation variant pinned by the
+            logic-tree branch ('1', '2' or '3'; integers are accepted and
+            canonicalised to strings); ``None`` defers to the ``get_prob``
+            call (legacy default: '3').
+        :param style: optional faulting style declared by the logic-tree
+            branch. Youngs et al. (2003) secondary regressions carry no
+            style selector, so the value does not change the numbers; it is
+            stored (validated against the global style vocabulary) as a
+            declaration of the branch context.
+        """
+        super().__init__()
+        self.version = check_choice(type(self).__name__, "version", version,
+                                    frozenset(["1", "2", "3"]), canon=str)
+        self.style = check_style(type(self).__name__, style)
+
+    def get_prob(self, mag: float, rx: float, r: float, version=None):
             """
             Model of Youngs et al. (2003) for the probability of surface
             rupture for rupture with all rupturing mechanism.
@@ -52,6 +70,9 @@ class Youngs2003SecondarySR(BaseSecondarySurfRup):
                 "2": Alternative formulation for average site behavior.
                 "3": A 50/50 weighted average of versions "1" and "2" (default).
             """
+            # Fall back to constructor-pinned value, then legacy default
+            if version is None:
+                version = self.version if self.version is not None else "3"
             # Normalize version to string
             version = str(version)
             

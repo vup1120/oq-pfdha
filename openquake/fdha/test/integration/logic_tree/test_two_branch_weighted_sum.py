@@ -91,7 +91,7 @@ def test_two_branch_weighted_sum(tmp_path):
     r0 = np.loadtxt(tmp_path / "out" / "hazard_curves" / "branch_0000.csv", delimiter=",", skiprows=1, usecols=1)
     r1 = np.loadtxt(tmp_path / "out" / "hazard_curves" / "branch_0001.csv", delimiter=",", skiprows=1, usecols=1)
 
-    assert np.any(r1 > 0), "SR=1 branch produced zero hazard — test is vacuous"
+    assert np.any(r1 > 0), "SR=1 branch produced zero hazard - test is vacuous"
     expected = w * r0 + (1 - w) * r1
     assert np.allclose(mean_lt, expected, atol=1e-12, rtol=0)
 

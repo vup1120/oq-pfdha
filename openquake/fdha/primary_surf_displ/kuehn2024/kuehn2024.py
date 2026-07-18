@@ -27,6 +27,7 @@ model of Kuehn et al. (2024) into :class:`Kuehn2024PrimaryFD`
 import numpy as np
 import pandas as pd
 from scipy import stats
+from openquake.fdha.params import check_bool, check_style
 from openquake.fdha.primary_surf_displ.base import BasePrimarySurfDispl
 from openquake.fdha.primary_surf_displ.kuehn2024.load_data import DATA as DATA_COEFFICIENTS
 
@@ -37,10 +38,11 @@ MAG_BREAK = 7.0
 DELTA = 0.1
 
 class Kuehn2024PrimaryFD(BasePrimarySurfDispl):
-    """Principal fault-displacement model of Kuehn et al. (2024).
+    """Aggregate fault-displacement model of Kuehn et al. (2024), run in the
+    principal (primary_surf_displ) slot.
 
-    Bayesian hierarchical model of principal fault displacement as a function
-    of magnitude, normalized along-strike position, and faulting style, with
+    Bayesian hierarchical model of fault displacement as a function of
+    magnitude, normalized along-strike position, and faulting style, with
     optional epistemic-uncertainty sampling over the posterior coefficients.
 
     References
@@ -48,13 +50,66 @@ class Kuehn2024PrimaryFD(BasePrimarySurfDispl):
     Kuehn, N. M., Kottke, A. R., Sarmiento, A. C., Madugo, C. M., &
     Bozorgnia, Y. (2024). A fault displacement model based on the FDHI
     database.
+
+    Model contract: DISPLACEMENT_DEFINITION = "aggregate",
+    DISPLACEMENT_COMPONENT = "net" -- Kuehn et al. (2024) fit the FDHI
+    *aggregate* net displacement (total slip across principal and
+    distributed ruptures within the measurement aperture); Sarmiento et al.
+    (2025, Earthquake Spectra) Table 1 lists KEA24 under the aggregate
+    definition, and there is no cross-definition conversion (ibid.). Because
+    the prediction already contains the distributed contribution, the hazard
+    kernel runs this model as a single bucket (rate * P_sr * P_fd_aggregate
+    * W_p) and any secondary-slot model in the same chain is rejected
+    (FDLT-013; docs/design/rupture_location_uncertainty.md, D8).
     """
 
-    def get_prob(self, d, X_L_ratio, mag, style, folded=True,
-                 epistemic_uncertainty=True, coefficient_type=None):
+    DISPLACEMENT_DEFINITION = "aggregate"
+    DISPLACEMENT_COMPONENT = "net"
+
+    _ACCEPTED_STYLES = frozenset(["strike-slip", "reverse", "normal"])
+
+    def __init__(self, style=None, epistemic_uncertainty=None, folded=None,
+                 coefficient_type=None):
+        """
+        :param style: optional coefficient-set selector pinned by the
+            logic-tree branch ('strike-slip', 'reverse' or 'normal');
+            ``None`` defers to the ``get_prob`` call.
+        :param epistemic_uncertainty: optional flag pinned by the logic-tree
+            branch (accepts booleans or the strings 'true'/'false'); ``None``
+            defers to the ``get_prob`` call (legacy default: True).
+        :param folded: optional x/L folding flag; legacy default True.
+        :param coefficient_type: optional legacy alias ('full' enables
+            epistemic uncertainty); ``None`` defers to the call.
+        """
+        super().__init__()
+        self.style = check_style(type(self).__name__, style,
+                                 self._ACCEPTED_STYLES)
+        self.epistemic_uncertainty = check_bool(
+            type(self).__name__, "epistemic_uncertainty",
+            epistemic_uncertainty)
+        self.folded = check_bool(type(self).__name__, "folded", folded)
+        self.coefficient_type = coefficient_type
+
+    def get_prob(self, d, X_L_ratio, mag, style=None, folded=None,
+                 epistemic_uncertainty=None, coefficient_type=None):
         """
         Calculate the probability of exceeding displacement thresholds [m] for Kuehn et al. (2024).
         """
+        # Fall back to constructor-pinned values, then legacy defaults
+        if style is None:
+            style = self.style
+        if style is None:
+            raise ValueError(
+                f"{type(self).__name__}: style must be given either in the "
+                f"logic-tree branch or at call time")
+        if folded is None:
+            folded = self.folded if self.folded is not None else True
+        if epistemic_uncertainty is None:
+            epistemic_uncertainty = (
+                self.epistemic_uncertainty
+                if self.epistemic_uncertainty is not None else True)
+        if coefficient_type is None:
+            coefficient_type = self.coefficient_type
         style = style.lower()
         valid_styles = ['strike-slip', 'reverse', 'normal']
         if style not in valid_styles:

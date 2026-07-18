@@ -4,7 +4,7 @@ Curve-mode logic tree with per-source model assignment (applyToSources).
 
 Independent sources ADD hazard. When branch selections differ per source,
 each end-branch must run against its own source group only, and the final
-mean must be the SUM over source groups of each group's weighted LT mean —
+mean must be the SUM over source groups of each group's weighted LT mean -
 NOT a pooled weighted mean of every-branch-times-every-source runs (which
 both averages away half the hazard and applies each group's models to the
 other group's sources).
@@ -201,7 +201,7 @@ def test_per_source_assignment_sums_sources(tmp_path):
     r2_pet = ref("only2_pet", SRC2, _SFD_PETERSEN)
 
     expected_mean = 0.6 * r1_85 + 0.4 * r1_95 + r2_pet
-    assert expected_mean.max() > 0.0, "reference hazard is zero — vacuous"
+    assert expected_mean.max() > 0.0, "reference hazard is zero - vacuous"
     np.testing.assert_allclose(mean_two, expected_mean, rtol=1e-9)
 
     # --- fractiles: per-group weighted fractile, summed across groups

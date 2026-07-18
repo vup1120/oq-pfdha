@@ -26,7 +26,7 @@ max |dxy| = 0.0 on both cases, identical path cost).
 
 The notebook bundle also contains `LCP_path_{PL,S2}_orig.txt`; those were
 produced from an *earlier* version of the cost rasters and do NOT match the
-committed rasters (Hausdorff distance km-scale) — deliberately not fixtures.
+committed rasters (Hausdorff distance km-scale) - deliberately not fixtures.
 The Hector Mine "field map" case is not used either: its cost raster is built
 by GDAL shapefile rasterization, which is not bit-reproducible without GDAL;
 our trace rasterization is validated by synthetic unit tests instead

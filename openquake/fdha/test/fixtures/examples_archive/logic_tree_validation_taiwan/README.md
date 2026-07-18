@@ -1,4 +1,4 @@
-# Taiwan FDHA Logic-Tree Hazard Map — unified demo
+# Taiwan FDHA Logic-Tree Hazard Map - unified demo
 
 One INI drives the whole calculation. The logic tree is expressed in three
 NRML XML files (one per faulting style) and the source model is a single
@@ -148,10 +148,10 @@ either drop secondary branches temporarily or coarsen the grid
   branch in the strike-slip PFD column. Petersen et al. (2011) is
   parameterised with shape variants (bilinear / elliptical / quadratic)
   rather than AD/MD, so we use the **bilinear** flavour as the
-  representative (`Petersen2011PrimaryFD_bilinear`). Switch to
+  representative (`Petersen2011PrimaryFD` (version=bilinear)). Switch to
   `_elliptical` or `_quadratic` in `fdha_logic_tree_strike_slip.xml` if
   you want a different interpretation.
-- Grid spacing of 0.1° (~10 km) is coarse by design — the demo is about
+- Grid spacing of 0.1° (~10 km) is coarse by design - the demo is about
   *demonstrating that the LT framework works on a real-world three-style
   setup*, not delivering a production map. Drop spacing to 0.05° / 0.02°
   in `fdha_map_taiwan.ini` if you want a finer map (expect ~4× / ~25× run

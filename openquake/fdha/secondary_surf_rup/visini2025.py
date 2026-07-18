@@ -47,6 +47,7 @@ import numpy as np
 from functools import lru_cache
 from scipy.stats import lognorm
 
+from openquake.fdha.params import check_positive, check_style
 from openquake.fdha.secondary_surf_rup.base import BaseSecondarySurfRup
 
 
@@ -67,13 +68,34 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
 
     # The Visini regressions are calibrated on distances to the ACTUAL
     # segmented principal rupture, so on multi-fault ruptures r must be the
-    # distance to the nearest surface-reaching section (gaps not bridged) —
+    # distance to the nearest surface-reaching section (gaps not bridged) -
     # no smoothed ECS/LCP reference line applies.
     MULTIFAULT_REFERENCE_LINE = "segments"
 
-    def __init__(self):
+    def __init__(self, style=None, pixel_size=None, segment_sampling=None,
+                 rupture_traces=None):
+        """
+        :param style: optional coefficient-set selector pinned by the
+            logic-tree branch ('normal' or 'reverse'); ``None`` defers to
+            the ``get_prob`` call.
+        :param pixel_size: optional across-strike cell size in meters pinned
+            by the logic-tree branch; ``None`` defers to the call.
+        :param segment_sampling: optional Rank-2 along-strike sampling
+            variant (e.g. 'truncated', 'legacy'), consumed by the secondary
+            (Visini) calculation pipeline; stored as given.
+        :param rupture_traces: optional list of rank-1.5 trace names used by
+            combination B, consumed by the secondary calculation pipeline;
+            stored as given.
+        """
         super().__init__()
-        
+        self.style = check_style(type(self).__name__, style,
+                                 frozenset(["normal", "reverse"]))
+        self.pixel_size = check_positive(type(self).__name__, "pixel_size",
+                                         pixel_size)
+        self.segment_sampling = (None if segment_sampling is None
+                                 else str(segment_sampling))
+        self.rupture_traces = rupture_traces
+
         # Logistic regression coefficients from Table 2 (unchanged)
         self.coeffs_occurrence = {
             'normal': {
@@ -179,12 +201,22 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
                 
                 self._pdf_tables[(mechanism, hw_fw)] = (x, pdf, t1i, t2i)
 
-    def get_prob(self, mag, r, rx, style, pixel_size, combination):
+    def get_prob(self, mag, r, rx, style=None, pixel_size=None,
+                 combination="A"):
         """
         Required method for BaseSecondarySurfRup.
         
         OPTIMIZED: Accepts both scalar and array inputs for r and rx.
         """
+        # Fall back to constructor-pinned values (call argument wins)
+        if style is None:
+            style = self.style
+        if pixel_size is None:
+            pixel_size = self.pixel_size
+        if style is None or pixel_size is None:
+            raise ValueError(
+                f"{type(self).__name__}: style and pixel_size must be given "
+                f"either in the logic-tree branch or at call time")
         return self.get_prob_slice(mag, r, rx, style, pixel_size, combination)
 
     def get_prob_slice(self, mag, r, rx, style, pixel_size, combination):

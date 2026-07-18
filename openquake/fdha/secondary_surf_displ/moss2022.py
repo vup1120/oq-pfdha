@@ -40,18 +40,29 @@ class Moss2022SecondaryFD(BaseSecondarySurfDispl):
 
     Two methods:
 
-    * ``'gamma'`` — Uses the global gamma distribution (Eqs 4.2–4.3) for the
+    * ``'gamma'`` - Uses the global gamma distribution (Eqs 4.2–4.3) for the
       d/MD ratio, with its mean rescaled by the distance-dependent envelope
       (Eq. 5.8). Integrated over MD(M) uncertainty the same way as the
       primary FD model.
-    * ``'envelope'`` — Deterministic: assumes d_secondary = MD × envelope(r),
+    * ``'envelope'`` - Deterministic: assumes d_secondary = MD × envelope(r),
       then integrates over MD uncertainty to obtain P(d > d₀).
 
     Distance ``r`` is received in **km** (adapter convention, matching
     ``ctx.r``).  Envelope Eq. 5.8 operates in km directly.
 
     Reference: GIRS-2022-05, Sections 5.3–5.4. DOI: 10.34948/N3F595
+
+    Model contract: DISPLACEMENT_DEFINITION = "distributed",
+    DISPLACEMENT_COMPONENT = "vertical" -- distributed reverse-fault
+    displacement normalised by the principal MD/AD, from vertical-offset
+    measurements (GIRS-2022-05 Section 5). No APPLICABILITY_RANGE is
+    declared: the report documents its envelopes per Section 5 without a
+    single distance limit comparable to the Valentini et al. (2025)
+    Table 4 entries (report-specific validity).
     """
+
+    DISPLACEMENT_DEFINITION = "distributed"
+    DISPLACEMENT_COMPONENT = "vertical"
 
     def get_prob(self, d, mag, r, rx,
                  version="MD", completeness="complete",

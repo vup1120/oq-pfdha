@@ -11,7 +11,7 @@ the ``mean`` column of ``aggregate_hazard.csv`` produced by
 :class:`openquake.fdha.logic_tree.driver.FdhaLogicTree`.
 
 Also writes ``smlt_validation_hazard_curves.png`` (matplotlib) in this example
-directory — same style as ``examples/logic_tree_validation/plot_hazard_curves.py``.
+directory - same style as ``examples/logic_tree_validation/plot_hazard_curves.py``.
 
 Usage::
 
@@ -219,7 +219,7 @@ def main() -> None:
     ax.set_xlabel(r"Displacement threshold $D_0$ (m)")
     ax.set_ylabel(r"Annual rate of exceedance $\lambda(D_0)$ (1/yr)")
     ax.set_title(
-        "Source-model logic tree — hazard curve validation\n"
+        "Source-model logic tree - hazard curve validation\n"
         "(SMLT × bGRRelative × minimal FDHA tree; Pizza2023 PSR + "
         "Petersen2011PrimaryFD bilinear)"
     )

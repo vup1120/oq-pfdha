@@ -26,8 +26,8 @@ The Youngs et al. (2003) primary surface displacement model predicts displacemen
 
 | Name | Type | Units | Default | Allowed | Required? | Description |
 | --- | --- | --- | --- | --- | --- | --- |
-| `style` | string | – | – | `"all"`, `"normal"` (case-insensitive) | Yes | Faulting style for Wells & Coppersmith (1994) coefficients. `"all"` uses "All styles" coefficients (recommended, consistent with paper and fdhpy). `"normal"` uses "Normal faulting" specific coefficients. |
-| `norm_disp_type` | string | – | – | `"AD"`, `"MD"` | Yes | Normalization displacement type. `"AD"` uses average displacement normalization (Gamma distribution), `"MD"` uses maximum displacement normalization (Beta distribution). |
+| `style` | string | - | - | `"all"`, `"normal"` (case-insensitive) | Yes | Faulting style for Wells & Coppersmith (1994) coefficients. `"all"` uses "All styles" coefficients (recommended, consistent with paper and fdhpy). `"normal"` uses "Normal faulting" specific coefficients. |
+| `norm_disp_type` | string | - | - | `"AD"`, `"MD"` | Yes | Normalization displacement type. `"AD"` uses average displacement normalization (Gamma distribution), `"MD"` uses maximum displacement normalization (Beta distribution). |
 
 ## Notes and cautions
 

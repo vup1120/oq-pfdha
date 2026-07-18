@@ -7,7 +7,7 @@ This section provides a high-level overview of these inputs.
 ## 1. Source Model (NRML/XML)
 
 The seismic source model defines the faults used in the analysis. It encodes where earthquakes can occur, how large they can be, and how often they happen.
-This project uses NRML (Natural Hazard Risk Markup Language)—the XML schema adopted by the GEM/OpenQuake —so your source files remain interoperable with the OpenQuake Engine and related tools.
+This project uses NRML (Natural Hazard Risk Markup Language) - the XML schema adopted by the GEM/OpenQuake - so your source files remain interoperable with the OpenQuake Engine and related tools.
 
 ### 1.1 Source Typologies (OQ-aligned; supported in this project)
 
@@ -23,7 +23,7 @@ In OpenQuake, a source model may include several source types. In this PFDHA too
 !!! note "ComplexFaultSource and the fault trace"
     For a standalone `ComplexFaultSource`, the FDHA distance metrics (r, x/L)
     derive from the top row of the **resampled** surface mesh, not the exact
-    NRML top edge — keep `complex_fault_mesh_spacing` fine near sites of
+    NRML top edge - keep `complex_fault_mesh_spacing` fine near sites of
     interest. Where ruptures are meant to span the whole surface, prefer
     wrapping the `complexFaultGeometry` in a `characteristicFaultSource`,
     which retains the exact top-edge trace.
@@ -38,7 +38,7 @@ Each supported fault source must provide:
     -   (Strike is implied by the trace; width is derived from dip and seismogenic thickness.)
     -   `ComplexFaultSource` / `complexFaultGeometry` instead provide explicit top and bottom edges as 3-D polylines (lon lat depth), ordered so the surface dips to the right of the strike direction (Aki & Richards convention).
 -   **Kinematics**
-    -   Rake (degrees). If using OQ’s distributions, provide a single nodal plane with probability 1.0.
+    -   Rake (degrees). If using OQ's distributions, provide a single nodal plane with probability 1.0.
 -   **Occurrence model**
     -   `SimpleFaultSource` / `ComplexFaultSource`: typically a Gutenberg–Richter MFD (truncated) or other OQ MFD element, plus a magnitude–area relation (e.g., `WC1994`) and a rupture aspect ratio.
     -   `CharacteristicFaultSource`: a Characteristic MFD (single magnitude or narrow band) consistent with ruptures spanning the full fault.
@@ -98,7 +98,7 @@ Each supported fault source must provide:
 -   **Keep Units Explicit**: lon/lat in degrees, depths in km, dip/rake in degrees.
 -   **One Source, One Role**: Avoid mixing unsupported source types; keep your NRML to `SimpleFaultSource`, `CharacteristicFaultSource` (with simple or complex geometry), and/or `ComplexFaultSource`.
 -   **Geometry Quality**: Use dense, order-consistent traces; check for self-intersections and unrealistic dips/widths.
--   **Kinematics Consistency**: Ensure rake aligns with the displacement models’ assumptions (e.g., reverse/normal/strike-slip branches).
+-   **Kinematics Consistency**: Ensure rake aligns with the displacement models' assumptions (e.g., reverse/normal/strike-slip branches).
 
 
 ---
@@ -171,7 +171,7 @@ The FDHA model logic tree selects the scientific models. The supported FDHA unce
 - `fdhaPrimaryFDModel`
 - `fdhaSecondarySRModel`
 - `fdhaSecondaryFDModel`
-- `fdhaCalcRThreshold` — a calculation-parameter uncertainty: each branch's `<uncertaintyModel>` carries an alternative value of the `r_threshold_km` distance threshold (in km) rather than a model class. A job must choose one mechanism: either the scalar `[calculation].r_threshold_km` in the INI or an `fdhaCalcRThreshold` branch set — defining both is a configuration error. See [Configuration](05-Configuration.md) for details.
+- `fdhaCalcRSigma` - a calculation-parameter uncertainty: each branch's `<uncertaintyModel>` carries an alternative value of the `r_sigma_km` mapping-accuracy sigma (in km, `0` allowed) rather than a model class. A job must choose one mechanism: either the scalar `[calculation].r_sigma_km` in the INI or `fdhaCalcRSigma` branch set(s) - defining both is a configuration error. See [Configuration](05-Configuration.md) for details.
 
 !!! note "primary = principal, secondary = distributed"
     The `Primary*` uncertainty types model **principal** rupture and
@@ -201,3 +201,93 @@ is also accepted (it parses identically).
 ```
 
 Weights must sum to 1.0 within each branch set. The validator also checks registered model classes, valid `applyToBranches`, valid `applyToSources` when source IDs are known, and `applyToStyle` values limited to `strike-slip`, `reverse`, or `normal`.
+
+### 4.1 Model Contract: Displacement Definition, Component, Applicability
+
+Every FD displacement model declares what it predicts as class metadata
+(the *model contract*), following the taxonomy of Sarmiento et al. (2025,
+Table 1). Two axes matter when assembling a logic tree:
+
+- **Definition** - which ruptures participate in the predicted displacement:
+  `principal` (single-strand principal fault), `sum-of-principal` (principal
+  strands summed across a profile), `aggregate` (principal **and**
+  distributed ruptures within the measurement aperture), or `distributed`
+  (off-fault only). There is **no conversion between definitions**
+  (Sarmiento et al. 2025), so the tool never mixes them.
+- **Component** - the slip vector component the model was regressed on:
+  `vertical`, `lateral`, or `net`.
+
+The contract is **static class metadata: the model class you select IS the
+definition**. Papers that publish several definitions get one model class
+per definition - e.g. `Lavrentiadis2023PrimaryFD_aggregate` (aggregate) vs
+`Lavrentiadis2023PrimaryFD_principal` (sum-of-principal). No model parameter
+can re-route a class to another definition (FDLT-015 below). A model
+parameter only selects among choices that share the same definition - e.g.
+`Petersen2011PrimaryFD`'s `version` (`quadratic` / `bilinear` / `elliptical`)
+picks the along-strike shape, all still principal/lateral.
+
+| Model class | Definition | Component | Declared applicability (model's own distance metric) |
+| :--- | :--- | :--- | :--- |
+| `Youngs2003PrimaryFD` | principal | vertical | - |
+| `Petersen2011PrimaryFD` (+ `_bilinear` / `_elliptical` / `_quadratic`) | principal | lateral | - |
+| `MossRoss2011PrimaryFD` | principal | vertical | - |
+| `Moss2022PrimaryFD` | principal | vertical | - |
+| `Moss2024PrimaryFD` | principal | vertical | - |
+| `Takao2013PrimaryFD` | principal | net | - |
+| `Chiou2025PrimaryFD` | sum-of-principal | net | - |
+| `Kuehn2024PrimaryFD` | **aggregate** | net | - |
+| `Lavrentiadis2023PrimaryFD_aggregate` | **aggregate** (`output_type` `disp_agg_prime` default / `disp_agg_seg`) | net | - |
+| `Lavrentiadis2023PrimaryFD_principal` | sum-of-principal (`disp_prnc_prime`, pinned by the class) | net | - |
+| `Youngs2003SecondaryFD` | distributed | vertical | r ≤ 15 km |
+| `Takao2013SecondaryFD` | distributed | net | r ≤ 20 km |
+| `Petersen2011SecondaryFD` | distributed | lateral | r ≤ 2 km |
+| `Visini2025SecondaryFD` | distributed | vertical | 5 m ≤ r ≤ 10 km (HW) / 8 km (FW), segments metric |
+| `Moss2022SecondaryFD` | distributed | vertical | report-specific (GIRS-2022-05 §5) |
+
+Sources: each assignment is cited in the model's class docstring
+(Sarmiento et al. 2025 Table 1; Valentini et al. 2025, *Rev. Geophys.*,
+Table 4; the model papers themselves - e.g. Petersen et al. 2011 limit
+their distributed dataset to 2 km, Visini et al. 2025 exclude data closer
+than 5 m to the principal rupture).
+
+The contract is enforced by the validator and the calculator:
+
+- **FDLT-013 (error)** - an aggregate-definition primary FD model combined
+  with a non-empty secondary slot in the same branch chain. An aggregate
+  model already contains the distributed contribution, so adding
+  `fdhaSecondarySRModel` / `fdhaSecondaryFDModel` branches would double
+  count the off-fault hazard. Aggregate chains run as a **single bucket**,
+  `rate x P_sr x P_fd_aggregate x W_p(r)`: in the outputs this flows
+  through the *principal* columns and the *distributed* columns stay
+  exactly zero. Direct `[models.*]` branch configurations are rejected at
+  calculator start-up with the same rule.
+- **FDLT-014 (error)** - mixed displacement *definitions* within one FD
+  branch set (e.g. `Youngs2003PrimaryFD` next to `Kuehn2024PrimaryFD`) are
+  **denied**. Weighted means or fractiles across branches predicting
+  different definitions are meaningless because no cross-definition
+  conversion exists.
+- **FDLT-105 (warning)** - mixed displacement *components* within one FD
+  branch set (e.g. a vertical model next to a lateral one) are **allowed**
+  but draw an advisory warning: components measure the same event
+  differently, so mixing them is a modelling choice worth double-checking,
+  not an error.
+- **FDLT-015 (error)** - wrong-class `output_type`. The class choice is
+  the definition, so `output_type = disp_prnc_prime` on
+  `Lavrentiadis2023PrimaryFD_aggregate` is rejected (select
+  `Lavrentiadis2023PrimaryFD_principal` instead), and any explicit
+  `output_type` on `Lavrentiadis2023PrimaryFD_principal` is rejected (the
+  class pins it). The model classes raise the same errors when called
+  directly.
+- **Applicability warning (runtime)** - when sites are evaluated outside a
+  distributed model's declared range (in the model's own distance metric),
+  one `WARNING` per model per run reports the offending-site count. The
+  regression extrapolates there; results are still computed unchanged.
+
+!!! note "Lavrentiadis 2023: two classes, one per definition"
+    `Lavrentiadis2023PrimaryFD_aggregate` serves the paper's aggregate variants
+    (`output_type` `disp_agg_prime`, the default, or `disp_agg_seg`); as
+    an aggregate model it runs single-bucket and forbids secondary slots
+    (FDLT-013). `Lavrentiadis2023PrimaryFD_principal` serves the
+    `disp_prnc_prime` sum-of-principal metric with `output_type` pinned by
+    the class; it is not aggregate, so secondary models remain legitimate
+    alongside it.

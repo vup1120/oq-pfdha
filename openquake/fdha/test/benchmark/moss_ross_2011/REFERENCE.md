@@ -27,10 +27,10 @@ anchors simultaneously).
 
 ## Model classes exercised
 
-- `MossRoss2011PrimarySR` — paper Eq. 5 (verified to 4 decimals).
-- `MossRoss2011PrimaryFD` — paper Eqs. 7 (gamma D/AD), 8 (AD lognormal;
+- `MossRoss2011PrimarySR` - paper Eq. 5 (verified to 4 decimals).
+- `MossRoss2011PrimaryFD` - paper Eqs. 7 (gamma D/AD), 8 (AD lognormal;
   the AD/gamma path is the paper's own reference configuration).
-- `WC1993PrimarySR` — the all-slip-types probability of surface rupture
+- `WC1993PrimarySR` - the all-slip-types probability of surface rupture
   used in the paper's Fig. 10 comparison.
 
 ## Tolerances and their justification
@@ -43,4 +43,4 @@ ratio (paper "nearly 45%", observed +48%).
 
 ## Status
 
-PASS — 5/5 assertions on 2026-07-10.
+PASS - 5/5 assertions on 2026-07-10.

@@ -1,8 +1,7 @@
 """MODE A regression baseline for the scalar ``[calculation].r_threshold_km``.
 
 These tests pin the outputs of the two public example jobs against golden
-fixtures (``test/fixtures/r_threshold_baseline/``) frozen before the
-``fdhaCalcRThreshold`` epistemic logic-tree feature. They guarantee that jobs
+fixtures (``test/fixtures/r_threshold_baseline/``). They guarantee that jobs
 using the INI scalar (``curve_explicit``) or relying on the implementation
 default when the key is absent (``map_default``) keep producing bit-identical
 results.

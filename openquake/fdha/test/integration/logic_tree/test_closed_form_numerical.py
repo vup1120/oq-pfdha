@@ -14,7 +14,7 @@ Two independent anchors are used:
    the ensemble have closed forms computable by hand.
 
 2. An ``abGRAbsolute`` SMLT branch must produce the same curve as a plain
-   run whose source-model XML has the modified (a, b) baked in — a
+   run whose source-model XML has the modified (a, b) baked in - a
    non-circular check that realisation modifications reach the calculator
    with the same numbers the XML parser would deliver.
 """
@@ -192,7 +192,7 @@ def test_fixed_sr_ensemble_matches_closed_form(tmp_path):
         1.0: _branch_curve(outdir, by_weight[0.5]["curve_file"]),
     }
     base = curve[1.0]
-    assert np.all(base > 0), "base hazard curve is zero — test is vacuous"
+    assert np.all(base > 0), "base hazard curve is zero - test is vacuous"
 
     # --- physics: hazard is linear in the fixed P(SR)
     np.testing.assert_allclose(curve[0.2], 0.2 * base, rtol=1e-9)
@@ -286,7 +286,7 @@ def test_smlt_abgr_absolute_equals_baked_in_model(tmp_path):
 
     assert np.all(c_base > 0)
     assert not np.allclose(c_mod, c_base), \
-        "modified (a, b) did not change the hazard — vacuous comparison"
+        "modified (a, b) did not change the hazard - vacuous comparison"
 
     # Run A: the same two alternatives expressed as an abGRAbsolute
     # branch set inside the source-model logic tree.

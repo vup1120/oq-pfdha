@@ -13,6 +13,35 @@ from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
+# Near-field displacement floor: the smallest across-strike distance (km) fed to
+# a distributed displacement regression that diverges as r -> 0 (Petersen 2011
+# eq.18, ln r term). Fixed at half a 25-m Petersen cell (12.5 m). It exists only
+# to tame the divergence, so it is a constant -- deliberately NOT the footprint
+# z, which is a per-model occurrence-table cell size and can legitimately be
+# hundreds of metres. Hard-coded and not exposed in job configuration.
+# See docs/design/rupture_location_uncertainty.md (D7).
+NEAR_FIELD_FLOOR_KM = 0.0125
+
+
+def effective_displacement_definition(model):
+    """Return a model's declared displacement definition (C4 contract).
+
+    FDHA displacement models declare their Sarmiento et al. (2025, Table 1)
+    displacement definition as the ``DISPLACEMENT_DEFINITION`` class
+    attribute. The contract is STATIC -- the class choice IS the definition
+    (papers publishing several definitions expose one class per definition,
+    e.g. ``Lavrentiadis2023PrimaryFD_aggregate`` vs
+    ``Lavrentiadis2023PrimaryFD_principal``); no model parameter may change
+    it. This helper is the single lookup point used by the hazard kernel
+    (single-bucket routing of aggregate models), by the calculator
+    configuration guard, and by the logic-tree validators (FDLT-013/014).
+
+    :param model: model instance or class (may be a duck-typed stub).
+    :returns: one of ``primary_surf_displ.base.DISPLACEMENT_DEFINITIONS``
+        or ``None`` when the model declares no contract (non-FD stubs).
+    """
+    return getattr(model, 'DISPLACEMENT_DEFINITION', None)
+
 
 class LegacyModelAdapter:
     """
@@ -229,7 +258,34 @@ class LegacyModelAdapter:
                 f"  [models.primary_surf_displ.parameters]\n"
                 f"  style = all"
             )
-        
+
+        # Wrong-class output_type misconfiguration (C4 contract): raise HERE,
+        # before _call_safely, which would otherwise swallow the model's own
+        # ValueError into silent zero hazard (same pre-call pattern as the
+        # Youngs2003 style check above; cf. commit d541dbc3). The class
+        # choice IS the displacement definition - Lavrentiadis2023PrimaryFD_aggregate
+        # serves only the aggregate variants; the sum-of-principal
+        # disp_prnc_prime metric lives in Lavrentiadis2023PrimaryFD_principal
+        # (which in turn accepts no explicit output_type at all). Logic-tree
+        # jobs are already rejected at validation time (FDLT-015).
+        _output_type = self.model_params.get('output_type')
+        if model_name == 'Lavrentiadis2023PrimaryFD_aggregate' \
+                and str(_output_type) == 'disp_prnc_prime':
+            raise ValueError(
+                "Lavrentiadis2023PrimaryFD_aggregate is the AGGREGATE-definition model; "
+                "output_type = disp_prnc_prime (sum-of-principal) is served "
+                "by the Lavrentiadis2023PrimaryFD_principal model class. "
+                "Select that class instead of passing output_type."
+            )
+        if model_name == 'Lavrentiadis2023PrimaryFD_principal' \
+                and _output_type is not None:
+            raise ValueError(
+                "Lavrentiadis2023PrimaryFD_principal evaluates the "
+                "disp_prnc_prime (sum-of-principal) metric; output_type is "
+                f"fixed by the class choice (got '{_output_type}'). Remove "
+                "the output_type parameter."
+            )
+
         # Build kwargs with vectorized arrays; x_L follows the model's
         # declared multi-fault reference line (e.g. Chiou2025 -> ECS).
         _r_sel, x_L_sel, _L_sel = self._ctx_metrics(ctx)
@@ -400,21 +456,26 @@ class LegacyModelAdapter:
         self,
         ctx: 'FDHAContext',
         displacements: np.ndarray,
-        red_cfg: Dict[str, Any]
+        red_cfg: Dict[str, Any],
     ) -> np.ndarray:
         """
         Compute secondary fault displacement probability.
-        
+
         Args:
             ctx: FDHA context
             displacements: Target displacement levels (m)
             red_cfg: MC reduction config
-            
+
+        The near-field distance floor is the fixed NEAR_FIELD_FLOOR_KM
+        constant; the distributed occurrence cell size lives with the
+        secondary_surf_rup model's own pixel_size (FD logic tree). Neither
+        is a caller-supplied parameter.
+
         Returns:
             Array of shape (N, D)
         """
         from openquake.fdha.calc.utils.probability import _to_sites_x_displ
-        
+
         N = len(ctx)
         D = len(displacements)
         
@@ -437,6 +498,24 @@ class LegacyModelAdapter:
         # Build kwargs; r/x_L/L follow the model's declared multi-fault
         # reference line (e.g. Visini2025 -> nearest segment, raw GC2 x/L).
         r_sel, x_L_sel, L_sel = self._ctx_metrics(ctx)
+
+        # Near-field floor (D7). Petersen (2011) eq.18 diverges as r -> 0; a
+        # model declaring NEAR_FIELD_FLOOR == 'footprint_half' has the distance
+        # fed to its displacement regression clamped to max(r, NEAR_FIELD_FLOOR_KM).
+        # The floor is a FIXED 12.5 m (= half a 25-m Petersen cell), deliberately
+        # decoupled from the footprint z: z can be a large model-specific cell
+        # (e.g. 500 m selects a coarser occurrence table via pixel_size), and a
+        # z/2 = 250 m floor would silently erase the near-trace distributed
+        # hazard the model exists to produce -- it would push every on-trace
+        # site out past the entire distributed zone. 12.5 m only tames ln(r),
+        # nothing more. Hard-coded, not user-facing. The clamp lives here, at the
+        # adapter boundary, so the model's get_prob stays paper-faithful. Bounded
+        # models (Visini, Takao) declare nothing and are untouched.
+        # See docs/design/rupture_location_uncertainty.md.
+        if getattr(self.model, 'NEAR_FIELD_FLOOR', None) == 'footprint_half':
+            r_sel = np.maximum(np.asarray(r_sel, dtype=np.float64),
+                               NEAR_FIELD_FLOOR_KM)
+
         kwargs = {
             'mag': float(ctx.mag[0]),
             'd': displacements,

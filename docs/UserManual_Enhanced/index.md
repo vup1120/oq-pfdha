@@ -18,9 +18,9 @@ The methodologies and implementation are designed to be transparent, extensible,
 
 ## High-Level Workflow
 
-The general workflow combines three inputs — an INI configuration file, a
+The general workflow combines three inputs - an INI configuration file, a
 source-model logic-tree (NRML XML, which references the seismic source model),
-and an FDHA-model logic-tree (NRML XML) — to run a hazard calculation via the
+and an FDHA-model logic-tree (NRML XML) - to run a hazard calculation via the
 `fdha` command-line interface (CLI).
 
 ```mermaid

@@ -1,3 +1,4 @@
+"""NRML reader for the FDHA logic-tree XML format."""
 from __future__ import annotations
 
 from dataclasses import dataclass

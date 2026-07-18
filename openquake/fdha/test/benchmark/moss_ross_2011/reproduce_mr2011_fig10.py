@@ -123,9 +123,9 @@ def main() -> None:
     figures.mkdir(exist_ok=True)
     fig, ax = plt.subplots(figsize=(8.5, 6))
     ax.loglog(d, nu_rev, "-", color="#d62728", lw=2.2,
-              label="reverse P$_{sr}$ (Eq. 5) — reference curve (paper Fig. 7)")
+              label="reverse P$_{sr}$ (Eq. 5) - reference curve (paper Fig. 7)")
     ax.loglog(d, nu_all, "-", color="#1f77b4", lw=2.2,
-              label="all-slip-types P$_{sr}$ (WC93) — comparison (paper Fig. 10)")
+              label="all-slip-types P$_{sr}$ (WC93) - comparison (paper Fig. 10)")
     for name, color in (("reverse", "#d62728"), ("all_slip_types", "#1f77b4")):
         pts = ANCHORS[name]
         ax.loglog([p[1] for p in pts], [p[0] for p in pts], "X",
@@ -138,7 +138,7 @@ def main() -> None:
     ax.set_ylabel("Annual probability of exceedance")
     ax.set_xlim(0.01, 10)
     ax.set_ylim(1e-7, 1e-2)
-    ax.set_title("Moss & Ross (2011) Los Osos example — oq-pfdha reproduction\n"
+    ax.set_title("Moss & Ross (2011) Los Osos example - oq-pfdha reproduction\n"
                  "of the Fig. 10 surface-rupture-distribution comparison")
     ax.grid(True, which="both", ls=":", alpha=0.35)
     ax.legend(fontsize=8, loc="lower left")
@@ -150,7 +150,7 @@ def main() -> None:
     # All-slip-types-only variant (no reverse curve/anchors)
     fig, ax = plt.subplots(figsize=(8.5, 6))
     ax.loglog(d, nu_all, "-", color="#1f77b4", lw=2.2,
-              label="all-slip-types P$_{sr}$ (WC93) — oq-pfdha")
+              label="all-slip-types P$_{sr}$ (WC93) - oq-pfdha")
     pts = ANCHORS["all_slip_types"]
     ax.loglog([p[1] for p in pts], [p[0] for p in pts], "X",
               color="#1f77b4", ms=11, mec="k", mew=0.8,
@@ -162,7 +162,7 @@ def main() -> None:
     ax.set_ylabel("Annual probability of exceedance")
     ax.set_xlim(0.01, 10)
     ax.set_ylim(1e-7, 1e-2)
-    ax.set_title("Moss & Ross (2011) Los Osos example — all-slip-types "
+    ax.set_title("Moss & Ross (2011) Los Osos example - all-slip-types "
                  "P$_{sr}$ curve\n(paper Fig. 10 comparison curve) vs oq-pfdha")
     ax.grid(True, which="both", ls=":", alpha=0.35)
     ax.legend(fontsize=8, loc="lower left")

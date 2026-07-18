@@ -39,7 +39,7 @@ def _make_uninitialised_calculator(config):
 
 
 class TestInitializeSite:
-    """FaultRuptureProbabilityCalculator._initialize_site() — site construction."""
+    """FaultRuptureProbabilityCalculator._initialize_site() - site construction."""
 
     pytestmark = pytest.mark.unit
 
@@ -57,7 +57,7 @@ class TestInitializeSite:
         assert len(calc.sitecol) == 3
         assert_allclose(calc.sitecol.lons, [13.0, 13.5, 14.0])
         assert_allclose(calc.sitecol.lats, [42.0, 42.5, 43.0])
-        # Site ids are 0..N-1 — required by the np.add.at accumulation path
+        # Site ids are 0..N-1 - required by the np.add.at accumulation path
         assert_allclose(calc.sitecol.sids, [0, 1, 2])
 
     def test_initialize_site_single_site_compat(self):
@@ -142,8 +142,8 @@ def _write_multi_site_branch_ini(base_dir, sites_line):
 
 
 # Two Norcia test sites:
-#   site 0 — on a fault-trace vertex (13.2264, 42.8846), principal zone
-#   site 1 — same latitude, ~0.27 deg (~22 km) east, distributed only
+#   site 0 - on a fault-trace vertex (13.2264, 42.8846), principal zone
+#   site 1 - same latitude, ~0.27 deg (~22 km) east, distributed only
 _SITE_0 = "13.2264 42.8846"
 _SITE_1 = "13.5000 42.8846"
 
@@ -173,7 +173,7 @@ class TestMultiSiteHazardCurve:
 
         Site 0 and site 1 are each calculated alone end-to-end, then together
         in one multi-site job. Row ``i`` of the multi-site ``poes`` must match
-        the standalone run of site ``i`` to floating-point tolerance — adding
+        the standalone run of site ``i`` to floating-point tolerance - adding
         more sites to a job must not perturb any site's numerics.
         """
         # Standalone single-site runs

@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 # Require fdhpy to be installed; skip entire module if not available
-fdhpy = pytest.importorskip("fdhpy", reason="fdhpy not installed – FDHI reference tests skipped")
+fdhpy = pytest.importorskip("fdhpy", reason="fdhpy not installed - FDHI reference tests skipped")
 
 from fdhpy import (
     YoungsEtAl2003,
@@ -31,7 +31,7 @@ try:
         Petersen2011PrimaryFD,
         Moss2024PrimaryFD,
         Kuehn2024PrimaryFD,
-        Lavrentiadis2023PrimaryFD,
+        Lavrentiadis2023PrimaryFD_aggregate,
         Chiou2025PrimaryFD,
     )
 except ImportError as e:
@@ -66,7 +66,7 @@ def pfdha_models():
         "Petersen2011PrimaryFD": Petersen2011PrimaryFD,
         "Moss2024PrimaryFD": Moss2024PrimaryFD,
         "Kuehn2024PrimaryFD": Kuehn2024PrimaryFD,
-        "Lavrentiadis2023PrimaryFD": Lavrentiadis2023PrimaryFD,
+        "Lavrentiadis2023PrimaryFD_aggregate": Lavrentiadis2023PrimaryFD_aggregate,
         "Chiou2025PrimaryFD": Chiou2025PrimaryFD,
     }
 
@@ -258,7 +258,7 @@ class TestLavrentiadis2023:
         fdhpy_result = fdhpy_model.prob_exceed
         
         # pfdha
-        pfdha_model = pfdha_models["Lavrentiadis2023PrimaryFD"]()
+        pfdha_model = pfdha_models["Lavrentiadis2023PrimaryFD_aggregate"]()
         pfdha_result = pfdha_model.get_prob(
             d=DISPLACEMENTS,
             X_L_ratio=np.array([xl]),

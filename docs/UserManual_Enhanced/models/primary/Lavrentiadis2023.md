@@ -6,33 +6,38 @@ The Lavrentiadis & Abrahamson (2023) primary surface displacement model predicts
 
 ## Model selection keys
 
+The model is exposed as **two classes, one per displacement definition**
+(the class choice IS the definition, like the `Petersen2011PrimaryFD_*`
+shape variants):
+
 | Path | Required? | Allowed values | Purpose |
 | --- | --- | --- | --- |
-| `models.primary_surf_displ.type` | Yes | `Lavrentiadis2023PrimaryFD` | Chooses the Lavrentiadis & Abrahamson (2023) displacement exceedance model. |
+| `models.primary_surf_displ.type` | Yes | `Lavrentiadis2023PrimaryFD_aggregate` | The **aggregate**-definition variants (`output_type` `disp_agg_prime`, default, or `disp_agg_seg`). Aggregate chains run single-bucket; secondary-slot models are forbidden (FDLT-013). |
+| `models.primary_surf_displ.type` | Yes | `Lavrentiadis2023PrimaryFD_principal` | The **sum-of-principal** `disp_prnc_prime` variant; `output_type` is pinned by the class. Not aggregate: secondary models remain legitimate. |
 
 ## Scope and behavior
 
 - **Supported fault styles:** Normal, strike-slip, reverse
 - **Magnitude range:** 5.0–8.5
 - **Displacement metrics:** 
-  - Aggregate displacement for entire event rupture (`disp_agg_prime`)
-  - Principal displacement for entire event rupture (`disp_prnc_prime`)
-  - Aggregate displacement for single segment (`disp_agg_seg`)
+  - Aggregate displacement for entire event rupture (`disp_agg_prime`) - `Lavrentiadis2023PrimaryFD_aggregate`
+  - Aggregate displacement for single segment (`disp_agg_seg`) - `Lavrentiadis2023PrimaryFD_aggregate`
+  - Principal displacement for entire event rupture (`disp_prnc_prime`) - `Lavrentiadis2023PrimaryFD_principal`
 - **Statistical distribution:** Normal distribution in power-normal space (m^0.3)
 - **Slip component:** Net displacement
-- **Classification:** Aggregate / Sum of Principal
+- **Classification:** Aggregate (`Lavrentiadis2023PrimaryFD_aggregate`) / Sum of principal (`Lavrentiadis2023PrimaryFD_principal`)
 
 ## Parameters (`models.primary_surf_displ.parameters`)
 
 | Name | Type | Units | Default | Allowed | Required? | Description |
 | --- | --- | --- | --- | --- | --- | --- |
-| `style` | string | – | `"normal"` | `"normal"`, `"strike-slip"`, `"reverse"` (case-insensitive) | No | Style of faulting. |
-| `output_type` | string | – | `"disp_agg_prime"` | `"disp_agg_prime"`, `"disp_prnc_prime"`, `"disp_agg_seg"` | No | Displacement metric to evaluate. `disp_agg_prime` is aggregate for full rupture, `disp_prnc_prime` is principal for full rupture, `disp_agg_seg` is aggregate for single segment. |
-| `include_zero_slip` | boolean | – | `false` | `true`, `false` | No | If `true`, the probability accounts for zero slip and gap probabilities. If `false`, uses only the displacement distribution. |
+| `style` | string | - | `"normal"` | `"normal"`, `"strike-slip"`, `"reverse"` (case-insensitive) | No | Style of faulting. |
+| `output_type` | string | - | `"disp_agg_prime"` | `"disp_agg_prime"`, `"disp_agg_seg"` (`Lavrentiadis2023PrimaryFD_aggregate` only) | No | Aggregate metric to evaluate. `disp_prnc_prime` is **rejected** on this class (FDLT-015): select `Lavrentiadis2023PrimaryFD_principal` instead. On `Lavrentiadis2023PrimaryFD_principal` the metric is pinned by the class and passing any explicit `output_type` is an error. |
+| `include_zero_slip` | boolean | - | `false` | `true`, `false` | No | If `true`, the probability accounts for zero slip and gap probabilities. If `false`, uses only the displacement distribution. Accepted by both classes. |
 
 ## Notes and cautions
 
-- **Output type validation:** Invalid `output_type` values raise `ValueError` with allowed options.
+- **Output type validation:** Invalid `output_type` values raise `ValueError` with allowed options; `disp_prnc_prime` on the aggregate class (or any explicit `output_type` on the `_principal` class) raises a `ValueError` naming the correct class, and is also rejected at logic-tree validation time (FDLT-015).
 - **Style handling:** Style is converted to lowercase for matching. Accepted values are "normal", "strike-slip", "reverse".
 - **Surface rupture length:** The model internally sets `srl=1.0` when calling the slip profile function, as the model normalizes by rupture length.
 - **Power-normal space:** All internal calculations use the 0.3 power transformation. This is a key feature of the model.

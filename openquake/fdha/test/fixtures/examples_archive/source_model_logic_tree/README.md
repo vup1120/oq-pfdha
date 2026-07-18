@@ -49,7 +49,7 @@ python examples/source_model_logic_tree/run.py
 ```
 
 From this directory with the **`fdha` CLI** (or `python -m openquake.fdha.main`).
-The logic-tree driver’s default output folder is `./out/` next to the INI file.
+The logic-tree driver's default output folder is `./out/` next to the INI file.
 
 ```bash
 cd examples/source_model_logic_tree
@@ -107,7 +107,7 @@ Hierarchical, mirroring the OpenQuake logic-tree composition:
 
 * **Inside** each source-model realisation, the FDHA logic tree is
   collapsed into a per-realisation mean (and fractile) rate cube using
-  the FDHA branch weights — the same per-source-id grouped sum used
+  the FDHA branch weights - the same per-source-id grouped sum used
   before this feature.
 * **Across** source-model realisations, the per-realisation cubes are
   combined with the SMLT weights:

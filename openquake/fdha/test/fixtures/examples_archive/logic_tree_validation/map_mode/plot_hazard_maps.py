@@ -3,8 +3,8 @@
 Mirror of ``../plot_hazard_curves.py`` but for hazard maps. Overlays, in a
 single figure:
 
-  1. single_bilinear_map       - weight-1.0 tree on Petersen2011PrimaryFD_bilinear
-  2. single_elliptical_map     - weight-1.0 tree on Petersen2011PrimaryFD_elliptical
+  1. single_bilinear_map       - weight-1.0 tree on Petersen2011PrimaryFD (version=bilinear)
+  2. single_elliptical_map     - weight-1.0 tree on Petersen2011PrimaryFD (version=elliptical)
   3. logic-tree blend          - displacement_map_mean.csv from blend_50_50_map
   4. analytical post-processing - invert  0.5 * rates_A + 0.5 * rates_B
                                   at the same return period
@@ -142,7 +142,7 @@ def main() -> None:
         constrained_layout=True,
     )
     fig.suptitle(
-        "Logic Tree Validation demo — hazard maps\n"
+        "Logic Tree Validation demo - hazard maps\n"
         "Petersen2011PrimaryFD bilinear vs elliptical, 50/50 blend\n"
         f"(strike-slip source, one-fault demo; RP = {int(rp_lt)} yr)",
         fontsize=12,

@@ -24,6 +24,7 @@ into :class:`Petersen2011SecondaryFD`
 
 import numpy as np
 from scipy.stats import norm
+from openquake.fdha.params import check_positive
 from openquake.fdha.primary_surf_displ.base import BaseSecondarySurfDispl
 
 class Petersen2011SecondaryFD(BaseSecondarySurfDispl):
@@ -33,7 +34,33 @@ class Petersen2011SecondaryFD(BaseSecondarySurfDispl):
     ----------
     Petersen, M.D., et al. (2011). Fault displacement hazard for strike-slip
     faults. Bulletin of the Seismological Society of America, 101(2), 805-825.
+
+    Model contract: DISPLACEMENT_DEFINITION = "distributed",
+    DISPLACEMENT_COMPONENT = "lateral" -- distributed displacement of
+    strike-slip earthquakes, measured as the lateral component like the
+    companion principal model (Petersen et al. 2011; Sarmiento et al. 2025
+    Table 1 component convention as for PEA11). Declared applicability:
+    r up to 2 km from the principal fault -- the paper's distributed
+    dataset is explicitly "limited to 2 km distance from principal fault"
+    (ibid., data description for eq. 18 / Tables 4-5); beyond that the
+    power law extrapolates.
     """
+
+    DISPLACEMENT_DEFINITION = "distributed"
+    DISPLACEMENT_COMPONENT = "lateral"
+
+    APPLICABILITY_RANGE = {
+        "r_max_km": 2.0,
+        "source": "Petersen et al. (2011) BSSA 101(2): distributed dataset "
+                  "limited to 2 km from the principal fault",
+    }
+
+    # Eqn 18 (Page 818) is a power law in ln(r) with no near-field definition:
+    # the mean displacement diverges as r -> 0 (ln r -> -inf). The tool floors
+    # the distance fed to that regression at the footprint half-width z/2; the
+    # clamp is applied at the calc/ adapter boundary so get_prob below stays
+    # paper-faithful (docs/design/rupture_location_uncertainty.md, D7).
+    NEAR_FIELD_FLOOR = "footprint_half"
 
     # Pixel ("cell") size parameters from Table 4 (Page 812, Petersen et al., 2011)
     PIXEL_SIZES = {
@@ -54,7 +81,20 @@ class Petersen2011SecondaryFD(BaseSecondarySurfDispl):
         200: {"p0": 0.92483, "p1": 0.18975, "p2": 0.074709, "r1": 200, "r2": 400},
     }
 
-    def get_prob(self, d, mag, r, pixel_size=25, cell_size=None):
+    def __init__(self, pixel_size=None, cell_size=None):
+        """
+        :param pixel_size: optional pixel (cell) size in meters pinned by
+            the logic-tree branch; ``None`` defers to the ``get_prob`` call
+            (legacy default: 25).
+        :param cell_size: deprecated alias of ``pixel_size``.
+        """
+        super().__init__()
+        self.pixel_size = check_positive(type(self).__name__, "pixel_size",
+                                         pixel_size)
+        self.cell_size = check_positive(type(self).__name__, "cell_size",
+                                        cell_size)
+
+    def get_prob(self, d, mag, r, pixel_size=None, cell_size=None):
         """
         Calculate the probability of exceeding displacement thresholds [m] for distributed
         strike-slip faults, per Petersen et al. (2011).
@@ -84,6 +124,12 @@ class Petersen2011SecondaryFD(BaseSecondarySurfDispl):
             - Returns only the displacement exceedance probability (prob_exceeding_d); combine
               with rupture probability (get_prob_rupture) separately, per Petersen et al. (Page 818, Eqn 18).
         """
+        # Fall back to constructor-pinned values, then legacy defaults
+        if cell_size is None:
+            cell_size = self.cell_size
+        if pixel_size is None:
+            pixel_size = (self.pixel_size
+                          if self.pixel_size is not None else 25)
         # Ensure inputs are arrays with proper shapes - following Youngs2003 pattern
         d = np.asarray(d)
         if d.ndim == 0:

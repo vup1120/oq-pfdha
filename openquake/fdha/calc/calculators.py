@@ -1,3 +1,7 @@
+"""
+Branch-level FDHA calculators: instantiate the four-model chain from a
+job configuration, build the site collection and invoke the hazard kernel.
+"""
 import os
 import inspect
 import logging
@@ -57,7 +61,7 @@ class BaseFaultRuptureCalculator:
         self.secondary_surf_rup_model = self._instantiate_model(models_cfg.get('secondary_surf_rup'))
         self.secondary_surf_displ_model = self._instantiate_model(models_cfg.get('secondary_surf_displ'))
         # Multi-fault reference-line consistency: the principal FD model sets
-        # the convention for the whole branch — the other models' distances
+        # the convention for the whole branch - the other models' distances
         # are measured against the same reference line so principal and
         # distributed hazard share one geometry (e.g. Chiou 2025 [ecs] pulls
         # a Petersen 2011 secondary onto the ECS line). The only exemption is
@@ -72,6 +76,42 @@ class BaseFaultRuptureCalculator:
                 if _m is not None and getattr(
                         _m, 'MULTIFAULT_REFERENCE_LINE', 'lcp') != 'segments':
                     _m.MULTIFAULT_REFERENCE_LINE = _principal_line
+        # Model-contract guard (C4): an aggregate-definition principal FD
+        # model (Sarmiento et al. 2025 Table 1, e.g. Kuehn2024PrimaryFD or
+        # Lavrentiadis2023PrimaryFD_aggregate -- the class choice IS the definition)
+        # already contains the distributed contribution, so configuring a
+        # secondary-slot model alongside it would double count the off-fault
+        # hazard. Logic-tree jobs are rejected earlier by validator FDLT-013;
+        # this guard covers direct [models.*] configurations, failing loudly
+        # rather than silently dropping the configured secondary models (cf.
+        # the silently-ignored-parameters precedent, commit d541dbc3).
+        if self.primary_surf_displ_model is not None and (
+                self.secondary_surf_rup_model is not None
+                or self.secondary_surf_displ_model is not None):
+            from openquake.fdha.calc.model_adapter import (
+                effective_displacement_definition)
+            _dd = effective_displacement_definition(
+                self.primary_surf_displ_model)
+            if _dd == 'aggregate':
+                _sec = [m.__class__.__name__ for m in (
+                    self.secondary_surf_rup_model,
+                    self.secondary_surf_displ_model) if m is not None]
+                raise ValueError(
+                    f"Primary FD model "
+                    f"{self.primary_surf_displ_model.__class__.__name__} "
+                    f"predicts AGGREGATE displacement (principal + "
+                    f"distributed, Sarmiento et al. 2025 Table 1), but the "
+                    f"job also configures secondary model(s) {_sec}. This "
+                    f"double counts the distributed hazard: aggregate "
+                    f"chains run as a single bucket "
+                    f"(rate * P_sr * P_fd_aggregate * W_p) and must leave "
+                    f"the secondary slots empty. Remove the "
+                    f"[models.secondary_surf_rup] / "
+                    f"[models.secondary_surf_displ] sections, or select a "
+                    f"principal-definition primary FD model (e.g. the "
+                    f"Lavrentiadis2023PrimaryFD_principal sum-of-principal "
+                    f"variant)."
+                )
         logger.debug(f"Models: primary_surf_rup={self.primary_surf_rup_model}, primary_surf_displ={self.primary_surf_displ_model}, "
                      f"secondary_surf_rup={self.secondary_surf_rup_model}, secondary_surf_displ={self.secondary_surf_displ_model}")
 
@@ -82,21 +122,27 @@ class BaseFaultRuptureCalculator:
         model_type = model_cfg['type']
         params = model_cfg.get('parameters', {})
         
+        # Look up class by name in current globals or imported modules.
+        # A typo'd model name must fail the job loudly: returning None here
+        # would silently zero the corresponding hazard contribution.
         try:
-            # Look up class by name in current globals or imported modules
             model_class = globals()[model_type]
-            
-            # Check which parameters the model's __init__ accepts
-            sig = inspect.signature(model_class.__init__)
-            init_params = set(sig.parameters.keys()) - {'self'}
-            
-            # Only pass parameters that the constructor accepts
-            constructor_params = {k: v for k, v in params.items() if k in init_params}
-            
-            return model_class(**constructor_params)
-        except Exception as e:
-            logger.warning(f"Model class '{model_type}' not found or failed to instantiate: {e}")
-            return None
+        except KeyError:
+            raise ValueError(
+                f"Unknown FDHA model class '{model_type}'; check the "
+                f"uncertaintyModel / [models] configuration")
+
+        # Check which parameters the model's __init__ accepts
+        sig = inspect.signature(model_class.__init__)
+        init_params = set(sig.parameters.keys()) - {'self'}
+
+        # Only pass parameters that the constructor accepts
+        constructor_params = {k: v for k, v in params.items() if k in init_params}
+
+        # Constructor errors (e.g. an invalid scaling_model) must propagate:
+        # swallowing them here used to convert a bad configuration into a
+        # silently-zero hazard contribution.
+        return model_class(**constructor_params)
 
     def call_model_safely(self, model, method, **kwargs):
         if model is None:
@@ -126,7 +172,7 @@ class BaseFaultRuptureCalculator:
         Cornell & Toro, 2005). The median is a legacy central-estimate
         heuristic. 'percentile' is refused because a per-rupture quantile of
         exceedance probabilities is not a fractile of any hazard
-        distribution — quantiles are only additive over the rate sum under
+        distribution - quantiles are only additive over the rate sum under
         comonotonicity (Dhaene et al., 2002). The percentile machinery in
         ``utils.probability`` is intentionally kept for non-integral uses
         (e.g. a future scenario calculator).
@@ -143,7 +189,7 @@ class BaseFaultRuptureCalculator:
                 f'[parameters] {name} = {{"method": "percentile"}} is not '
                 f'supported in hazard calculations: a quantile applied '
                 f'inside the hazard integral does not produce a hazard '
-                f'fractile of any kind. Use {{"method": "mean"}} — the '
+                f'fractile of any kind. Use {{"method": "mean"}} - the '
                 f'mean hazard curve, which incorporates within-model '
                 f'epistemic uncertainty exactly. Fractiles of within-model '
                 f'epistemic uncertainty are not currently supported; they '
@@ -189,7 +235,31 @@ class BaseFaultRuptureCalculator:
         self.near_far_threshold_km = float(
             self.config.get('parameters', {}).get('near_far_threshold_km', 0.2)
         )
-        
+
+        # Rupture-location uncertainty
+        # (docs/design/rupture_location_uncertainty.md, section 3).
+        #
+        #   r_sigma_km   two-sided mapping-accuracy sigma (Petersen Tables
+        #                2-3). Selects one of the two SEPARATE W_p paths,
+        #                each with its own combination rule:
+        #                0  -> boxcar 1{|r| <= r_threshold_km}, COMPLEMENTARY
+        #                      split (inside h only principal, outside only
+        #                      distributed) - the historical behaviour;
+        #                >0 -> Petersen's pure Gaussian exp(-r^2/2 sigma^2),
+        #                      pinned, truncated at +-2 sigma (fixed, not
+        #                      user-configurable), SUMMED with the full
+        #                      distributed term (Petersen eq.1 + eq.2);
+        #                      r_threshold_km plays no role on this path.
+        #
+        # The near-field displacement floor is a fixed kernel constant
+        # (model_adapter.NEAR_FIELD_FLOOR_KM); the distributed occurrence
+        # cell size is the secondary model's own pixel_size from the FD
+        # logic tree. Neither is a job parameter.
+        self.r_sigma_km = float(
+            self.config.get('calculation', {}).get('r_sigma_km') or
+            self.config.get('parameters', {}).get('r_sigma_km', 0.0)
+        )
+
         # Case label for Visini models. The logic-tree branch typically sets
         # 'case' as a parameter of the secondary-model uncertaintyModel (it
         # travels with the Visini2025SecondarySR/FD branch, not [parameters]),
@@ -203,7 +273,7 @@ class BaseFaultRuptureCalculator:
 
         # Union of the reference-line treatments the configured models
         # declare for multi-section (multiFaultSource) ruptures, via their
-        # MULTIFAULT_REFERENCE_LINE class attribute — the FDHA analogue of
+        # MULTIFAULT_REFERENCE_LINE class attribute - the FDHA analogue of
         # hazardlib collecting the union of the GMPEs' REQUIRES_DISTANCES.
         # The context maker computes one metric set per method in this union.
         _models = (self.primary_surf_rup_model, self.primary_surf_displ_model,
@@ -257,6 +327,9 @@ class BaseFaultRuptureCalculator:
             'r_threshold_km': self.r_threshold_km,
             'near_far_threshold_km': self.near_far_threshold_km,
             'multifault_reference_lines': self.multifault_reference_lines,
+            # Rupture-location uncertainty (W_p); see
+            # docs/design/rupture_location_uncertainty.md.
+            'r_sigma_km': self.r_sigma_km,
         }
 
 
@@ -290,7 +363,7 @@ class FaultRuptureProbabilityCalculator(BaseFaultRuptureCalculator):
                     "in VectorizedRuptureDistanceCalculator."
                 )
             # SiteCollection([Site(...)]) is required (not from_points) so that
-            # the 'vs30' field is present in the structured array — FDHAContextMaker
+            # the 'vs30' field is present in the structured array - FDHAContextMaker
             # reads sitecol.vs30 and from_points omits that field.
             global_vs30 = site_cfg.get('vs30')
             oq_sites = []
@@ -304,7 +377,7 @@ class FaultRuptureProbabilityCalculator(BaseFaultRuptureCalculator):
             self.sitecol = SiteCollection(oq_sites)
             logger.debug(f"Initialized {n} sites from sites_list")
         else:
-            # Single-site path (unchanged — backward compatible)
+            # Single-site path (unchanged - backward compatible)
             lat = site_cfg.get('latitude')
             lon = site_cfg.get('longitude')
             vs30 = site_cfg.get('vs30')

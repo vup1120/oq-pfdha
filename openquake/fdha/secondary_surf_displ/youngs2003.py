@@ -23,6 +23,7 @@ model of Youngs et al. (2003) into :class:`Youngs2003`
 
 import numpy as np
 from scipy.stats import gamma, norm
+from openquake.fdha.params import check_choice, check_style
 from openquake.fdha.primary_surf_displ.base import BaseSecondarySurfDispl
 
 
@@ -33,7 +34,24 @@ class Youngs2003SecondaryFD(BaseSecondarySurfDispl):
     ----------
     Youngs, R.R., et al. (2003). A methodology for probabilistic fault
     displacement hazard analysis (PFDHA). Earthquake Spectra, 19(1), 191-219.
+
+    Model contract: DISPLACEMENT_DEFINITION = "distributed",
+    DISPLACEMENT_COMPONENT = "vertical" -- distributed (off-fault) vertical
+    separation of normal-faulting earthquakes, normalised by the principal
+    maximum displacement (Youngs et al. 2003; Sarmiento et al. 2025 Table 1
+    component convention as for YEA03). Declared applicability: r up to
+    15 km from the principal fault (dataset range summarised in Valentini
+    et al. 2025, Rev. Geophys., Table 4).
     """
+
+    DISPLACEMENT_DEFINITION = "distributed"
+    DISPLACEMENT_COMPONENT = "vertical"
+
+    APPLICABILITY_RANGE = {
+        "r_max_km": 15.0,
+        "source": "Valentini et al. (2025) Rev. Geophys. Table 4 "
+                  "(Youngs et al. 2003 dataset range)",
+    }
 
     # Constants for Wells & Coppersmith (1994) formulas for normal faulting
     _WC94_MD_INTERCEPT = -5.90
@@ -53,12 +71,26 @@ class Youngs2003SecondaryFD(BaseSecondarySurfDispl):
         95: 5.535
     }
     
-    def __init__(self):
+    def __init__(self, percentile=None, style=None):
+        """
+        :param percentile: optional hanging-wall percentile curve pinned by
+            the logic-tree branch ('85' or '95'; integers accepted);
+            ``None`` defers to the ``get_prob`` call (legacy default: '85').
+        :param style: optional faulting style declared by the logic-tree
+            branch. The Youngs et al. (2003) secondary displacement
+            regressions carry no style selector, so the value does not
+            change the numbers; it is stored (validated against the global
+            style vocabulary) as a declaration of the branch context.
+        """
         super().__init__()
+        self.percentile = check_choice(
+            type(self).__name__, "percentile", percentile,
+            frozenset(["85", "95"]), canon=str)
+        self.style = check_style(type(self).__name__, style)
         # Pre-calculate common values
         self._norm_pdf_cache = {}
     
-    def get_prob(self, d, mag, rx, r, percentile="85"):
+    def get_prob(self, d, mag, rx, r, percentile=None):
         """
         Model of Youngs et al. (2003) for the probability of exceeding
         threshold values of secondary displacement [m]
@@ -70,6 +102,10 @@ class Youngs2003SecondaryFD(BaseSecondarySurfDispl):
         :param percentile: The percentile used in calculations ("85" or "95")
         :returns: Probability of exceeding the given displacement (shape (n_sites, n_displacements))
         """
+        # Fall back to constructor-pinned value, then legacy default
+        if percentile is None:
+            percentile = (self.percentile
+                          if self.percentile is not None else "85")
         # Validate percentile
         if percentile not in self._ACCEPTED_PERCENTILES:
             raise ValueError(

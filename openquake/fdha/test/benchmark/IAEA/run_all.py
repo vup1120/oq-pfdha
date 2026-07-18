@@ -106,7 +106,7 @@ def main() -> int:
         outdir = HERE / "out" / tag
         d0, rates = run_job(entry.case, entry.job, outdir)
         if not np.any(rates > 0):
-            print(f"!!! {tag}: all-zero hazard curve — model chain failed, "
+            print(f"!!! {tag}: all-zero hazard curve - model chain failed, "
                   f"check logs in {outdir}")
         csv_path = computed_dir / f"{tag}.csv"
         with csv_path.open("w") as f:

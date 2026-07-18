@@ -29,7 +29,7 @@ import pytest
 # poisons numba's config for the rest of the pytest process: any module
 # importing hazardlib afterwards gets a half-JIT'd baselib.performance and
 # crashes with "'function' object has no attribute 'get_call_template'".
-# The standalone scripts (run_all.py, diagnose_M11.py) may still set it —
+# The standalone scripts (run_all.py, diagnose_M11.py) may still set it -
 # they own their whole process.
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
 

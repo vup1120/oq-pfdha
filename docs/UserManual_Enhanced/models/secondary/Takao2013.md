@@ -1,4 +1,4 @@
-# Configuration guide for Takao et al. (2013) — Secondary Displacement
+# Configuration guide for Takao et al. (2013) - Secondary Displacement
 
 Reference: Takao, M., Tsuchiyama, J., Annaka, T., & Kurita, T. (2013). Application of probabilistic fault displacement hazard analysis in Japan. Journal of Japan Association for Earthquake Engineering, 13(1), 17-36. https://doi.org/10.5610/jaee.13.17
 
@@ -24,8 +24,8 @@ The Takao et al. (2013) secondary (distributed) surface displacement model predi
 
 | Name | Type | Units | Default | Allowed | Required? | Description |
 | --- | --- | --- | --- | --- | --- | --- |
-| `norm_disp_type` | string | – | `"AD"` | `"AD"`, `"MD"` | No | Normalization displacement type. `"AD"` uses the average-displacement regression (Eq. 16, `DD/PAD = 1.9 exp(-0.17 r)`), `"MD"` the maximum-displacement regression (Eq. 15, `DD/PMD = 0.55 exp(-0.17 r)`). The paper's own case study uses `"AD"`. |
-| `n_sigma` | float | – | `3.0` | > 0 | No | Truncation of the PMD/PAD lognormal at `mean ± n_sigma · sigma` in log10 space, mirroring `Takao2013PrimaryFD`. |
+| `norm_disp_type` | string | - | `"AD"` | `"AD"`, `"MD"` | No | Normalization displacement type. `"AD"` uses the average-displacement regression (Eq. 16, `DD/PAD = 1.9 exp(-0.17 r)`), `"MD"` the maximum-displacement regression (Eq. 15, `DD/PMD = 0.55 exp(-0.17 r)`). The paper's own case study uses `"AD"`. |
+| `n_sigma` | float | - | `3.0` | > 0 | No | Truncation of the PMD/PAD lognormal at `mean ± n_sigma · sigma` in log10 space, mirroring `Takao2013PrimaryFD`. |
 
 ## Notes and cautions
 

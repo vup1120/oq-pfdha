@@ -379,9 +379,12 @@ class TestHazardEndToEnd:
         assert np.asarray(results['rate_principal']).max() > 0.0
         total_rate = 10 ** (4.0 - 1.0 * 6.5) - 10 ** (4.0 - 1.0 * 7.0)
         assert poes.max() <= total_rate * 1.0001
-        # regression anchor: frozen from a verified run of this scenario
-        # (plateau = 11% of the 2.1623e-3/yr GR total rate, and within 5%
-        # of the simpleFaultSource twin — see the equivalence test below)
+        # regression anchor: the sigma = 0 path uses the historical
+        # COMPLEMENTARY boxcar split (this job sets no r_sigma_km), so the
+        # on-trace site carries the principal component only - the original
+        # pre-additive anchor values (plateau = 11% of the 2.1623e-3/yr GR
+        # total rate, and within 5% of the simpleFaultSource twin - see the
+        # equivalence test below).
         expected = np.array(
             [2.38460639e-04, 2.38002779e-04, 2.22840039e-04, 8.79603903e-05])
         np.testing.assert_allclose(poes[0], expected, rtol=1e-6)
@@ -404,7 +407,9 @@ class TestHazardEndToEnd:
 
     def test_hazard_curve_characteristic_complex(self, tmp_path):
         """Single characteristic rupture at 1e-3/yr: the on-trace plateau is
-        bounded by (and close to) rate x P_sr(M7)."""
+        bounded by (and close to) rate x P_sr(M7). At sigma = 0 the
+        complementary split leaves only the principal component on-trace, so
+        the total respects the event-rate gate exactly."""
         results = _run_calc(
             tmp_path, CHAR_COMPLEX_XML, "charcomplex",
             rupture_mesh_spacing=1.0, complex_fault_mesh_spacing=1.0,

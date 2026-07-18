@@ -61,7 +61,7 @@ This is the most fundamental workflow, used to assess the hazard at a specific p
     -   Define a `[geometry]` section with `sites` for one or more point sites (format: `lon1 lat1, lon2 lat2, ...`), or `sites_csv` for sites from a CSV file.
     -   Define the `displacement_measure_levels` in `[calculation]` section (JSON format: `{"FD": [0.001, 0.01, ...]}`).
     -   Set `[calculation].source_model_logic_tree_file` and `[calculation].fdha_logic_tree_file`.
-    -   Select the four required model categories in the FDHA logic-tree XML, not in `[models]` INI sections; to model only one side, neutralize the other with the constant `Fixed*SR` models (see [Models — Modeling only principal or only distributed displacement](06-Models.md#modeling-only-principal-or-only-distributed-displacement)).
+    -   Select the four required model categories in the FDHA logic-tree XML, not in `[models]` INI sections; to model only one side, neutralize the other with the constant `Fixed*SR` models (see [Models - Modeling only principal or only distributed displacement](06-Models.md#modeling-only-principal-or-only-distributed-displacement)).
 3.  **Run Calculation**:
     Execute the `fdha` command with your configuration file:
     ```bash
@@ -69,7 +69,7 @@ This is the most fundamental workflow, used to assess the hazard at a specific p
     ```
     The calculation type is automatically detected from the configuration (presence of `region` indicates hazard map, otherwise hazard curve).
 4.  **Interpret Results**: Results are written to the output directory (`out/`
-    next to the INI by default). The hazard curve data is written as CSV —
+    next to the INI by default). The hazard curve data is written as CSV -
     `aggregate_hazard.csv` (aggregate mean/quantile curve) and
     `hazard_curves/branch_XXXX.csv` (per branch). The `--plot` PNG visualizes the
     mean curve. See [Outputs](08-Outputs.md).
@@ -92,7 +92,7 @@ This workflow visualizes the spatial distribution of hazard across a region for 
     -   Set the desired `return_period` in the `[calculation]` section (e.g., `100000` years).
     -   Define `displacement_measure_levels` in `[calculation]` section.
     -   Set `[calculation].source_model_logic_tree_file` and `[calculation].fdha_logic_tree_file`.
-    -   Select the four required model categories in the FDHA logic-tree XML, not in `[models]` INI sections; to model only one side, neutralize the other with the constant `Fixed*SR` models (see [Models — Modeling only principal or only distributed displacement](06-Models.md#modeling-only-principal-or-only-distributed-displacement)).
+    -   Select the four required model categories in the FDHA logic-tree XML, not in `[models]` INI sections; to model only one side, neutralize the other with the constant `Fixed*SR` models (see [Models - Modeling only principal or only distributed displacement](06-Models.md#modeling-only-principal-or-only-distributed-displacement)).
 3.  **Run Calculation**:
     ```bash
     fdha job_map.ini --plot map.png
@@ -110,4 +110,4 @@ This workflow visualizes the spatial distribution of hazard across a region for 
 
 ## References (OQ)
 
--   OpenQuake Engine User Guide — User Guide Index: https://docs.openquake.org/oq-engine/manual/latest/user-guide/index.html
+-   OpenQuake Engine User Guide - User Guide Index: https://docs.openquake.org/oq-engine/manual/latest/user-guide/index.html

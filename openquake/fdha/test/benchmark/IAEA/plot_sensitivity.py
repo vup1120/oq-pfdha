@@ -53,10 +53,10 @@ def main():
         ax.set_ylim(1e-12, 1e-3)
         ax.set_xlabel("Displacement (m)")
         ax.set_ylabel("Annual rate of exceedance")
-        ax.set_title(f"{titles[case]} — sensitivity cases")
+        ax.set_title(f"{titles[case]} - sensitivity cases")
         ax.legend(fontsize=7)
         ax.grid(alpha=0.3, which="both")
-    fig.suptitle("IAEA PFDHA exercise — sensitivity-case demonstration curves "
+    fig.suptitle("IAEA PFDHA exercise - sensitivity-case demonstration curves "
                  "(no published reference; snapshot-validated)", y=1.02)
     fig.tight_layout()
     figdir = HERE / "Figures"

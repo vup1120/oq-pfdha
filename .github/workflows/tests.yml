@@ -25,6 +25,11 @@ jobs:
       - name: Install package
         run: |
           python -m pip install --upgrade pip
+          # openquake.engine pins gdal/fiona versions whose Linux wheels are
+          # published on GEM's wheelhouse, not on PyPI; install the engine's
+          # pinned requirements first so pip never tries a source build.
+          PY=$(python -c 'import sys; print(f"py{sys.version_info.major}{sys.version_info.minor}")')
+          pip install -r "https://raw.githubusercontent.com/gem/oq-engine/master/requirements-${PY}-linux64.txt"
           pip install -e .
           pip install pytest
 

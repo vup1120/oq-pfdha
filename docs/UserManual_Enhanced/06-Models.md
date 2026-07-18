@@ -7,47 +7,47 @@ This chapter lists the FDHA model classes registered in the runtime model librar
     following the IAEA convention in which **primary = principal** (rupture on
     the main seismogenic fault) and **secondary = distributed** (off-fault
     rupture on splays, shears, and nearby structures). In the broader PFDHA
-    literature — e.g. Valentini et al. (2025), *Reviews of Geophysics* — the
+    literature - e.g. Valentini et al. (2025), *Reviews of Geophysics* - the
     preferred terms are **principal** and **distributed**, because
     "primary/secondary" is also used at a higher level to separate tectonic
     ("primary") from non-tectonic ("secondary") earthquake effects such as
     landsliding and liquefaction. In this toolkit, `secondary_surf_rup` and
     `secondary_surf_displ` always refer to **distributed tectonic** rupture and
-    displacement — never to non-tectonic ground failure.
+    displacement - never to non-tectonic ground failure.
 
 ## Model Categories
 
 For each calculation, select one model in each category; together they provide the conditional pieces of the PFDHA integral.
 
 ### Primary Surface Rupture
-Models that provide the conditional probability that the principal (seismogenic) rupture reaches the ground surface on the primary fault—commonly denoted as the conditional probability of surface rupture (CPSR or P(Slip|M)). Approaches include empirical logistic regressions (e.g., magnitude‑dependent P(Slip|M)) and numerical, fault‑geometry–aware formulations that incorporate seismogenic thickness, dip, and rupture width distributions; the latter highlight the strong control of seismogenic depth and local geometry on CPSR.
+Models that provide the conditional probability that the principal (seismogenic) rupture reaches the ground surface on the primary fault - commonly denoted as the conditional probability of surface rupture (CPSR or P(Slip|M)). Approaches include empirical logistic regressions (e.g., magnitude-dependent P(Slip|M)) and numerical, fault-geometry–aware formulations that incorporate seismogenic thickness, dip, and rupture width distributions; the latter highlight the strong control of seismogenic depth and local geometry on CPSR.
 
 ### Primary Surface Displacement
-Models that describe the probability distribution of displacement along the primary fault trace at a site, conditioned on surface rupture intersecting the site (and, implicitly, on the event magnitude and along‑strike position). Modern formulations distinguish displacement metrics (e.g., average, maximum, raw D, or normalized D/AD, D/MD) and what is being summed (single‑strand “single principal,” sum‑of‑principal across multiple strands, or aggregate definitions when applicable). Clear specification of vector components (lateral, vertical, net, dip‑slip) is essential because models predict different components.
+Models that describe the probability distribution of displacement along the primary fault trace at a site, conditioned on surface rupture intersecting the site (and, implicitly, on the event magnitude and along-strike position). Modern formulations distinguish displacement metrics (e.g., average, maximum, raw D, or normalized D/AD, D/MD) and what is being summed (single-strand "single principal," sum-of-principal across multiple strands, or aggregate definitions when applicable). Clear specification of vector components (lateral, vertical, net, dip-slip) is essential because models predict different components.
 
 ### Secondary (Distributed) Surface Rupture
-Models that give the probability of non‑zero, off‑fault rupture occurring in the distributed zone away from the principal trace, typically expressed as a function of magnitude and fault‑normal distance r to the principal rupture. In practice, this term is a major source of epistemic spread in PFDHA; inter‑team comparisons show order‑of‑magnitude differences in distributed hazard driven by different assumptions about the conditional probability of secondary rupturing.
+Models that give the probability of non-zero, off-fault rupture occurring in the distributed zone away from the principal trace, typically expressed as a function of magnitude and fault-normal distance r to the principal rupture. In practice, this term is a major source of epistemic spread in PFDHA; inter-team comparisons show order-of-magnitude differences in distributed hazard driven by different assumptions about the conditional probability of secondary rupturing.
 
 ### Secondary (Distributed) Surface Displacement
-Models that describe the distribution of displacement amplitudes for secondary ruptures, conditioned on secondary rupture occurring at the site and parameterized by distance from the principal fault (and sometimes by along‑strike position or style of faulting). This term closes the distributed‑hazard integral (probability of any secondary rupture × probability of non‑zero displacement at r × exceedance distribution P[D>d0|⋅]) and is the piece that, together with the previous item, controls the shape of distributed‑displacement hazard curves.
+Models that describe the distribution of displacement amplitudes for secondary ruptures, conditioned on secondary rupture occurring at the site and parameterized by distance from the principal fault (and sometimes by along-strike position or style of faulting). This term closes the distributed-hazard integral (probability of any secondary rupture × probability of non-zero displacement at r × exceedance distribution P[D>d0|⋅]) and is the piece that, together with the previous item, controls the shape of distributed-displacement hazard curves.
 
 #### Context notes for users
-- The primary pair (items 1–2) applies on the principal trace; the secondary pair (items 3–4) applies off‑trace. This principal vs distributed distinction is standard in IAEA guidance and current exercises.
-- For long return periods, hazard is often dominated by the surface‑rupture probability model choices (item 1), especially for moderate magnitudes—so multiple CPSR branches with justified weights are recommended.
+- The primary pair (items 1–2) applies on the principal trace; the secondary pair (items 3–4) applies off-trace. This principal vs distributed distinction is standard in IAEA guidance and current exercises.
+- For long return periods, hazard is often dominated by the surface-rupture probability model choices (item 1), especially for moderate magnitudes - so multiple CPSR branches with justified weights are recommended.
 
 ### Modeling only principal or only distributed displacement
 
 The FDHA logic tree **always declares all four categories**, because the tool
-computes principal (on‑fault) and distributed (off‑fault) displacement together
+computes principal (on-fault) and distributed (off-fault) displacement together
 in a single pass: principal hazard applies where `|r| ≤ r_threshold_km` and
 distributed hazard where `|r| > r_threshold_km`. To study only one side, you do
-not delete a category — you **neutralize** the other side with the constant
-`Fixed*SR` surface‑rupture models. Only surface‑rupture placeholders exist
+not delete a category - you **neutralize** the other side with the constant
+`Fixed*SR` surface-rupture models. Only surface-rupture placeholders exist
 (`FixedPrimarySR`, `FixedSecondarySR`); there is deliberately no
 `FixedPrimaryFD`/`FixedSecondaryFD`, so each displacement side is switched off
-through its paired surface‑rupture probability.
+through its paired surface-rupture probability.
 
-- **Principal (on‑fault) displacement only.** Set the secondary surface‑rupture
+- **Principal (on-fault) displacement only.** Set the secondary surface-rupture
   branch to `[FixedSecondarySR]` with `value = 0.0`. The distributed contribution
   becomes `P_sr · (0 · P_fd_sec) = 0`, so the distributed zone reports no hazard.
   The `fdhaSecondaryFDModel` branch still needs a valid entry (any registered
@@ -71,11 +71,11 @@ through its paired surface‑rupture probability.
 - **Principal + distributed displacement.** Provide real models in all four
   categories (the `flt_distributed_*` pattern).
 
-- **Caveat — the P_sr gate.** The distributed contribution is scaled by the
-  primary surface‑rupture probability `P_sr`. When you want distributed hazard,
+- **Caveat - the P_sr gate.** The distributed contribution is scaled by the
+  primary surface-rupture probability `P_sr`. When you want distributed hazard,
   keep a physically appropriate primary SR model (e.g. `WC1993PrimarySR`) rather
   than disabling it. `FixedPrimarySR` with `value = 0.0` sets `P_sr = 0`, which
-  zeroes **both** the principal and the distributed contributions — it is a full
+  zeroes **both** the principal and the distributed contributions - it is a full
   "off" switch, not a way to isolate distributed displacement.
 
 ### Displacement Metrics and Definitions for PFDHA
@@ -84,24 +84,24 @@ through its paired surface‑rupture probability.
 
 Recent reviews report that FD displacement models predict one or more of: average displacement (AD), maximum displacement (MD), normalized displacement (D/AD, D/MD), and the displacement amplitude D itself.
 
-- AD, MD are event‑level quantities with magnitude scaling in several models (e.g., recent numerical and empirical models).
-- D/AD, D/MD are normalized metrics used by multiple models (e.g., Youngs et al. 2003; Moss‑family; Mammarella 2024) typically with along‑strike position x/L as a predictor.
+- AD, MD are event-level quantities with magnitude scaling in several models (e.g., recent numerical and empirical models).
+- D/AD, D/MD are normalized metrics used by multiple models (e.g., Youngs et al. 2003; Moss-family; Mammarella 2024) typically with along-strike position x/L as a predictor.
 - Some models predict D directly (often after a transformation).
 
 ## 2) Displacement definitions (how displacement is defined)
 
-Displacement is defined by two axes: (i) vector component — lateral, fault‑normal, vertical; net is vector sum; dip‑slip is vertical + fault‑normal; and (ii) participating ruptures — single principal, sum‑of‑principal, or aggregate (= principal + distributed).
+Displacement is defined by two axes: (i) vector component - lateral, fault-normal, vertical; net is vector sum; dip-slip is vertical + fault-normal; and (ii) participating ruptures - single principal, sum-of-principal, or aggregate (= principal + distributed).
 
 !!! tip "Use models with their calibrated definition"
     Apply each model with the same displacement component and participation definition it was calibrated for; models predict different components and may not be interchangeable without conversion.
 
 ## 3) Principal (primary) vs distributed (secondary) surface ruptures
 
-Principal ruptures occur on the primary fault that generated the earthquake; distributed ruptures occur off‑trace (splays, shears). They are modeled separately in data sets and in the PFDHA workflow (primary vs secondary branches).
+Principal ruptures occur on the primary fault that generated the earthquake; distributed ruptures occur off-trace (splays, shears). They are modeled separately in data sets and in the PFDHA workflow (primary vs secondary branches).
 
 ## 4) Conditional probability of principal surface rupture (CPSR)
 
-A numerical CPSR model for PFDHA computes the conditional probability of surface rupture on the principal fault as a function of magnitude, using down‑dip geometry and probabilistic inputs: hypocenter depth distribution (HDD), rupture width W(M) scaling, and hypocenter‑to‑rupture positioning (HDR).
+A numerical CPSR model for PFDHA computes the conditional probability of surface rupture on the principal fault as a function of magnitude, using down-dip geometry and probabilistic inputs: hypocenter depth distribution (HDD), rupture width W(M) scaling, and hypocenter-to-rupture positioning (HDR).
 ---
 
 ## Primary Surface Rupture Models
@@ -119,7 +119,7 @@ These models answer the question: *Given an earthquake of a certain magnitude an
 | `Takao2013PrimarySR` | Takao et al. (2013) | Reverse, strike-slip | 5.5–7.4 | A model developed for reverse and strike-slip faults in Japan. |
 | `WC1993PrimarySR` | Wells & Coppersmith (1993) | All | 5.0–8.2 | An early logistic regression model for surface rupture probability. |
 | `Yang2021PrimarySR` | Yang et al. (2021) | Reverse | 4.7–6.6 | A logistic regression model for reverse faults developed using Australian earthquake data. |
-| `FixedPrimarySR` | Fixed value | — | — | Constant primary surface rupture probability model (not data-derived). |
+| `FixedPrimarySR` | Fixed value | - | - | Constant primary surface rupture probability model (not data-derived). |
 
 ¹ Applicable moment-magnitude range of the underlying empirical/numerical model,
 from Valentini et al. (2025), *Reviews of Geophysics*, Table 4. Using a model
@@ -136,21 +136,19 @@ These models answer the question: *Given that a surface rupture has occurred, wh
 | `Youngs2003PrimaryFD` | Youngs et al. (2003) | Normal | Vertical | Single principal | via AD/MD scaling | Models the displacement profile based on Average or Maximum Displacement normalization. |
 | `Chiou2025PrimaryFD` | Chiou et al. (2025) | Strike-slip | Net | Sum-of-principal | 6.0–8.3 | A model for sum-of-principal displacement on strike-slip faults (NGA-Displacement). |
 | `Kuehn2024PrimaryFD` | Kuehn et al. (2024) | All | Net | Aggregate | 5.0–8.0 (R); 6.0–8.0 (N, SS) | A comprehensive model with options to include epistemic uncertainty via posterior sampling. |
-| `Lavrentiadis2023PrimaryFD`| Lavrentiadis & Abrahamson (2023) | All | Net | Aggregate / sum-of-principal | 5.0–8.5 | A model that can account for zero-slip probability and rupture gaps. |
+| `Lavrentiadis2023PrimaryFD_aggregate`| Lavrentiadis & Abrahamson (2023) | All | Net | Aggregate | 5.0–8.5 | Aggregate variants (`output_type` `disp_agg_prime` default / `disp_agg_seg`); can account for zero-slip probability and rupture gaps. The class choice is the definition - for the sum-of-principal metric use the `_principal` class below. |
+| `Lavrentiadis2023PrimaryFD_principal`| Lavrentiadis & Abrahamson (2023) | All | Net | Sum-of-principal | 5.0–8.5 | The `disp_prnc_prime` variant, `output_type` pinned by the class (passing one is an error). Not aggregate: secondary models remain legitimate alongside it. |
 | `MossRoss2011PrimaryFD` | Moss & Ross (2011) | Reverse | Vertical | Single principal | via AD/MD scaling | Restored legacy normalized displacement model with AD/MD scaling. |
 | `Moss2022PrimaryFD` | Moss et al. (2022) | Reverse | Vertical | Single principal | 4.7–8.0 | GIRS-2022-05 report formulation with `gamma_mode`, incomplete MD subset, and `sigma_type` selector. |
 | `Moss2024PrimaryFD` | Moss et al. (2024) | Reverse | Vertical | Single principal | 4.7–8.0 | Peer-reviewed *Earthquake Spectra* implementation; `source="EQS"` uses journal Table 2 alpha/beta files, while `source="GIRS"` uses GIRS gamma regressions. AD/MD scaling follows Table 3. |
-| `Petersen2011PrimaryFD` | Petersen et al. (2011) | Strike-slip | Lateral | Single principal | 6.0–8.0 | Base Petersen primary displacement model. |
-| `Petersen2011PrimaryFD_bilinear` | Petersen et al. (2011) | Strike-slip | Lateral | Single principal | 6.0–8.0 | Bilinear strike-slip displacement profile. |
-| `Petersen2011PrimaryFD_elliptical` | Petersen et al. (2011) | Strike-slip | Lateral | Single principal | 6.0–8.0 | Elliptical strike-slip displacement profile. |
-| `Petersen2011PrimaryFD_quadratic` | Petersen et al. (2011) | Strike-slip | Lateral | Single principal | 6.0–8.0 | Quadratic strike-slip displacement profile. |
+| `Petersen2011PrimaryFD` | Petersen et al. (2011) | Strike-slip | Lateral | Single principal | 6.0–8.0 | Petersen primary displacement model. Along-strike shape set with the `version` parameter: `quadratic` (default), `bilinear`, or `elliptical`. |
 | `Takao2013PrimaryFD` | Takao et al. (2013) | Reverse, strike-slip | Net | Single principal | via AD/MD scaling | A normalized displacement model with coefficients dependent on surface rupture length. |
 
 ¹ Applicable Mw range, from Valentini et al. (2025), *Reviews of Geophysics*,
 Table 4. "via AD/MD scaling" marks normalized models in which magnitude enters
 through a separate average/maximum-displacement scaling relation rather than as
 a direct model input. *Slip component* and *Participation* (single-principal,
-sum-of-principal, or aggregate) are the calibrated definitions — apply each
+sum-of-principal, or aggregate) are the calibrated definitions - apply each
 model only with its own definition (see the tip in "Displacement Metrics").
 
 ---
@@ -166,11 +164,11 @@ These models answer the question: *Given an earthquake, what is the probability 
 | `Takao2014SecondarySR` | Takao et al. (2014) | Reverse, strike-slip | 5.8–7.4 | 0–25 km | A model for reverse and strike-slip faults based on distance and pixel size. |
 | `Visini2025SecondarySR` | Visini et al. (2025) | Normal, reverse | 5.5–7.9 (N); 4.9–7.9 (R) | 0–10 km (HW); 0–8 km (FW) | A logistic regression for normal/reverse faults depending on magnitude, distance, and pixel size. |
 | `FerrarioLivio2021SecondarySR` | Ferrario & Livio (2021) | Normal | 6.0–7.5 | 0–15.5 km (HW); 0–12.5 km (FW) | A model for distributed surface rupture probability. |
-| `Rodriguez2023SecondarySR` | Rodriguez Padilla & Oskin (2023) | Strike-slip | — | 0–3 km | Probability per unit area; recommended for near-field, immature strike-slip faults. |
+| `Rodriguez2023SecondarySR` | Rodriguez Padilla & Oskin (2023) | Strike-slip | - | 0–3 km | Probability per unit area; recommended for near-field, immature strike-slip faults. |
 | `Takao2013SecondarySR` | Takao et al. (2013) | Reverse, strike-slip | 5.8–7.4 | 0–25 km | A model for distributed surface rupture probability. |
 | `Petersen2011SecondarySR_default` | Petersen et al. (2011) | Strike-slip | 6.5–7.5 | 0–2.5 km | Default Petersen secondary surface rupture variant exposed by the library. |
 | `Moss2022SecondarySR` | Moss et al. (2022) | Reverse | Report-specific | Report-specific | Distributed surface-rupture probability model from GIRS-2022-05 Section 5.2.1; simple mode uses Eq. 5.5 / Table 5.3 and biexponential mode uses Eqs. 5.6-5.7 / Tables 5.4-5.5. |
-| `FixedSecondarySR` | Fixed value | — | — | — | Constant secondary surface rupture probability model (not data-derived). |
+| `FixedSecondarySR` | Fixed value | - | - | - | Constant secondary surface rupture probability model (not data-derived). |
 
 ¹ Applicable Mw and fault-normal-distance (r) ranges, from Valentini et al.
 (2025), *Reviews of Geophysics*, Table 4. HW = hanging wall, FW = footwall.
@@ -204,22 +202,22 @@ Section 5, rather than in the Valentini et al. summary table.
     The specific parameters for each model are crucial for correct implementation. Detailed configuration guides are available for the following models:
 
     **Primary Surface Rupture Models:**
-    - [Mammarella et al. (2024)](models/primary/MammarellaEtAl2024.md) — Primary surface rupture probability (numerical)
-    - [Yang et al. (2021)](models/primary/Yang2021.md) — Reverse faults, logistic regression (Australian data)
+    - [Mammarella et al. (2024)](models/primary/MammarellaEtAl2024.md) - Primary surface rupture probability (numerical)
+    - [Yang et al. (2021)](models/primary/Yang2021.md) - Reverse faults, logistic regression (Australian data)
 
     **Primary Surface Displacement Models:**
-    - [Chiou et al. (2025)](models/primary/Chiou2025.md) — Strike-slip faults, sum-of-principal displacement
-    - [Kuehn et al. (2024)](models/primary/Kuehn2024.md) — All fault styles, aggregate displacement with epistemic uncertainty
-    - [Lavrentiadis & Abrahamson (2023)](models/primary/Lavrentiadis2023.md) — All fault styles, aggregate/principal displacement
-    - [Moss et al. (2024)](models/primary/Moss2024.md) — Reverse faults, normalized displacement
-    - [Petersen et al. (2011)](models/primary/Petersen2011.md) — Strike-slip faults, multiple functional forms
-    - [Takao et al. (2013)](models/primary/Takao2013.md) — Reverse and strike-slip faults, normalized displacement
-    - [Youngs et al. (2003)](models/primary/Youngs2003.md) — Normal faults, normalized displacement
+    - [Chiou et al. (2025)](models/primary/Chiou2025.md) - Strike-slip faults, sum-of-principal displacement
+    - [Kuehn et al. (2024)](models/primary/Kuehn2024.md) - All fault styles, aggregate displacement with epistemic uncertainty
+    - [Lavrentiadis & Abrahamson (2023)](models/primary/Lavrentiadis2023.md) - All fault styles; aggregate (`Lavrentiadis2023PrimaryFD_aggregate`) and sum-of-principal (`Lavrentiadis2023PrimaryFD_principal`) classes
+    - [Moss et al. (2024)](models/primary/Moss2024.md) - Reverse faults, normalized displacement
+    - [Petersen et al. (2011)](models/primary/Petersen2011.md) - Strike-slip faults, multiple functional forms
+    - [Takao et al. (2013)](models/primary/Takao2013.md) - Reverse and strike-slip faults, normalized displacement
+    - [Youngs et al. (2003)](models/primary/Youngs2003.md) - Normal faults, normalized displacement
 
     **Secondary Surface Displacement Models:**
-    - [Petersen et al. (2011)](models/secondary/Petersen2011.md) — Strike-slip faults, distributed displacement
-    - [Takao et al. (2013)](models/secondary/Takao2013.md) — Reverse and strike-slip faults, distributed displacement normalized by PMD/PAD
-    - [Visini et al. (2025)](models/secondary/VisiniEtAl2025.md) — Normal and reverse faults, distributed displacement (Note: Model class name is `Visini2025SecondarySR` and `Visini2025SecondaryFD`)
-    - [Youngs et al. (2003)](models/secondary/Youngs2003.md) — Normal faults, distributed displacement
+    - [Petersen et al. (2011)](models/secondary/Petersen2011.md) - Strike-slip faults, distributed displacement
+    - [Takao et al. (2013)](models/secondary/Takao2013.md) - Reverse and strike-slip faults, distributed displacement normalized by PMD/PAD
+    - [Visini et al. (2025)](models/secondary/VisiniEtAl2025.md) - Normal and reverse faults, distributed displacement (Note: Model class name is `Visini2025SecondarySR` and `Visini2025SecondaryFD`)
+    - [Youngs et al. (2003)](models/secondary/Youngs2003.md) - Normal faults, distributed displacement
 
     Each guide includes complete parameter tables, INI configuration examples, implementation details, and usage notes.

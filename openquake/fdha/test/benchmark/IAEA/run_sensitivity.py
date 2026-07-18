@@ -80,7 +80,7 @@ def main() -> int:
 
         snap_d, snap_r = load_snapshot(tag)
         if snap_d is None:
-            print("    !!! no snapshot — run with --update-snapshots")
+            print("    !!! no snapshot - run with --update-snapshots")
             n_fail += 1
             continue
         ok = (np.allclose(snap_d, d0, rtol=1e-9)

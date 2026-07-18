@@ -218,8 +218,8 @@ class FDHAContext:
         Return the (r, x_L, L) arrays for a model's declared reference-line
         method (its ``MULTIFAULT_REFERENCE_LINE`` class attribute).
 
-        For single-strand ruptures — or a method that was not required by
-        any configured model — this falls back to the canonical ctx arrays,
+        For single-strand ruptures - or a method that was not required by
+        any configured model - this falls back to the canonical ctx arrays,
         which for single-strand sources are the trace-based values every
         method would produce anyway.
         """
@@ -312,7 +312,7 @@ class FDHAContextMaker:
         self.near_far_threshold_km = fdha_params.get('near_far_threshold_km', 0.2)
         # Reference-line methods required by the configured models on
         # multi-section ruptures (union of the models' declared
-        # MULTIFAULT_REFERENCE_LINE attributes, collected by the calculator —
+        # MULTIFAULT_REFERENCE_LINE attributes, collected by the calculator -
         # the FDHA analogue of hazardlib's union of REQUIRES_DISTANCES).
         # 'segments' is always added for multi-section ruptures in get_ctx:
         # the canonical ctx.r (principal/distributed mask, near/far label)
@@ -380,8 +380,8 @@ class FDHAContextMaker:
         Create hash key from surface geometry.
 
         Multi-section surfaces (multiFaultSource ruptures) are keyed by their
-        per-section identity — ``suid`` when the engine set one, else the
-        section top-trace endpoints — so ruptures made of different section
+        per-section identity - ``suid`` when the engine set one, else the
+        section top-trace endpoints - so ruptures made of different section
         combinations never collide and the expensive concatenated
         ``MultiSurface.mesh`` property is not touched. Single surfaces keep
         the mesh first/last-point key.
@@ -530,7 +530,7 @@ class FDHAContextMaker:
         Create FDHA context for a rupture.
 
         Args:
-            rupture: OpenQuake rupture object — parametric (has an
+            rupture: OpenQuake rupture object - parametric (has an
                 ``occurrence_rate``) or non-parametric (has a PMF in
                 ``probs_occur``, e.g. multiFaultSource ruptures).
             investigation_time: Time span (years) covered by the PMF of a
@@ -555,7 +555,7 @@ class FDHAContextMaker:
         ref_metrics = None
         if is_multisection:
             # Union of the reference-line treatments declared by the
-            # configured models (MULTIFAULT_REFERENCE_LINE — the FDHA
+            # configured models (MULTIFAULT_REFERENCE_LINE - the FDHA
             # analogue of hazardlib computing the union of the GMPEs'
             # REQUIRES_DISTANCES), plus 'segments' for the canonical ctx.r:
             # the principal/distributed mask and the near/far label need the

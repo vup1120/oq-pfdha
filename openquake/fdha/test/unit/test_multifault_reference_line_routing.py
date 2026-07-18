@@ -4,7 +4,7 @@ Per-model reference-line routing for multi-fault ruptures.
 
 Each FDHA model declares how distances must be measured when the source has
 no continuous fault trace (multiFaultSource / kite sections) via the
-``MULTIFAULT_REFERENCE_LINE`` class attribute — the FDHA analogue of
+``MULTIFAULT_REFERENCE_LINE`` class attribute - the FDHA analogue of
 hazardlib GMPEs declaring ``REQUIRES_DISTANCES``. The routing rules:
 
 - ``Chiou2025PrimaryFD``  -> 'ecs'      (model defined on the ECS line)
@@ -49,13 +49,13 @@ def test_listed_primary_fd_models_declare_lcp():
     from openquake.fdha.primary_surf_displ.moss2022 import Moss2022PrimaryFD
     from openquake.fdha.primary_surf_displ.takao2013 import Takao2013PrimaryFD
     from openquake.fdha.primary_surf_displ.lavrentiadis2023 import (
-        Lavrentiadis2023PrimaryFD)
+        Lavrentiadis2023PrimaryFD_aggregate)
     from openquake.fdha.primary_surf_displ.kuehn2024.kuehn2024 import (
         Kuehn2024PrimaryFD)
 
     for model in (Youngs2003PrimaryFD, Petersen2011PrimaryFD,
                   MossRoss2011PrimaryFD, Moss2024PrimaryFD, Moss2022PrimaryFD,
-                  Takao2013PrimaryFD, Lavrentiadis2023PrimaryFD,
+                  Takao2013PrimaryFD, Lavrentiadis2023PrimaryFD_aggregate,
                   Kuehn2024PrimaryFD):
         assert model.MULTIFAULT_REFERENCE_LINE == 'lcp', model.__name__
 

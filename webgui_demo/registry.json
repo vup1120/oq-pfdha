@@ -208,7 +208,7 @@
           "prefill": ""
         },
         {
-          "class_name": "Lavrentiadis2023PrimaryFD",
+          "class_name": "Lavrentiadis2023PrimaryFD_aggregate",
           "module": "openquake.fdha.primary_surf_displ.lavrentiadis2023",
           "doc_page": "primary/Lavrentiadis2023.md",
           "doc_params": [
@@ -226,9 +226,9 @@
               "type": "string",
               "units": "\u2013",
               "default": "`\"disp_agg_prime\"`",
-              "allowed": "`\"disp_agg_prime\"`, `\"disp_prnc_prime\"`, `\"disp_agg_seg\"`",
+              "allowed": "`\"disp_agg_prime\"`, `\"disp_agg_seg\"` (`Lavrentiadis2023PrimaryFD_aggregate` only)",
               "required": false,
-              "description": "Displacement metric to evaluate. `disp_agg_prime` is aggregate for full rupture, `disp_prnc_prime` is principal for full rupture, `disp_agg_seg` is aggregate for single segment."
+              "description": "Aggregate metric to evaluate. `disp_prnc_prime` is **rejected** on this class (FDLT-015): select `Lavrentiadis2023PrimaryFD_principal` instead. On `Lavrentiadis2023PrimaryFD_principal` the metric is pinned by the class and passing any explicit `output_type` is an error."
             },
             {
               "name": "include_zero_slip",
@@ -237,9 +237,16 @@
               "default": "`false`",
               "allowed": "`true`, `false`",
               "required": false,
-              "description": "If `true`, the probability accounts for zero slip and gap probabilities. If `false`, uses only the displacement distribution."
+              "description": "If `true`, the probability accounts for zero slip and gap probabilities. If `false`, uses only the displacement distribution. Accepted by both classes."
             }
           ],
+          "prefill": ""
+        },
+        {
+          "class_name": "Lavrentiadis2023PrimaryFD_principal",
+          "module": "openquake.fdha.primary_surf_displ.lavrentiadis2023",
+          "doc_page": null,
+          "doc_params": [],
           "prefill": ""
         },
         {
@@ -404,7 +411,8 @@
           ],
           "prefill": "norm_disp_type = AD",
           "ctor_defaults": {
-            "n_sigma": 6.0
+            "n_sigma": 6.0,
+            "scaling_model": "WC1994"
           }
         }
       ]
@@ -786,9 +794,6 @@
     "FixedPrimarySR",
     "FixedSecondarySR",
     "MammarellaEtAl2024PrimarySR",
-    "Petersen2011PrimaryFD_bilinear",
-    "Petersen2011PrimaryFD_elliptical",
-    "Petersen2011PrimaryFD_quadratic",
     "Petersen2011SecondarySR_default"
   ]
 }

@@ -1,4 +1,4 @@
-# oq-pfdha validation report — IAEA PFDHA benchmarking exercise
+# oq-pfdha validation report - IAEA PFDHA benchmarking exercise
 
 **Date:** 2026-07-11 · **Scope:** the three IAEA exercise case studies
 (Kumamoto strike-slip, Le Teil reverse, Norcia normal) and the
@@ -9,13 +9,13 @@ rupture-probability model is validated against its **source
 publication**; (2) full engine model chains are validated against the
 **published team curves** of the IAEA exercise (TECDOC-2092 / Valentini
 et al. Figs 4 and 6); (3) the **complete author-workbook definitions**
-— epistemic logic trees and all sensitivity cases — are implemented and
+- epistemic logic trees and all sensitivity cases - are implemented and
 regression-tested, so the benchmark covers everything the exercise
 defines, not only the configurations with published curves.
 
 ---
 
-## Tier 1 — model-level validation against source publications
+## Tier 1 - model-level validation against source publications
 
 | Suite | What is validated | Result |
 |---|---|---|
@@ -29,7 +29,7 @@ Unit level: 400+ tests including exact anchors (e.g.
 `Takao2013SecondaryFD` places exactly 10% exceedance on the paper's
 Eq. 15/16 regression levels).
 
-## Tier 2 — IAEA exercise: published-curve comparisons (18 entries)
+## Tier 2 - IAEA exercise: published-curve comparisons (18 entries)
 
 Each entry = one team model chain, run through the engine as a logic-tree
 job and asserted against the team's published curve (`manifest.py`,
@@ -56,12 +56,12 @@ Qualitative entries (documented reasons, README "Known deviations"):
 Le Teil **M11** (our stiff `Moss2013PrimarySR` = 9.9% reproduces the
 paper's stated "10% at Mw5.5" and the expected plateau
 `4.6e-5 x 0.099 = 4.6e-6`; the paper's *plotted* plateau implies an
-effective P_sr of only 1.2%, inconsistent with its own text — see
+effective P_sr of only 1.2%, inconsistent with its own text - see
 `le_teil/diagnose_M11_psr.py`), Le Teil / Norcia **V24** (paper curves
 computed with the earlier, under-review model revision), and the
 base-case-tree entries below.
 
-## Tier 3 — complete workbook coverage
+## Tier 3 - complete workbook coverage
 
 **Epistemic base-case trees** (all published curves correspond to the
 single-scenario configurations; the trees quantify the full model):
@@ -69,8 +69,8 @@ single-scenario configurations; the trees quantify the full model):
 | Case | Tree | Implementation | Tree vs single-scenario curves |
 |---|---|---|---|
 | Kumamoto | 4 coexisting rupture sources × independent mag/rate branches (w .2/.6/.2) | `kumamoto/make_basecase.py` (mean-collapse: 3-bin MFDs, exact for the mean) + P11/T13 jobs | head ×1.8–2.1, 10-m tail ×28–32 (Mw 7.0–7.4 multi-segment branches) |
-| Le Teil | 36 end branches: thickness × rupture length × magnitude × slip rate | `le_teil/make_basecase.py` (12 explicit smlt branches, slip level collapsed) + M11 job | M11 tail moves toward the published curve (3/5 m ratio 0.18/0.02 → 0.37/0.14); head ×14 — confirms the M11 diagnosis |
-| Norcia | none (single MVFS source, Gaussian MFD) | already the standard jobs | — |
+| Le Teil | 36 end branches: thickness × rupture length × magnitude × slip rate | `le_teil/make_basecase.py` (12 explicit smlt branches, slip level collapsed) + M11 job | M11 tail moves toward the published curve (3/5 m ratio 0.18/0.02 → 0.37/0.14); head ×14 - confirms the M11 diagnosis |
+| Norcia | none (single MVFS source, Gaussian MFD) | already the standard jobs | - |
 
 **Sensitivity cases** (no published curves → demonstration jobs with
 regression snapshots + physical-consistency tests,
@@ -112,4 +112,4 @@ the workbooks + shapefiles, not committed); regenerating snapshots:
    exercise definitions (team-specific configurations / earlier model
    vintage); both are diagnosed and documented rather than asserted.
 3. Sensitivity-case jobs are regression-tested, not
-   reference-validated — the exercise published no curves for them.
+   reference-validated - the exercise published no curves for them.

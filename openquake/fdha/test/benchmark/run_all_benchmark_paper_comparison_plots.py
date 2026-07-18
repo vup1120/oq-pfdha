@@ -4,9 +4,9 @@
 Regenerate paper / reference comparison figures for bundled benchmark suites.
 
 Executes (same code paths as standalone plot scripts):
-  1. Valentini et al. — Kumamoto case 2 (Chiou 2025) vs REF_EXCEED
-  2. Norcia sensitivity — Youngs2003 AD 85 vs paper rates
-  3. Visini et al. — Fig.13 cases 1–3 vs CSV reference data
+  1. Valentini et al. - Kumamoto case 2 (Chiou 2025) vs REF_EXCEED
+  2. Norcia sensitivity - Youngs2003 AD 85 vs paper rates
+  3. Visini et al. - Fig.13 cases 1–3 vs CSV reference data
 
 Outputs go to ``openquake/fdha/test/figures/``.
 

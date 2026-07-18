@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Segmentation-direct rupture distances for multi-section (multiFaultSource)
-ruptures — NO smoothed representative reference line.
+ruptures - NO smoothed representative reference line.
 
 Third option of the ``reference_line_method`` config switch
 (``'ecs' | 'lcp' | 'segments'``). Unlike the ECS (penalized-spline) and LCP
@@ -17,7 +17,7 @@ distributed-faulting regressions are calibrated on distances to the actual
   smoothed reference line passing through the gap would (wrongly for this
   model family) assign it ``r ~ 0``.
 * ``x/L`` and ``L`` come from GC2 over the raw section traces via oq-engine
-  ``MultiLine`` (NOT reimplemented) — the standard engine treatment of
+  ``MultiLine`` (NOT reimplemented) - the standard engine treatment of
   multi-segment ruptures. ``L`` is the along-strike ``u``-span of the section
   vertices; ``x/L`` is the site ``u`` normalised by that span, clipped to
   [0, 1].
@@ -43,7 +43,7 @@ class SegmentsResult:
 
     Shares the ``x_l(lon, lat) -> (xl, L_m)`` interface of ``EcsResult`` /
     ``LcpResult`` (so ``calculate_x_l_ratios`` needs no special casing) and
-    additionally exposes ``r_km(lon, lat)`` — the per-section minimum distance
+    additionally exposes ``r_km(lon, lat)`` - the per-section minimum distance
     that replaces the polyline-to-smoothed-trace ``r`` (the presence of
     ``r_km`` is what routes the distance computation, by duck typing, in
     ``VectorizedRuptureDistanceCalculator``).

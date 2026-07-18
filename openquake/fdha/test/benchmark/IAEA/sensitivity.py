@@ -5,7 +5,7 @@ These implement the author workbooks' sensitivity cases, for which the
 exercise published no reference hazard curves. They are validated by
 
 1. structural checks (positive head, non-increasing hazard curve), and
-2. regression snapshots committed in ``reference_snapshots/`` —
+2. regression snapshots committed in ``reference_snapshots/`` -
    regenerate with ``python run_sensitivity.py --update-snapshots`` after
    an intentional model change, and review the diff.
 

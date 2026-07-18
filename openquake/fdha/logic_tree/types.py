@@ -1,3 +1,4 @@
+"""Shared logic-tree data types: branches, branch sets and end branches."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -9,7 +10,7 @@ FDHA_UNCERTAINTY_TYPES = {
     "fdhaPrimaryFDModel",
     "fdhaSecondarySRModel",
     "fdhaSecondaryFDModel",
-    "fdhaCalcRThreshold",
+    "fdhaCalcRSigma",
 }
 
 FDHA_SLOTS_BY_UTYPE = {
@@ -24,26 +25,30 @@ FDHA_SLOTS_BY_UTYPE = {
 # class. They are validated by a type-specific grammar and must never fall
 # through the model-class checks (FDLT-006) or the [models.*] materialisation.
 #
-# fdhaCalcRThreshold: alternative values of [calculation].r_threshold_km, the
-# hard-step simplification of the rupture-location term fr(r) of Petersen et
-# al. (2011, BSSA 101, 805-825, doi:10.1785/0120100035). Treating the
-# threshold choice as weighted logic-tree branches follows Petersen et al.
-# (2011, p. 810) and IAEA-TECDOC-2092 (2025, Section 3.3).
+# fdhaCalcRSigma: alternative values of [calculation].r_sigma_km, the
+# two-sided mapping-accuracy sigma of the rupture-location term fr(r) of
+# Petersen et al. (2011, BSSA 101, 805-825, doi:10.1785/0120100035, Tables
+# 2-3). 0 selects the boxcar W_p path (half-width r_threshold_km); > 0
+# selects the pure-Gaussian path. Treating the mapping-accuracy class as
+# weighted logic-tree branches follows Petersen et al. (2011, p. 811): "this
+# epistemic uncertainty should be considered as alternative branches in a
+# logic tree". Branch sets may be scoped per correlation group of sources via
+# applyToSources; each source may be covered by at most one set (FDLT-012).
 FDHA_CALC_PARAM_UTYPES = {
-    "fdhaCalcRThreshold",
+    "fdhaCalcRSigma",
 }
 
 # Pseudo-slot names used for calc-param uncertainty types inside
 # ``EndBranch.selections``. Keeping them in ``selections`` (rather than a
 # parallel structure) means fingerprinting, dedup, weight multiplication and
-# manifest branch paths treat threshold branches as ordinary realizations.
+# manifest branch paths treat sigma branches as ordinary realizations.
 # ``build_config`` materialises these into the branch INI's ``[calculation]``
 # section instead of ``[models.*]``.
 CALC_SLOTS_BY_UTYPE = {
-    "fdhaCalcRThreshold": "calc_r_threshold",
+    "fdhaCalcRSigma": "calc_r_sigma",
 }
 
-CALC_R_THRESHOLD_SLOT = CALC_SLOTS_BY_UTYPE["fdhaCalcRThreshold"]
+CALC_R_SIGMA_SLOT = CALC_SLOTS_BY_UTYPE["fdhaCalcRSigma"]
 
 ALLOWED_STYLES = {"strike-slip", "reverse", "normal"}
 

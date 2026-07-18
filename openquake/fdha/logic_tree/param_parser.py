@@ -1,3 +1,7 @@
+"""
+Parse uncertaintyModel blocks (model name plus parameters) from FDHA
+logic-tree branches.
+"""
 from __future__ import annotations
 
 import ast
@@ -5,7 +9,7 @@ import configparser
 import math
 from typing import Any
 
-R_THRESHOLD_KM_KEY = "r_threshold_km"
+R_SIGMA_KM_KEY = "r_sigma_km"
 
 
 def parse_uncertainty_model(text: str) -> tuple[str, dict[str, Any]]:
@@ -59,36 +63,35 @@ def _parse_ini_block(raw: str) -> tuple[str, dict[str, Any]]:
     return class_name, params
 
 
-def parse_r_threshold_model(text: str) -> float:
+def parse_r_sigma_model(text: str) -> float:
     """
-    Parse the <uncertaintyModel> of a ``fdhaCalcRThreshold`` branch.
+    Parse the <uncertaintyModel> of a ``fdhaCalcRSigma`` branch.
 
     Follows the OpenQuake engine convention for scalar uncertainty types
     (:func:`openquake.hazardlib.lt.parse_uncertainty` fallback): the element
     text is a single bare float, and the parameter is identified by the
-    ``uncertaintyType`` itself. Here the value is the principal/distributed
-    distance threshold in kilometres and must be a positive finite float.
+    ``uncertaintyType`` itself. Here the value is the two-sided
+    mapping-accuracy sigma in kilometres and must be a finite float >= 0.
 
-    The branch value is one epistemic alternative for the hard-step
-    simplification of the rupture-location term fr(r) of Petersen et al.
-    (2011, BSSA 101, 805-825, doi:10.1785/0120100035); representing the
-    choice as weighted branches follows Petersen et al. (2011, p. 810) and
-    IAEA-TECDOC-2092 (2025, Section 3.3).
+    **Zero is a legal branch value** - it selects the boxcar W_p path
+    (perfectly located trace), so a logic tree can weigh "trust the mapped
+    trace" against Gaussian mapping-error alternatives (Petersen et al. 2011,
+    Tables 2-3; the logic-tree treatment follows p. 811).
 
     Raises ValueError for anything else (empty text, several tokens, a
-    ``key = value`` line, a non-numeric / non-finite / non-positive value).
+    ``key = value`` line, a non-numeric / non-finite / negative value).
     """
     raw = (text or "").strip()
     try:
         value = float(raw)
     except (TypeError, ValueError):
         raise ValueError(
-            "fdhaCalcRThreshold: expected single positive float value (km) "
+            "fdhaCalcRSigma: expected single non-negative float value (km) "
             f"in <uncertaintyModel>, got {raw!r}"
         )
-    if not math.isfinite(value) or value <= 0.0:
+    if not math.isfinite(value) or value < 0.0:
         raise ValueError(
-            f"fdhaCalcRThreshold value must be a positive finite float (km); got {raw!r}"
+            f"fdhaCalcRSigma value must be a non-negative finite float (km); got {raw!r}"
         )
     return value
 

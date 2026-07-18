@@ -129,7 +129,7 @@ def pfdha_models() -> Dict[str, Any]:
             Petersen2011PrimaryFD,
             Moss2024PrimaryFD,
             Kuehn2024PrimaryFD,
-            Lavrentiadis2023PrimaryFD,
+            Lavrentiadis2023PrimaryFD_aggregate,
             Chiou2025PrimaryFD,
         )
         models = {
@@ -137,7 +137,7 @@ def pfdha_models() -> Dict[str, Any]:
             "Petersen2011PrimaryFD": Petersen2011PrimaryFD,
             "Moss2024PrimaryFD": Moss2024PrimaryFD,
             "Kuehn2024PrimaryFD": Kuehn2024PrimaryFD,
-            "Lavrentiadis2023PrimaryFD": Lavrentiadis2023PrimaryFD,
+            "Lavrentiadis2023PrimaryFD_aggregate": Lavrentiadis2023PrimaryFD_aggregate,
             "Chiou2025PrimaryFD": Chiou2025PrimaryFD,
         }
     except ImportError as e:

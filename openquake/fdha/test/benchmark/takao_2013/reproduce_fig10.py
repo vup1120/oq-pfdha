@@ -4,12 +4,12 @@
 Fig. 10 shows, for the case-(a) worked example (Mw 6.8), the three
 probability densities entering their Eq. (12):
 
-    solid  — AD:    lognormal of Eq. (10), log10(AD) = -4.80 + 0.69 Mw
-    dotted — D/AD:  the conditional gamma distribution
-    dashed — D:     the marginal of D = AD x (D/AD)
+    solid - AD:    lognormal of Eq. (10), log10(AD) = -4.80 + 0.69 Mw
+    dotted - D/AD:  the conditional gamma distribution
+    dashed - D:     the marginal of D = AD x (D/AD)
 
 Empirical identification (see README): the paper's y axis is probability
-MASS on a 0.01-decade log grid — the digitized AD peak (x = 0.7793,
+MASS on a 0.01-decade log grid - the digitized AD peak (x = 0.7793,
 h = 0.01108) equals the Eq. 10 lognormal mass exactly (theory x = 0.7798,
 h = 0.01108). The dotted/dashed curves correspond to the SHORT-segment
 gamma of their Eq. (8) (a = 1.53, b = 0.58, the L < 10 km branch), not the
@@ -181,7 +181,7 @@ def make_figure(curves, points, res):
     ax.set_ylim(0, 1.2e-2)
     ax.set_xlabel("AD (m), D/AD (unitless), D (m)")
     ax.set_ylabel(f"Probability mass per {GRID_DLOG10} decade")
-    ax.set_title("Takao et al. (2013) Fig. 10 — computed vs digitized")
+    ax.set_title("Takao et al. (2013) Fig. 10 - computed vs digitized")
     ax.legend(fontsize=8)
     ax.grid(alpha=0.3, which="both")
     fig.tight_layout()

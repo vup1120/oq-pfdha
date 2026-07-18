@@ -1,4 +1,4 @@
-"""Logic Tree Validation (reverse) — verification script.
+"""Logic Tree Validation (reverse) - verification script.
 
 Same invariants as the strike-slip sibling demo, rebound onto the reverse-fault
 configuration (Youngs2003PrimaryFD vs Moss2024PrimaryFD, 50/50 blend).
@@ -73,7 +73,7 @@ def _load_manifest(run_dir: Path) -> dict:
 
 
 def main() -> int:
-    _banner("Logic Tree Validation (reverse) demo — verify.py")
+    _banner("Logic Tree Validation (reverse) demo - verify.py")
 
     _ensure_runs()
 

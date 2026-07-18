@@ -41,15 +41,24 @@
         </logicTreeBranch>
 
         <logicTreeBranch branchID="SS_PFD_PETERSEN2011_bilinear">
-          <uncertaintyModel>Petersen2011PrimaryFD_bilinear</uncertaintyModel>
+          <uncertaintyModel>
+            [Petersen2011PrimaryFD]
+            version = bilinear
+          </uncertaintyModel>
           <uncertaintyWeight>0.13</uncertaintyWeight>
         </logicTreeBranch>
         <logicTreeBranch branchID="SS_PFD_PETERSEN2011_elliptical">
-          <uncertaintyModel>Petersen2011PrimaryFD_elliptical</uncertaintyModel>
+          <uncertaintyModel>
+            [Petersen2011PrimaryFD]
+            version = elliptical
+          </uncertaintyModel>
           <uncertaintyWeight>0.13</uncertaintyWeight>
         </logicTreeBranch>
         <logicTreeBranch branchID="SS_PFD_PETERSEN2011_quadratic">
-          <uncertaintyModel>Petersen2011PrimaryFD_quadratic</uncertaintyModel>
+          <uncertaintyModel>
+            [Petersen2011PrimaryFD]
+            version = quadratic
+          </uncertaintyModel>
           <uncertaintyWeight>0.14</uncertaintyWeight>
         </logicTreeBranch>
       </logicTreeBranchSet>
@@ -117,7 +126,7 @@
           <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
         </logicTreeBranch>
         <logicTreeBranch branchID="NM_PFD_LAVRENTIADIS2023">
-          <uncertaintyModel>Lavrentiadis2023PrimaryFD</uncertaintyModel>
+          <uncertaintyModel>Lavrentiadis2023PrimaryFD_aggregate</uncertaintyModel>
           <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
         </logicTreeBranch>
         <logicTreeBranch branchID="NM_PFD_KUEHN2024">

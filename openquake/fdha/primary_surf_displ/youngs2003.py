@@ -10,6 +10,7 @@ displacement hazard analysis (PFDHA). Earthquake Spectra, 19(1), 191-219.
 
 import numpy as np
 from scipy.stats import gamma, norm, beta
+from openquake.fdha.params import check_choice, check_style
 from openquake.fdha.primary_surf_displ.base import BasePrimarySurfDispl, BaseSecondarySurfDispl
 
 class Youngs2003PrimaryFD(BasePrimarySurfDispl):
@@ -26,8 +27,17 @@ class Youngs2003PrimaryFD(BasePrimarySurfDispl):
     Reference:
         Youngs, R. R., et al. (2003). A methodology for probabilistic fault
         displacement hazard analysis (PFDHA). Earthquake Spectra, 19(1), 191-219.
+
+    Model contract: DISPLACEMENT_DEFINITION = "principal",
+    DISPLACEMENT_COMPONENT = "vertical" -- Youngs et al. (2003) predict
+    principal-fault displacement of normal-faulting earthquakes measured as
+    vertical separation; Sarmiento et al. (2025, Earthquake Spectra) Table 1
+    lists YEA03 as D_P,V (principal, vertical).
     """
-    
+
+    DISPLACEMENT_DEFINITION = "principal"
+    DISPLACEMENT_COMPONENT = "vertical"
+
     # Wells & Coppersmith (1994) coefficients for "All styles"
     # (recommended - consistent with Youngs et al. 2003 paper and fdhpy)
     _WC94_ALL = {
@@ -46,18 +56,59 @@ class Youngs2003PrimaryFD(BasePrimarySurfDispl):
 
     _ACCEPTED_DISP_TYPES = frozenset(["AD", "MD"])
     _ACCEPTED_STYLES = frozenset(["all", "normal"])
+    # The ε-space convolution below needs log10-space (intercept, slope,
+    # sigma) regressions for BOTH AD and MD per style; only Wells &
+    # Coppersmith (1994) provides them here (and is the relation used by
+    # Youngs et al. 2003 themselves). LEONARD2010 / THINGBAIJAM2017 expose
+    # AD-only regressions (see openquake.fdha.scalerel) and their use inside
+    # the Youngs (2003) convolution has not been validated, so they are
+    # rejected rather than silently ignored.
+    _ACCEPTED_SCALING_MODELS = frozenset(["WC1994"])
 
-    def __init__(self, n_sigma=6.0):
+    def __init__(self, n_sigma=6.0, scaling_model="WC1994", style=None,
+                 norm_disp_type=None):
         """
         :param n_sigma:
             Half-width of the ±σ ε-space integration truncation. Defaults to 6
             (improves accuracy over the historical ±3σ). Overridable from the
             logic tree via ``[Youngs2003PrimaryFD] n_sigma = <value>``.
+        :param scaling_model:
+            Magnitude-displacement scaling relation used to convert magnitude
+            into AD/MD inside the convolution. Only ``"WC1994"`` (the relation
+            used by Youngs et al. 2003) is implemented; any other value raises
+            ``ValueError`` instead of being silently ignored.
+        :param style:
+            Optional WC94 coefficient-set selector pinned by the logic-tree
+            branch ('all' or 'normal'); ``None`` defers to the ``get_prob``
+            call.
+        :param norm_disp_type:
+            Optional normalization type pinned by the logic-tree branch
+            ('AD' or 'MD'); ``None`` defers to the ``get_prob`` call.
         """
         super().__init__()
         self._N_EPS = float(n_sigma)  # ±n_sigma truncation in epsilon space
         if self._N_EPS <= 0.0:
             raise ValueError(f"n_sigma must be positive; got {self._N_EPS}")
+        self.scaling_model = self._check_scaling_model(scaling_model)
+        self.style = check_style(type(self).__name__, style,
+                                 self._ACCEPTED_STYLES)
+        self.norm_disp_type = check_choice(
+            type(self).__name__, "norm_disp_type", norm_disp_type,
+            self._ACCEPTED_DISP_TYPES, canon=lambda v: str(v).upper())
+
+    @classmethod
+    def _check_scaling_model(cls, scaling_model):
+        """Validate ``scaling_model``, returning its canonical (upper) form."""
+        sm = str(scaling_model).upper()
+        if sm not in cls._ACCEPTED_SCALING_MODELS:
+            raise ValueError(
+                f"{cls.__name__} only implements scaling_model='WC1994' "
+                f"(the magnitude-displacement relation used by Youngs et al. "
+                f"2003); got {scaling_model!r}. LEONARD2010/THINGBAIJAM2017 "
+                f"provide AD-only regressions and are not validated inside "
+                f"the Youngs (2003) convolution."
+            )
+        return sm
     
     def _get_wc94_coeffs(self, style, norm_disp_type):
         """
@@ -72,7 +123,8 @@ class Youngs2003PrimaryFD(BasePrimarySurfDispl):
         elif style == "normal":  # normal
             return self._WC94_NORMAL[norm_disp_type]
     
-    def get_prob(self, d, X_L_ratio, mag, style, norm_disp_type):
+    def get_prob(self, d, X_L_ratio, mag, style=None, norm_disp_type=None,
+                 scaling_model=None):
         """
         Model of Youngs et al. (2003) for the probability of exceeding
         threshold values of primary displacement [m].
@@ -89,9 +141,23 @@ class Youngs2003PrimaryFD(BasePrimarySurfDispl):
                      - "all": Use WC94 "All styles" coefficients
                      - "normal": Use WC94 "Normal faulting" coefficients
         :param norm_disp_type: Normalization displacement type. Valid options are "AD" or "MD".
+        :param scaling_model: Optional call-time override of the constructor's
+                             ``scaling_model``; validated the same way
+                             (only "WC1994" is implemented).
         :returns: Probability of exceeding target displacement (m), shape (n_displacements, n_sites).
         """
+        # Fall back to constructor-pinned values (call-time argument wins)
+        if style is None:
+            style = self.style
+        if norm_disp_type is None:
+            norm_disp_type = self.norm_disp_type
+        if style is None or norm_disp_type is None:
+            raise ValueError(
+                f"{type(self).__name__}: style and norm_disp_type must be "
+                f"given either in the logic-tree branch or at call time")
         # Validate inputs
+        if scaling_model is not None:
+            self._check_scaling_model(scaling_model)
         style_lower = style.lower() if isinstance(style, str) else str(style).lower()
         if style_lower not in self._ACCEPTED_STYLES:
             raise ValueError(

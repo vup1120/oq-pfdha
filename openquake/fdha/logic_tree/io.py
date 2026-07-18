@@ -1,3 +1,4 @@
+"""CSV/HDF5 writers and the run manifest for logic-tree results."""
 from __future__ import annotations
 
 import csv
@@ -429,7 +430,7 @@ def write_displacement_map_csv(
     ``<label>``. Each component is obtained by inverting that component's
     own rate curve at the target return period, so the components answer
     "what displacement has this return period considering only
-    principal/distributed faulting" — the inversion is nonlinear, hence
+    principal/distributed faulting" - the inversion is nonlinear, hence
     they do NOT sum to the total column.
     """
     lons = [float(v) for v in site_lons]

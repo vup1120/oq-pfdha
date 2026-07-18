@@ -22,8 +22,7 @@
       <logicTreeBranchSet branchSetID="bs_2" uncertaintyType="fdhaPrimaryFDModel" applyToBranches="B1_PSR">
         <logicTreeBranch branchID="B2_PFD">
           <uncertaintyModel>
-            [Lavrentiadis2023PrimaryFD]
-            output_type = disp_prnc_prime
+            [Lavrentiadis2023PrimaryFD_principal]
             include_zero_slip = True
           </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>

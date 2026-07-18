@@ -31,6 +31,7 @@ Reference:
 
 import numpy as np
 from scipy.stats import gamma, norm
+from openquake.fdha.params import check_choice
 from openquake.fdha.primary_surf_displ.base import BaseSecondarySurfDispl
 
 
@@ -56,7 +57,23 @@ class Takao2013SecondaryFD(BaseSecondarySurfDispl):
     The PMD/PAD lognormal is integrated over ``mean ± n_sigma·sigma`` (log10
     space); ``n_sigma`` defaults to 3 and may be overridden from the logic
     tree via ``[Takao2013SecondaryFD] n_sigma = <value>``.
+
+    Model contract: DISPLACEMENT_DEFINITION = "distributed",
+    DISPLACEMENT_COMPONENT = "net" -- distributed displacement normalised by
+    the principal-fault PMD/PAD net-slip scaling (Takao et al. 2013, Eqs.
+    15-17; component convention per Valentini et al. 2025, Rev. Geophys.,
+    Table 4). Declared applicability: r up to 20 km (ibid., dataset range
+    of the Eqs. 15-16 regressions).
     """
+
+    DISPLACEMENT_DEFINITION = "distributed"
+    DISPLACEMENT_COMPONENT = "net"
+
+    APPLICABILITY_RANGE = {
+        "r_max_km": 20.0,
+        "source": "Valentini et al. (2025) Rev. Geophys. Table 4 "
+                  "(Takao et al. 2013 dataset range)",
+    }
 
     _N_INTEGRATION = 1000
     _GAMMA_SHAPE = 2.5
@@ -71,16 +88,25 @@ class Takao2013SecondaryFD(BaseSecondarySurfDispl):
     }
     _DECAY = -0.17  # per km, shared by Eqs. 15 and 16
 
-    def __init__(self, n_sigma=3.0):
+    def __init__(self, n_sigma=3.0, norm_disp_type=None):
+        """
+        :param n_sigma: truncation half-width of the AD/MD distribution.
+        :param norm_disp_type: optional normalization type pinned by the
+            logic-tree branch ('AD' or 'MD'); ``None`` defers to the
+            ``get_prob`` call (legacy default: 'AD').
+        """
         super().__init__()
         self.n_sigma = float(n_sigma)
         if self.n_sigma <= 0.0:
             raise ValueError(f"n_sigma must be positive; got {self.n_sigma}")
+        self.norm_disp_type = check_choice(
+            type(self).__name__, "norm_disp_type", norm_disp_type,
+            frozenset(["AD", "MD"]), canon=lambda v: str(v).upper())
         # 90th percentile of the unit-scale gamma(a=2.5); dividing the
         # regression level by this anchors gamma.ppf(0.9) at the regression.
         self._p90_factor = float(gamma.ppf(0.90, self._GAMMA_SHAPE))
 
-    def get_prob(self, d, mag, r, norm_disp_type="AD"):
+    def get_prob(self, d, mag, r, norm_disp_type=None):
         """
         Model of Takao et al. (2013) for the probability of exceeding
         threshold values of secondary (distributed) displacement [m]
@@ -93,6 +119,10 @@ class Takao2013SecondaryFD(BaseSecondarySurfDispl):
         :returns: Probability of exceeding the given displacement
             (shape (n_sites, n_displacements))
         """
+        # Fall back to constructor-pinned value, then legacy default
+        if norm_disp_type is None:
+            norm_disp_type = (self.norm_disp_type
+                              if self.norm_disp_type is not None else "AD")
         if norm_disp_type not in self._COEFFS:
             raise ValueError(
                 f"Invalid norm_disp_type '{norm_disp_type}'. "

@@ -26,10 +26,10 @@ The Kuehn et al. (2024) primary surface displacement model predicts aggregate di
 
 | Name | Type | Units | Default | Allowed | Required? | Description |
 | --- | --- | --- | --- | --- | --- | --- |
-| `style` | string | – | – | `"normal"`, `"reverse"`, `"strike-slip"` (case-insensitive) | Yes | Fault style. Invalid values raise ValueError. |
-| `folded` | boolean | – | `true` | `true`, `false` | No | If true, averages probabilities from x/L and 1−x/L positions. If false, uses only the site position. |
-| `epistemic_uncertainty` | boolean | – | `true` | `true`, `false` | No | If true, uses ensemble of coefficient realizations (posterior sampling). If false, uses mean coefficients only. |
-| `coefficient_type` | string | – | – | `"full"`, `"mean"` | No | Alternative to `epistemic_uncertainty`. `"full"` enables epistemic uncertainty, `"mean"` uses mean coefficients. If provided, overrides `epistemic_uncertainty`. |
+| `style` | string | - | - | `"normal"`, `"reverse"`, `"strike-slip"` (case-insensitive) | Yes | Fault style. Invalid values raise ValueError. |
+| `folded` | boolean | - | `true` | `true`, `false` | No | If true, averages probabilities from x/L and 1−x/L positions. If false, uses only the site position. |
+| `epistemic_uncertainty` | boolean | - | `true` | `true`, `false` | No | If true, uses ensemble of coefficient realizations (posterior sampling). If false, uses mean coefficients only. |
+| `coefficient_type` | string | - | - | `"full"`, `"mean"` | No | Alternative to `epistemic_uncertainty`. `"full"` enables epistemic uncertainty, `"mean"` uses mean coefficients. If provided, overrides `epistemic_uncertainty`. |
 
 ## Notes and cautions
 

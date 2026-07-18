@@ -2,13 +2,13 @@
 """Pytest wrapper for the Moss & Ross (2011) Los Osos Fig. 7/10 benchmark.
 
 Asserts the reproduction of the paper's published anchor values (see
-``reproduce_fig10.py`` and README.md). Tolerances:
+``reproduce_mr2011_fig10.py`` and README.md). Tolerances:
 
 - all-slip-types anchors and the reverse 1%-in-50-yr anchor: within 15%
   (observed 1-6%);
 - reverse 2%-in-50-yr anchor: within 35% (observed +28%; the paper's own
   Fig. 8 percent-difference curve is consistent with our value and
-  inconsistent with the paper's text value — see README.md);
+  inconsistent with the paper's text value - see README.md);
 - plateau shift all-slip/reverse within [1.30, 1.60] (paper: "nearly 45%",
   observed 1.48).
 """
@@ -28,7 +28,7 @@ pytestmark = [pytest.mark.benchmark, pytest.mark.slow]
 
 @pytest.fixture(scope="module")
 def curves():
-    from reproduce_fig10 import hazard_curves
+    from reproduce_mr2011_fig10 import hazard_curves
 
     d, nu_rev, nu_all, _alpha = hazard_curves()
     return d, nu_rev, nu_all
@@ -46,7 +46,7 @@ def curves():
          "allslip-1pc50yr"],
 )
 def test_losososos_anchor(curves, which, level, paper_m, tol):
-    from reproduce_fig10 import displacement_at
+    from reproduce_mr2011_fig10 import displacement_at
 
     d, nu_rev, nu_all = curves
     nu = nu_rev if which == "rev" else nu_all

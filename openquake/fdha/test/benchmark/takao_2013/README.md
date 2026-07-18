@@ -1,4 +1,4 @@
-# Takao et al. (2013) — paper-figure reproduction benchmark
+# Takao et al. (2013) - paper-figure reproduction benchmark
 
 Validates the Takao et al. (2013) model implementations against the
 paper's own worked examples (Figs. 10 and 11, cases (a) and (b)), using
@@ -21,7 +21,7 @@ plot-area rectangle against its axis labels, and writes the data points to
 are. Curve identity is resolved by nearest-curve assignment in the
 comparison scripts (`figcompare.py`).
 
-## Fig. 11 case (a) — principal faulting (`reproduce_fig11a.py`)
+## Fig. 11 case (a) - principal faulting (`reproduce_fig11a.py`)
 
 Site at the midpoint of a 22-km fault; six curves (R 3,000/30,000 yr ×
 Mw 6.6/6.8/7.0) via the paper's Eq. (1), including the full P2p placement
@@ -47,7 +47,7 @@ gray ink = R 3,000, black = R 30,000):
 | Mw6.8 R3000 | 0.4% | 3.2% | Mw6.8 R30000 | 0.6% | 3.5% |
 | Mw7.0 R3000 | 1.3% | 4.0% | Mw7.0 R30000 | 1.3% | 3.7% |
 
-## Fig. 11 case (b) — distributed faulting (`reproduce_fig11b.py`)
+## Fig. 11 case (b) - distributed faulting (`reproduce_fig11b.py`)
 
 Four faults (r = 5/5/10/10 km, R = 3,000/30,000/3,000/30,000 yr, Mw 6.8)
 via Eq. (13) with `Takao2013PrimarySR` × `Takao2013SecondarySR` ×
@@ -69,13 +69,13 @@ Digitized-curve agreement over the full 8-decade range (1e-10..1e-3):
 | fault 2 | 0.8% | 4.1% | sum | 1.4% | 5.1% |
 | fault 3 | 1.2% | 4.3% | | | |
 
-## Fig. 10 — probability densities (`reproduce_fig10.py`)
+## Fig. 10 - probability densities (`reproduce_fig10.py`)
 
 The paper plots probability **mass on a 0.01-decade log grid** (the
 digitized AD peak height 0.01108 equals the Eq. 10 lognormal log-density
 1.108 × 0.01 exactly). The dotted/dashed curves correspond to the
 **short-segment gamma of Eq. (8)** (a = 1.53, b = 0.58, the L < 10 km
-branch) — not the long-segment Eq. (6) at x/L = 0 that the caption text
+branch) - not the long-segment Eq. (6) at x/L = 0 that the caption text
 suggests: Eq. 6 at x/L = 0 would peak at 0.50 (D/AD) and 0.34 (D),
 excluded by the digitized 0.89 and 0.58.
 
@@ -89,21 +89,21 @@ The D curve is the strongest single test: with **no adjustable
 parameter** it validates the AD-grid-mass × gamma composition exactly as
 `Takao2013PrimaryFD` implements it. The dotted D/AD curve carries an
 unexplained uniform display scale in the paper (~1/7.9; its log-mass peak
-would otherwise be 0.0108, comparable to AD's) — shape and position are
+would otherwise be 0.0108, comparable to AD's) - shape and position are
 validated, the scale is fitted and reported.
 
 ## Files
 
-- `extract_reference.py` — PDF → `reference/fig*_points.csv` (provenance)
-- `figcompare.py` — nearest-curve matching statistics
-- `reproduce_fig10.py` / `reproduce_fig11a.py` / `reproduce_fig11b.py` —
+- `extract_reference.py` - PDF → `reference/fig*_points.csv` (provenance)
+- `figcompare.py` - nearest-curve matching statistics
+- `reproduce_fig10.py` / `reproduce_fig11a.py` / `reproduce_fig11b.py` -
   computation, `Figures/*.png` overlays, `fig*_agreement.json`
-- `test_paper_reproduction.py` — 23 pytest assertions on all of the above
+- `test_paper_reproduction.py` - 23 pytest assertions on all of the above
 
 ## Not covered
 
 The P2p machinery (Takemura length, Fig. 3 lines, placement counting)
-lives in `reproduce_fig11a.py` as example-specific code — it is validated
+lives in `reproduce_fig11a.py` as example-specific code - it is validated
 here against the paper but is not yet a library model (the same P2p gap
 documented in the IAEA benchmark, where the T13 principal chains use
 constant post-factors).

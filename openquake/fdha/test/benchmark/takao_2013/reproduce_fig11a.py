@@ -17,7 +17,7 @@ with the machinery the paper documents in Section 4(2):
   Fig. 3 (equal weight 0.25), anchored at (5.9, 50%), (6.2, 35%),
   (6.5, 20%), (6.8, 5%) and reaching 100% at Mw +0.7, flat outside;
 - lp = L - L_l + 1 segment placements per rupture placement, 1-km grid,
-  half-open [s, s+L_l) site-coverage convention — this reproduces all
+  half-open [s, s+L_l) site-coverage convention - this reproduces all
   eight placement counts of the paper's Mw 6.8 worked example;
 - P3p from the ``Takao2013PrimaryFD`` building blocks (their Eqs. 6/8 via
   ``get_prob_D_AD`` with the *actual segment length* as srl, and Eq. 10 AD
@@ -214,7 +214,7 @@ def make_figure(d, curves):
     ax.set_ylim(1e-10, 1e-3)
     ax.set_xlabel("Displacement (m)")
     ax.set_ylabel("Annual rate of exceedance")
-    ax.set_title("Takao et al. (2013) Fig. 11 case (a) — computed vs digitized")
+    ax.set_title("Takao et al. (2013) Fig. 11 case (a) - computed vs digitized")
     ax.legend(fontsize=7, ncol=2)
     ax.grid(alpha=0.3, which="both")
     fig.tight_layout()

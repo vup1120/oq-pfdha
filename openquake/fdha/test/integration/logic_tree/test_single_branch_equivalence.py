@@ -105,7 +105,7 @@ def test_single_branch_equivalence(tmp_path):
         skiprows=1,
         usecols=1,
     )
-    assert np.any(branch_rates > 0), "branch curve is zero — test is vacuous"
+    assert np.any(branch_rates > 0), "branch curve is zero - test is vacuous"
     assert np.allclose(lt_rates[0], branch_rates, atol=1e-12, rtol=0)
 
 

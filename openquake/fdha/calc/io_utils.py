@@ -1,3 +1,4 @@
+"""Plotting and JSON-export helpers for hazard curves and hazard maps."""
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -22,14 +23,14 @@ def plot_hazard_map(
     title: Optional[str] = None,
 ) -> None:
     """
-    Plot a fault‐displacement hazard map.
+    Plot a fault-displacement hazard map.
 
     :param hazard_map: 2D array of shape (n_rows, n_cols) with displacement (m) values
     :param lons: 1D array of longitudes for the grid columns
     :param lats: 1D array of latitudes for the grid rows
-    :param fault_lons: list or 1D array of longitudes for fault‐trace sites
-    :param fault_lats: list or 1D array of latitudes for fault‐trace sites
-    :param trace_disp: list or 1D array of displacement (m) values at fault‐trace sites
+    :param fault_lons: list or 1D array of longitudes for fault-trace sites
+    :param fault_lats: list or 1D array of latitudes for fault-trace sites
+    :param trace_disp: list or 1D array of displacement (m) values at fault-trace sites
     :param plot_file: optional path to save the plot (if None, show interactively)
     :param title: optional figure title (default: generic hazard map title)
     """
@@ -42,7 +43,7 @@ def plot_hazard_map(
     lon_grid, lat_grid = np.meshgrid(lons, lats)
     disp_flat = hazard_map.flatten()
 
-    # Mask out zero‐displacement cells
+    # Mask out zero-displacement cells
     grid_mask = disp_flat > 0
     grid_lons = lon_grid.flatten()[grid_mask]
     grid_lats = lat_grid.flatten()[grid_mask]
@@ -56,7 +57,7 @@ def plot_hazard_map(
 
     # Nothing to plot?
     if grid_disp.size == 0 and trace_vals.size == 0:
-        logger.warning("No non‐zero displacements to plot.")
+        logger.warning("No non-zero displacements to plot.")
         return
 
     # Color normalization
@@ -244,7 +245,7 @@ def _save_single_curve(
     ax.set_ylabel("Annual Exceedance Rate", fontsize=12, fontweight='bold')
     title = "Fault Displacement Hazard Curve"
     if title_suffix:
-        title = f"{title} — {title_suffix}"
+        title = f"{title} - {title_suffix}"
     ax.set_title(title, fontsize=14, fontweight='bold', pad=15)
     ax.grid(True, which='major', linestyle='-', alpha=0.3, linewidth=0.8)
     ax.grid(True, which='minor', linestyle='--', alpha=0.2, linewidth=0.5)
@@ -288,11 +289,11 @@ def plot_fault_displacement_hazard(
     n_sites = len(poes)
 
     if n_sites == 1:
-        # Single-site path — unchanged behaviour
+        # Single-site path - unchanged behaviour
         _save_single_curve(imls, poes[0], plot_file, title_suffix="")
         return
 
-    # Multi-site path — one figure per site
+    # Multi-site path - one figure per site
     if plot_file:
         base, ext = os.path.splitext(plot_file)
         for idx, poe in enumerate(poes):
@@ -349,7 +350,7 @@ def save_map_to_json(
     trace_disp: Union[List[float], np.ndarray],
     output_file: str
 ) -> None:
-    """Save hazard‐map data to JSON."""
+    """Save hazard-map data to JSON."""
     data = {
         "hazard_map": hazard_map.tolist(),
         "lons": lons.tolist(),

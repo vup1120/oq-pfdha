@@ -60,7 +60,7 @@
       </logicTreeBranchSet>
     </logicTreeBranchingLevel>
 
-    <!-- ====== BL2: PRIMARY-FD (normal) — Youngs2003 AD/MD variants ======== -->
+    <!-- ====== BL2: PRIMARY-FD (normal) - Youngs2003 AD/MD variants ======== -->
     <logicTreeBranchingLevel branchingLevelID="bl2_nm_pfd">
       <logicTreeBranchSet branchSetID="bs2_nm_pfd"
                           uncertaintyType="fdhaPrimaryFDModel"
@@ -87,7 +87,7 @@
       </logicTreeBranchSet>
     </logicTreeBranchingLevel>
 
-    <!-- ============ BL3: SECONDARY-SR (normal) — 2 branches ============== -->
+    <!-- ============ BL3: SECONDARY-SR (normal) - 2 branches ============== -->
     <logicTreeBranchingLevel branchingLevelID="bl3_nm_ssr">
       <logicTreeBranchSet branchSetID="bs3_nm_ssr"
                           uncertaintyType="fdhaSecondarySRModel"
@@ -112,7 +112,7 @@
       </logicTreeBranchSet>
     </logicTreeBranchingLevel>
 
-    <!-- BL4a: SECONDARY-FD (normal) — Youngs2003 FD paired with Youngs SSR -->
+    <!-- BL4a: SECONDARY-FD (normal) - Youngs2003 FD paired with Youngs SSR -->
     <logicTreeBranchingLevel branchingLevelID="bl4_nm_sfd_youngs">
       <logicTreeBranchSet branchSetID="bs4_nm_sfd_youngs"
                           uncertaintyType="fdhaSecondaryFDModel"
@@ -129,7 +129,7 @@
       </logicTreeBranchSet>
     </logicTreeBranchingLevel>
 
-    <!-- BL4b: SECONDARY-FD (normal) — Visini2025 FD paired with Visini SSR -->
+    <!-- BL4b: SECONDARY-FD (normal) - Visini2025 FD paired with Visini SSR -->
     <logicTreeBranchingLevel branchingLevelID="bl4_nm_sfd_visini">
       <logicTreeBranchSet branchSetID="bs4_nm_sfd_visini"
                           uncertaintyType="fdhaSecondaryFDModel"

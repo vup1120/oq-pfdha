@@ -52,7 +52,7 @@ def _style_from_rake(rake: float) -> str:
 class ThingbaijamInterface(BaseMSRSigma, BaseASRSigma):
     """Scaling relations of Thingbaijam et al. (2017) for crustal events."""
 
-    # Thingbaijam et al. (2017) – crustal events only
+    # Thingbaijam et al. (2017) - crustal events only
     LENGTH = {
         "strike-slip": Coeff(-2.943, 0.681, 0.151),
         "reverse":     Coeff(-2.693, 0.614, 0.083),

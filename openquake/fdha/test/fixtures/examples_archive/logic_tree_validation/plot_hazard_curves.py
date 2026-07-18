@@ -1,8 +1,8 @@
 """Plot hazard curves from the Logic Tree Validation demo.
 
 Overlays, in a single figure:
-  1. single_bilinear      - weight-1.0 tree on Petersen2011PrimaryFD_bilinear
-  2. single_elliptical    - weight-1.0 tree on Petersen2011PrimaryFD_elliptical
+  1. single_bilinear      - weight-1.0 tree on Petersen2011PrimaryFD (version=bilinear)
+  2. single_elliptical    - weight-1.0 tree on Petersen2011PrimaryFD (version=elliptical)
   3. analytical average   - 0.5 * bilinear + 0.5 * elliptical (computed here)
   4. logic-tree blend     - mean column from blend_50_50/out/aggregate_hazard.csv
 
@@ -111,7 +111,7 @@ def main() -> None:
     ax.set_xlabel(r"Displacement threshold $D_0$ (m)")
     ax.set_ylabel(r"Annual rate of exceedance  $\lambda(D_0)$ (1/yr)")
     ax.set_title(
-        "Logic Tree Validation demo — hazard curves\n"
+        "Logic Tree Validation demo - hazard curves\n"
         "Petersen2011PrimaryFD bilinear vs elliptical, 50/50 blend\n"
         r"(strike-slip source, on-trace site; Primary-SR = Pizza2023)"
     )

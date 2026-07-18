@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Correctness: partial Chelungpu NRML — trace horizontal distance r must be
+Correctness: partial Chelungpu NRML - trace horizontal distance r must be
 stable across rupture_mesh_spacing (decoupled from 3-D Rrup mesh density).
 
 Uses the real MeshSpacingError partial fault geometry (not the full trace).
@@ -50,7 +50,7 @@ def test_partial_chelungpu_trace_distance_invariant_fine_meshes(partial_xml_exis
     """Fine rupture meshes (0.25–0.5 km): same trace polyline → r must match tightly.
 
     Sinuous real traces: spacing ≥~1 km changes the mesh top-row polyline enough that
-    horizontal r can drift (geometric approximation), which is expected — not Rrup noise.
+    horizontal r can drift (geometric approximation), which is expected - not Rrup noise.
     """
     spacings = (0.25, 0.5)
     sites_ll = [

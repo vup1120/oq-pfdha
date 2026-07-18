@@ -28,20 +28,56 @@ faults. Bulletin of the Seismological Society of America, 101(2), 805-825.
 
 import numpy as np
 from scipy.stats import norm
+from openquake.fdha.params import check_choice
 from openquake.fdha.primary_surf_displ.base import BasePrimarySurfDispl
 
 
 class Petersen2011PrimaryFD(BasePrimarySurfDispl):
     """
     Implements the Petersen et al. (2011) primary fault displacement model.
+
+    Model contract: DISPLACEMENT_DEFINITION = "principal",
+    DISPLACEMENT_COMPONENT = "lateral" -- Petersen et al. (2011) regress
+    principal strike-slip displacement measured as the lateral (horizontal
+    fault-parallel) component; Sarmiento et al. (2025, Earthquake Spectra)
+    Table 1 lists PEA11 as D_P,L (principal, lateral).
+
+    The along-strike shape variant is selected with the ``version`` model
+    parameter ('quadratic' (default), 'bilinear' or 'elliptical') -- pin it
+    on the logic-tree branch, e.g.::
+
+        [Petersen2011PrimaryFD]
+        version = bilinear
+
+    (all three variants share the same dataset and metric).
     """
 
-    def get_prob(self, d, X_L_ratio, mag, version="quadratic"):
+    DISPLACEMENT_DEFINITION = "principal"
+    DISPLACEMENT_COMPONENT = "lateral"
+
+    _ACCEPTED_VERSIONS = frozenset(["quadratic", "bilinear", "elliptical"])
+
+    def __init__(self, version=None):
+        """
+        :param version: optional along-strike shape variant pinned by the
+            logic-tree branch ('quadratic', 'bilinear' or 'elliptical');
+            ``None`` defers to the ``get_prob`` call (legacy default:
+            'quadratic').
+        """
+        super().__init__()
+        self.version = check_choice(type(self).__name__, "version", version,
+                                    self._ACCEPTED_VERSIONS,
+                                    canon=lambda v: str(v).lower())
+
+    def get_prob(self, d, X_L_ratio, mag, version=None):
         """
         Calculate probability of exceeding displacement thresholds [m] for Petersen et al. (2011).
         Supports vectorized inputs: d (n_displacements,), X_L_ratio (n_sites,), mag (scalar or broadcastable).
         Returns array of shape (n_displacements, n_sites).
         """
+        # Fall back to the constructor-pinned variant, then legacy default
+        if version is None:
+            version = self.version if self.version is not None else "quadratic"
         # Prepare inputs
         d_arr = np.atleast_1d(d).astype(float)
         X_L = np.atleast_1d(X_L_ratio).astype(float)
@@ -185,39 +221,3 @@ class Petersen2011PrimaryFD(BasePrimarySurfDispl):
                 f"'bilinear', 'elliptical', or 'quadratic'.")
         return 1.0 - norm.cdf(np.log(np.asarray(D_AD, dtype=float)),
                               loc=mu, scale=sd)
-
-
-class Petersen2011PrimaryFD_bilinear(Petersen2011PrimaryFD):
-    """Petersen et al. (2011) model fixed to the bilinear along-strike shape."""
-
-    def get_prob(self, d, X_L_ratio, mag, version="quadratic"):
-        """Return exceedance probability using the bilinear shape variant."""
-        return super().get_prob(d=d, X_L_ratio=X_L_ratio, mag=mag, version="bilinear")
-
-    def get_prob_D_AD(self, D_AD, X_L_ratio, version="bilinear"):
-        """Return P(D/AD > x) using the bilinear shape variant."""
-        return super().get_prob_D_AD(D_AD=D_AD, X_L_ratio=X_L_ratio, version="bilinear")
-
-
-class Petersen2011PrimaryFD_elliptical(Petersen2011PrimaryFD):
-    """Petersen et al. (2011) model fixed to the elliptical along-strike shape."""
-
-    def get_prob(self, d, X_L_ratio, mag, version="quadratic"):
-        """Return exceedance probability using the elliptical shape variant."""
-        return super().get_prob(d=d, X_L_ratio=X_L_ratio, mag=mag, version="elliptical")
-
-    def get_prob_D_AD(self, D_AD, X_L_ratio, version="elliptical"):
-        """Return P(D/AD > x) using the elliptical shape variant."""
-        return super().get_prob_D_AD(D_AD=D_AD, X_L_ratio=X_L_ratio, version="elliptical")
-
-
-class Petersen2011PrimaryFD_quadratic(Petersen2011PrimaryFD):
-    """Petersen et al. (2011) model fixed to the quadratic along-strike shape."""
-
-    def get_prob(self, d, X_L_ratio, mag, version="quadratic"):
-        """Return exceedance probability using the quadratic shape variant."""
-        return super().get_prob(d=d, X_L_ratio=X_L_ratio, mag=mag, version="quadratic")
-
-    def get_prob_D_AD(self, D_AD, X_L_ratio, version="quadratic"):
-        """Return P(D/AD > x) using the quadratic shape variant."""
-        return super().get_prob_D_AD(D_AD=D_AD, X_L_ratio=X_L_ratio, version="quadratic")

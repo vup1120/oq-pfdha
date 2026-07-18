@@ -142,7 +142,7 @@ def build_hazard_map_sites(
     #
     # Resample (not merely densify): NRML traces are often digitised at
     # sub-kilometre vertex spacing, so keeping every native vertex would place
-    # thousands of principal sites on a grid that cannot resolve them — the 48
+    # thousands of principal sites on a grid that cannot resolve them - the 48
     # onshore Taiwan faults gave 3 246 trace sites against a 1 040-site 0.1°
     # grid, a ~36x cost for no extra information.
     mean_lat = float(np.mean(lats)) if len(lats) else 0.0
