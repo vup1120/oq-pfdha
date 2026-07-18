@@ -17,9 +17,10 @@ OpenQuake recognises in a source-model logic tree is therefore supported here:
 * ``setMSRAbsolute``, ``setLowerSeismDepthAbsolute``,
   ``setUpperSeismDepthAbsolute``, ``recomputeMmax``, ``dummy``.
 
-Each realisation expanded by :func:`enumerate_realizations` carries the base
-source-model XML file(s) chosen by the realisation's ``sourceModel`` branch
-plus a list of ``(uncertainty_type, value, applyToSources)`` modifications.
+Each realisation yielded by OpenQuake's ``SourceModelLogicTree`` iterator
+carries the base source-model XML file(s) chosen by the realisation's
+``sourceModel`` branch plus a list of
+``(uncertainty_type, value, applyToSources)`` modifications.
 The driver applies them via :func:`apply_realization_to_sources` (a thin
 wrapper around :func:`openquake.hazardlib.lt.apply_uncertainties`) before
 handing the resulting source dict to the FDHA calculator.
@@ -109,11 +110,15 @@ def parse_source_model_logic_tree(
     """Parse a source-model logic-tree and return one realisation per path.
 
     Internally delegates to
-    :class:`openquake.hazardlib.logictree.SourceModelLogicTree` and walks the
-    branch-set tree with :meth:`enumerate_paths`, so the entire OpenQuake
-    NRML schema (weight sums, file existence, ``applyToBranches``,
-    ``applyToSources``, and every supported ``uncertaintyType``) applies
-    transparently.
+    :class:`openquake.hazardlib.logictree.SourceModelLogicTree`, whose
+    iterator enumerates (or samples) realisations, and to its
+    :meth:`bset_values` for the per-realisation ``(branchset, value)`` pairs.
+    The whole OpenQuake NRML schema therefore applies transparently: weight
+    sums, relative-path/file-existence validation (raised at construction
+    time), ``applyToBranches``, ``applyToSources``, and every supported
+    ``uncertaintyType``.  We only translate OpenQuake's ``Realization`` into
+    the FDHA-facing :class:`SourceModelBranch` record and resolve the
+    sourceModel branch's XML file(s) to absolute paths for the manifests.
     """
     xml_path = Path(xml_path)
     if not xml_path.exists():
@@ -122,43 +127,24 @@ def parse_source_model_logic_tree(
         )
 
     smlt = _open_smlt(xml_path)
-    basedir = xml_path.parent
+    basedir = Path(smlt.basepath)
 
     realizations: list[SourceModelBranch] = []
-    sm_branchset = smlt.branchsets[0]
-    if sm_branchset.uncertainty_type != "sourceModel":
-        # OpenQuake itself raises before this in practice but be defensive.
-        raise SourceModelLogicTreeError(
-            f"First branch set in {xml_path} must be uncertaintyType=sourceModel"
-        )
-
-    for weight, branches in smlt.root_branchset.enumerate_paths():
-        path_ids = [br.branch_id for br in branches]
-        # The first branch is always the sourceModel branch; subsequent ones
-        # correspond to other branchsets in declaration order.
-        sm_branch = branches[0]
-        files_raw = _split_branch_value(sm_branch.value)
-        if not files_raw:
-            raise SourceModelLogicTreeError(
-                f"sourceModel branch '{sm_branch.branch_id}' in {xml_path} "
-                "has empty <uncertaintyModel>"
-            )
-        resolved = [_resolve_source_path(f, basedir) for f in files_raw]
-        for raw, p in zip(files_raw, resolved):
-            if not p.exists():
-                raise SourceModelLogicTreeError(
-                    f"Source model file referenced by branch "
-                    f"'{sm_branch.branch_id}' not found: {p} (raw: '{raw}')"
-                )
-        abs_files = [str(p.resolve()) for p in resolved]
+    for rlz in smlt:
+        path_ids = list(rlz.lt_path)
+        sm_branch_id = path_ids[0]
+        # ``rlz.value`` is one entry per branchset; the first is the
+        # sourceModel branch's ``<uncertaintyModel>`` (a whitespace-separated
+        # set of one or more XML files, already validated by hazardlib).
+        files_raw = _split_branch_value(rlz.value[0])
+        abs_files = [str((basedir / f).resolve()) for f in files_raw]
         joined = abs_files[0] if len(abs_files) == 1 else ",".join(abs_files)
 
-        # bset_values returns (branchset, value) for non-sourceModel
-        # branchsets that participate in this realisation.
-        bset_values = smlt.bset_values(path_ids)
         uncertainties: list[UncertaintyApplication] = []
-        for bset, value in bset_values:
-            br_id = _branch_id_for(bset, path_ids)
+        for bset, value in smlt.bset_values(path_ids):
+            ordinal = getattr(bset, "ordinal", None)
+            br_id = path_ids[ordinal] if ordinal is not None else ""
+            filters = getattr(bset, "filters", {})
             uncertainties.append(
                 UncertaintyApplication(
                     uncertainty_type=bset.uncertainty_type,
@@ -166,10 +152,10 @@ def parse_source_model_logic_tree(
                     branch_set_id=getattr(bset, "id", "") or "",
                     branch_id=br_id,
                     apply_to_sources=_tuple_or_none(
-                        getattr(bset, "filters", {}).get("applyToSources")
+                        filters.get("applyToSources")
                     ),
                     apply_to_branches=_tuple_or_none(
-                        getattr(bset, "filters", {}).get("applyToBranches")
+                        filters.get("applyToBranches")
                     ),
                 )
             )
@@ -178,16 +164,16 @@ def parse_source_model_logic_tree(
             SourceModelBranch(
                 branch_id="|".join(path_ids),
                 source_model_file=joined,
-                weight=float(weight),
+                weight=float(rlz.weight),
                 metadata={
-                    "branch_path": list(path_ids),
+                    "branch_path": path_ids,
                     "files": abs_files,
                     "logic_tree_file": str(xml_path.resolve()),
-                    "source_model_branch_id": sm_branch.branch_id,
-                    "raw_value": sm_branch.value,
+                    "source_model_branch_id": sm_branch_id,
+                    "raw_value": rlz.value[0],
                 },
                 uncertainties=tuple(uncertainties),
-                ordinal=len(realizations),
+                ordinal=rlz.ordinal,
             )
         )
 
@@ -224,26 +210,6 @@ def _split_branch_value(value: Any) -> list[str]:
         return [str(v).strip() for v in value if str(v).strip()]
     text = str(value).strip()
     return text.split() if text else []
-
-
-def _resolve_source_path(raw: str, basedir: Path) -> Path:
-    p = Path(raw)
-    return p if p.is_absolute() else basedir / p
-
-
-def _branch_id_for(bset, path_ids: list[str]) -> str:
-    """Find the branch ID from ``path_ids`` that belongs to ``bset``.
-
-    OpenQuake stores ``bset.ordinal`` as the branchset's position in the
-    logic tree (0 for the sourceModel root, etc.), and ``path_ids`` is a flat
-    list in branchset declaration order, so the lookup is just an index.
-    """
-    ordinal = getattr(bset, "ordinal", None)
-    if ordinal is None:
-        return ""
-    if 0 <= ordinal < len(path_ids):
-        return path_ids[ordinal]
-    return ""
 
 
 def _tuple_or_none(value):
