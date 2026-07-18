@@ -16,9 +16,9 @@ def compute_hazard_maps(
 ) -> np.ndarray:
     """
     OpenQuake Engine's standard implementation for computing hazard maps from curves.
-    
+
     Given a set of hazard curve poes, interpolate hazard maps at the specified poes.
-    
+
     Parameters:
     -----------
     curves : array-like
@@ -30,7 +30,7 @@ def compute_hazard_maps(
         should be an array-like of floats.
     poes : array-like
         Value(s) on which to interpolate a hazard map from the input curves.
-        
+
     Returns:
     --------
     array
@@ -71,10 +71,10 @@ def get_map_from_curves(
 ) -> np.ndarray:
     """
     Convert hazard curves to displacement map values for a target probability of exceedance.
-    
+
     This function uses OpenQuake Engine's standard interpolation method to ensure
     consistency with the official OpenQuake implementation.
-    
+
     Parameters:
     -----------
     imls : array-like
@@ -83,7 +83,7 @@ def get_map_from_curves(
         Matrix of probabilities of exceedance for each site and displacement level
     pex : float
         Target probability of exceedance (e.g., 1/return_period)
-    
+
     Returns:
     --------
     array
@@ -92,6 +92,6 @@ def get_map_from_curves(
     # Use OpenQuake's standard compute_hazard_maps function
     # This ensures we get the exact same results as OpenQuake Engine
     hazard_maps = compute_hazard_maps(poes_matrix, imls, [pex])
-    
+
     # Return the first (and only) column since we only have one target probability
     return hazard_maps[:, 0]

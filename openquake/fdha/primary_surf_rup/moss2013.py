@@ -17,7 +17,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.fdha.primary_surf_rup.moss2013` 
+Module :mod:`openquake.fdha.primary_surf_rup.moss2013`
 """
 
 import numpy as np
@@ -60,19 +60,19 @@ class Moss2013PrimarySR(BasePrimarySurfRup):
     def get_prob(self, mag: float, style=None, vs30: float = None) -> float:
         """
         Model of Moss et al. (2013) for the probability of surface rupture
-        based on the rupture mechanism (faulting style) and site conditions 
+        based on the rupture mechanism (faulting style) and site conditions
         (shear-wave velocity).
 
-        This model estimates the likelihood of surface rupture for two styles 
-        of faulting: "reverse" and "strike-slip." The probability is calculated 
-        as a function of event magnitude (mag) and the time-averaged shear-wave 
-        velocity to a depth of 30 meters (Vs30), which characterizes the site as 
+        This model estimates the likelihood of surface rupture for two styles
+        of faulting: "reverse" and "strike-slip." The probability is calculated
+        as a function of event magnitude (mag) and the time-averaged shear-wave
+        velocity to a depth of 30 meters (Vs30), which characterizes the site as
         soft or stiff soil.
 
         :param mag:
-            The magnitude of the seismic event (float). Higher magnitudes generally 
+            The magnitude of the seismic event (float). Higher magnitudes generally
             result in greater probabilities of surface rupture.
-            
+
         :param style:
             The faulting style (string, required). Accepted values are:
             - "reverse": Reverse faulting mechanism.
@@ -81,13 +81,13 @@ class Moss2013PrimarySR(BasePrimarySurfRup):
             If an unsupported style is provided, a ValueError will be raised.
 
         :param vs30:
-            The time-averaged shear-wave velocity (float) to a depth of 30 meters 
-            (Vs30). This parameter distinguishes between stiff soil or rock (Vs30 > 600 m/s) 
-            and soft soil (Vs30 ≤ 600 m/s). The rupture probability varies based on 
+            The time-averaged shear-wave velocity (float) to a depth of 30 meters
+            (Vs30). This parameter distinguishes between stiff soil or rock (Vs30 > 600 m/s)
+            and soft soil (Vs30 ≤ 600 m/s). The rupture probability varies based on
             this classification.
-            
+
         :raises ValueError:
-            If an invalid style is provided, the function raises an error indicating 
+            If an invalid style is provided, the function raises an error indicating
             the acceptable faulting styles.
 
         :return:

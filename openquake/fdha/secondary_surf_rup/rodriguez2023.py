@@ -22,10 +22,12 @@ the model of Rodriguez Padilla and Oskin (2023) in :class:`Rodriguez2023Secondar
 
 Supported Fault Styles: Strike-slip only
 
-Reference:
-    Rodriguez Padilla, A. M., & Oskin, M. E. (2023). Displacement hazard from
-    distributed ruptures in strike-slip earthquakes. Bulletin of the Seismological
-    Society of America, 113(6), 2730-2745. https://doi.org/10.1785/0120230044
+References
+----------
+Rodriguez Padilla, A. M., & Oskin, M. E. (2023). Displacement hazard from
+distributed ruptures in strike-slip earthquakes. Bulletin of the
+Seismological Society of America, 113(6), 2730-2745.
+https://doi.org/10.1785/0120230044
 """
 
 import numpy as np

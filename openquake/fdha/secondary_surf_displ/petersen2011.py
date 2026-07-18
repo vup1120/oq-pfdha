@@ -17,9 +17,9 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.fdha.secondary_surf_displ.petersen2011` extends
-model of Petersen et al. (2011) for secondary (distributed) fault displacements
-into :class:`Petersen2011SecondaryFD`
+Module :mod:`openquake.fdha.secondary_surf_displ.petersen2011` implements the
+Petersen et al. (2011) model for secondary (distributed) fault displacements
+in :class:`Petersen2011SecondaryFD`.
 """
 
 import numpy as np
@@ -70,7 +70,7 @@ class Petersen2011SecondaryFD(BaseSecondarySurfDispl):
         150: {"a": -1.0934, "b": 3.5526, "sigma": 1.0188},  # 150 x 150 m
         200: {"a": -1.1538, "b": 4.2342, "sigma": 1.0177},  # 200 x 200 m
     }
-    
+
     # Near-field interpolation points from Table 5 (page 812, Petersen et al., 2011);
     # p0/p1/p2 converted from percent to fractions
     NEAR_FIELD_POINTS = {
@@ -134,56 +134,56 @@ class Petersen2011SecondaryFD(BaseSecondarySurfDispl):
         d = np.asarray(d)
         if d.ndim == 0:
             d = np.array([d])
-        
+
         r = np.asarray(r)
         if r.ndim == 0:
             r = np.array([r])
-        
+
         # Convert distance from km to m
         r = r * 1000  # Now in meters
-        
+
         # Ensure magnitude is scalar
         if np.isscalar(mag):
             mag = float(mag)
         else:
             mag = float(np.atleast_1d(mag)[0])
-        
+
         # Validate inputs
         if not (6 <= mag <= 8):
             raise ValueError("Magnitude must be between 6 and 8 for strike-slip faults")
-        
+
         # Handle zero distances to avoid log(0) warning
         # Replace zeros with a small positive value (0.1 m)
         r = np.where(r == 0, 0.1, r)
-        
+
         # Get dimensions
         n_sites = r.shape[0]
         n_displacements = d.shape[0]
-        
+
         # Calculate average displacement (D_ave) for strike-slip faults per Wells and Coppersmith (1994)
         D_ave = 10 ** (-6.32 + 0.90 * mag)  # In meters, Page 813
         sigma_D_ave = 0.28  # Standard deviation in log10 units
-        
+
         # Convert displacement to centimeters for Petersen's regression (Page 818, Eqn 18)
         d_cm = d * 100  # Convert to cm to match paper units
-        
+
         # Calculate mean for each site (Page 818, Eqn 18)
         # mu will have shape (n_sites,)
         mu = 1.4016 * mag - 0.1671 * np.log(r) - 6.7991  # ln(d) in cm
-        
+
         # Standard deviation in ln(cm) units, Page 818
         sigma_dist = 1.1193
-        
+
         # Reshape arrays for proper broadcasting
         # d_cm: (n_displacements,) -> (1, n_displacements)
         # mu: (n_sites,) -> (n_sites, 1)
         d_cm_reshaped = d_cm[np.newaxis, :]  # Shape (1, n_displacements)
         mu_reshaped = mu[:, np.newaxis]  # Shape (n_sites, 1)
-        
+
         # Calculate probability of exceeding d using log-normal distribution
         # This will broadcast to shape (n_sites, n_displacements)
         prob_exceeding = 1 - norm.cdf(np.log(d_cm_reshaped), loc=mu_reshaped, scale=sigma_dist)
-        
+
         # Handle return values following Youngs2003 pattern
         if n_sites == 1 and n_displacements == 1:
             return float(prob_exceeding[0, 0])

@@ -55,13 +55,13 @@ class Pizza2023PrimarySR(BasePrimarySurfRup):
         Model of Pizza et al., 2023 for the probability of surface rupture
         based on rupture mechanism and earthquake magnitude.
 
-        This model estimates the likelihood of surface rupture for four faulting 
-        styles: "all", "normal", "reverse", and "strike-slip." The probability is 
-        calculated using a logistic regression formula, with coefficients varying 
+        This model estimates the likelihood of surface rupture for four faulting
+        styles: "all", "normal", "reverse", and "strike-slip." The probability is
+        calculated using a logistic regression formula, with coefficients varying
         based on the selected faulting style.
 
         :param mag:
-            The magnitude of the seismic event (float). Larger magnitudes generally 
+            The magnitude of the seismic event (float). Larger magnitudes generally
             lead to higher probabilities of surface rupture.
 
         :param style:
@@ -70,16 +70,16 @@ class Pizza2023PrimarySR(BasePrimarySurfRup):
             - "normal": Represents normal faulting mechanisms.
             - "reverse": Represents reverse faulting mechanisms.
             - "strike-slip": Represents strike-slip faulting mechanisms.
-            
-            Default is "all." If an unsupported style is provided, a ValueError will 
+
+            Default is "all." If an unsupported style is provided, a ValueError will
             be raised.
 
         :raises ValueError:
-            If an invalid style is provided, the function raises an error indicating 
+            If an invalid style is provided, the function raises an error indicating
             the acceptable faulting styles.
 
         :return:
-            The probability of surface rupture as a float value between 0 and 1, 
+            The probability of surface rupture as a float value between 0 and 1,
             calculated using a logistic regression model.
         """
 
@@ -97,7 +97,7 @@ class Pizza2023PrimarySR(BasePrimarySurfRup):
             )
 
         m = np.asarray(mag, dtype=float)
-        
+
         if style == "all":
             a = -14.47
             b = 2.177
@@ -114,5 +114,5 @@ class Pizza2023PrimarySR(BasePrimarySurfRup):
             raise ValueError(f"Invalid style '{style}'.")
         fx = a + b * m
         prob = np.exp(fx) / (1.0 + np.exp(fx))
-        
+
         return prob.item() if prob.shape == () else prob

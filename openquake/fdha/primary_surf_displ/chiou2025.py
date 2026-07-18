@@ -13,8 +13,15 @@ Behavior and constraints:
 - Recommended magnitude range is (6.0, 8.3). Out-of-range magnitudes emit a warning but are computed.
 - The model returns exceedance probabilities for the provided displacement threshold(s).
 
-References: Chiou et al. (2025), coefficients loaded from
-`openquake/fdha/primary_surf_displ/data/chiou_2025_coefficients.csv`.
+Coefficients are loaded from
+``openquake/fdha/primary_surf_displ/data/chiou_2025_coefficients.csv``.
+
+References
+----------
+Chiou, B., Chen, R., Thomas, K., Milliner, C., Dawson, T., & Petersen, M.
+(2025). Fault displacement model for surface principal rupture of strike-slip
+faults. Earthquake Spectra, 41(4), 2746-2782.
+https://doi.org/10.1177/87552930251337703
 """
 
 from __future__ import annotations

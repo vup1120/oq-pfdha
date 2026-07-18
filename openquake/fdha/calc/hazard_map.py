@@ -72,7 +72,7 @@ def compute_hazard_map(
     )
 
     logger.info("Loaded %d fault sources", len(fault_sources))
-    
+
     def build_surface(source) -> Optional[object]:
         """Return an OpenQuake surface instance suitable for distance queries."""
         if hasattr(source, 'surface'):
@@ -115,7 +115,7 @@ def compute_hazard_map(
                     getattr(source, 'source_id', getattr(source, 'name', 'unknown')),
                 )
         return None
-    
+
     surface_cache = {}
     for source_id, source in fault_sources.items():
         surface = build_surface(source)
@@ -126,7 +126,7 @@ def compute_hazard_map(
                 "No usable surface for source '%s' - distances will fallback to all grid sites",
                 getattr(source, 'source_id', getattr(source, 'name', 'unknown')),
             )
-    
+
     from openquake.fdha.calc.utils.rupture_distance import (
         VectorizedRuptureDistanceCalculator,
         _sections_info, SURFACE_DEPTH_TOLERANCE_KM,
@@ -158,7 +158,7 @@ def compute_hazard_map(
                 source_id,
                 exc,
             )
-    
+
     # Compute minimum distance with robust handling
     if len(dist_arrays) == 0:
         logger.warning("No valid surfaces found for distance calculation. All sites will be considered active.")
@@ -215,14 +215,14 @@ def compute_hazard_map(
 
     # Combine active grid and trace sites
     combined_sites = active_grid_sites + trace_sites
-    
+
     if len(combined_sites) == 0:
         raise ValueError(
             f"No sites found within {max_dist} km of any fault. "
             f"Check your configuration: region={geom['region']}, "
             f"max_distance_km={max_dist}, and ensure your source model has valid fault geometries."
         )
-    
+
     combined_sitecol = SiteCollection(combined_sites)
     logger.info("Computing hazard map for %d sites (%d grid + %d trace)",
                 len(combined_sites), len(active_grid_sites), len(trace_sites))

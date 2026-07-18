@@ -43,13 +43,13 @@ def _reduce_mc(
     """
     if prob is None:
         return 1.0
-    
+
     arr = np.asarray(prob)
-    
+
     # Fast path: scalar input
     if arr.ndim == 0:
         return float(arr)
-    
+
     # For 1D arrays, reduce over the only axis
     if arr.ndim == 1:
         if method == "percentile":
@@ -61,7 +61,7 @@ def _reduce_mc(
             return np.mean(arr, axis=0)
         else:  # "median" by default
             return np.median(arr, axis=0)
-    
+
     # For 2D arrays, reduce over the last axis (MC dimension)
     if method == "percentile":
         qq = float(q)
@@ -153,21 +153,21 @@ def _to_sites_x_displ(
     """
     if arr is None:
         return None
-    
+
     # Precompute reduction parameters once
     method = red_cfg.get("method", "median")
     q_val = red_cfg.get("q", 50)
-    
+
     A = np.asarray(arr)
-    
+
     # Fast path: already correct shape
     if A.shape == (n_sites, n_displ):
         return A
-    
+
     # Fast path: scalar input
     if A.ndim == 0:
         return np.full((n_sites, n_displ), float(A), dtype=A.dtype)
-    
+
     # 1D cases
     if A.ndim == 1:
         if A.size == n_displ:
@@ -179,24 +179,24 @@ def _to_sites_x_displ(
         # treat as MC vector -> reduce to scalar, broadcast
         val = float(_reduce_mc(A, method=method, q=q_val))
         return np.full((n_sites, n_displ), val, dtype=float)
-    
+
     # 2D cases
     if A.ndim == 2:
         # Transpose case
         if A.shape == (n_displ, n_sites):
             return A.T
-        
+
         # Special case: (1, n_displ) should be broadcast directly to (n_sites, n_displ)
         # This happens when model returns a single site's result that needs to be broadcast
         if A.shape == (1, n_displ):
             return np.broadcast_to(A, (n_sites, n_displ))
-        
+
         # Handle cases where one axis matches n_displ or n_sites
         if A.shape[0] == n_displ:
             # (n_displ, n_mc) -> reduce over MC axis, then broadcast to sites
             red = _reduce_over_axes(A, axes=1, method=method, q=q_val)
             return np.broadcast_to(red.reshape(1, n_displ), (n_sites, n_displ))
-        
+
         if A.shape[1] == n_displ:
             # (n_mc, n_displ) -> reduce over MC axis, then broadcast to sites
             # But skip if shape is (1, n_displ) - already handled above
@@ -204,22 +204,22 @@ def _to_sites_x_displ(
                 return np.broadcast_to(A, (n_sites, n_displ))
             red = _reduce_over_axes(A, axes=0, method=method, q=q_val)
             return np.broadcast_to(red.reshape(1, n_displ), (n_sites, n_displ))
-        
+
         if A.shape[0] == n_sites:
             # (n_sites, n_mc) -> reduce over MC axis, then broadcast to displ
             red = _reduce_over_axes(A, axes=1, method=method, q=q_val)
             return np.broadcast_to(red.reshape(n_sites, 1), (n_sites, n_displ))
-        
+
         if A.shape[1] == n_sites:
             # (n_mc, n_sites) -> reduce over MC axis, then broadcast to displ
             red = _reduce_over_axes(A, axes=0, method=method, q=q_val)
             return np.broadcast_to(red.reshape(n_sites, 1), (n_sites, n_displ))
-    
+
     # >=3D: find site/displ axes and reduce the rest
     shape = A.shape
     isite = next((i for i, s in enumerate(shape) if s == n_sites), None)
     idispl = next((i for i, s in enumerate(shape) if s == n_displ and i != isite), None)
-    
+
     if isite is not None and idispl is not None:
         # Move site and displ axes to front, then reduce over remaining axes
         A2 = np.moveaxis(A, (isite, idispl), (0, 1))  # -> (site, displ, extra...)
@@ -227,7 +227,7 @@ def _to_sites_x_displ(
             A2 = _reduce_over_axes(A2, axes=tuple(range(2, A2.ndim)),
                                    method=method, q=q_val)
         return A2
-    
+
     # Fallback: reduce everything to a scalar, broadcast
     val = float(_reduce_mc(A, method=method, q=q_val))
     return np.full((n_sites, n_displ), val, dtype=float)

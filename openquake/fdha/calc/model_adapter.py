@@ -1,9 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-Legacy Model Adapter for FDHA calculations.
+Legacy model adapter for FDHA calculations.
 
-This module provides backward compatibility by wrapping existing FDHA models
-to work with the new FDHAContext-based calculation pattern.
+``LegacyModelAdapter`` bridges the hazard kernel's fixed calling convention
+to the heterogeneous model APIs: it inspects each model's signature to pass
+only the keyword arguments it accepts, assembles the model inputs from the
+:class:`~openquake.fdha.calc.contexts.FDHAContext`, reduces internal
+Monte-Carlo / epistemic sample dimensions by the mean, normalizes output
+shapes, and applies the near-field distance floor to the models that declare
+it. It is scheduled for removal once the models expose a fixed, vectorized
+``compute(ctx)`` interface (see docs/EngineIntegration.md, sections 4.2 and
+8).
 """
 
 import numpy as np
@@ -46,20 +53,20 @@ def effective_displacement_definition(model):
 class LegacyModelAdapter:
     """
     Wraps legacy FDHA models for use with FDHAContext.
-    
+
     Provides backward compatibility during migration to context-based
     calculations. Automatically detects model type and handles parameter
     extraction from context objects.
-    
+
     Example:
         adapter = LegacyModelAdapter(my_model, {'style': 'normal'})
         P_sr = adapter.compute_primary_sr(ctx, red_cfg)
     """
-    
+
     def __init__(self, model: Any, model_params: Dict[str, Any] = None):
         """
         Initialize adapter for a model.
-        
+
         Args:
             model: Model instance with get_prob() method
             model_params: Default parameters for model calls
@@ -67,7 +74,7 @@ class LegacyModelAdapter:
         self.model = model
         self.model_params = model_params or {}
         self._signature_cache: Dict[tuple, set] = {}
-        
+
         # Auto-detect model type from class name
         class_name = model.__class__.__name__
         if 'PrimarySR' in class_name or 'PrimarySurfRup' in class_name:
@@ -107,15 +114,15 @@ class LegacyModelAdapter:
     def _get_method_params(self, method_name: str) -> set:
         """
         Get valid parameter names for a method (cached).
-        
+
         Args:
             method_name: Name of the method
-            
+
         Returns:
             Set of valid parameter names
         """
         cache_key = (id(self.model.__class__), method_name)
-        
+
         if cache_key not in self._signature_cache:
             method = getattr(self.model, method_name, None)
             if method is None:
@@ -126,9 +133,9 @@ class LegacyModelAdapter:
                     self._signature_cache[cache_key] = set(sig.parameters.keys())
                 except (ValueError, TypeError):
                     self._signature_cache[cache_key] = set()
-        
+
         return self._signature_cache[cache_key]
-    
+
     def _call_model(self, method_name: str, **kwargs) -> Any:
         """
         Call a model method with only the parameters it accepts.
@@ -159,7 +166,7 @@ class LegacyModelAdapter:
                 f"{self.model.__class__.__name__}.{method_name} returned "
                 f"None; models must return probabilities")
         return result
-    
+
     def _ctx_metrics(self, ctx: 'FDHAContext'):
         """(r, x_L, L) arrays for this model's declared reference-line method.
 
@@ -191,7 +198,7 @@ class LegacyModelAdapter:
             Array of shape (N,); model errors propagate
         """
         from openquake.fdha.calc.utils.probability import _reduce_mc
-        
+
         N = len(ctx)
 
         style = self._resolve_style(ctx, 'primary_surf_rup')
@@ -240,7 +247,7 @@ class LegacyModelAdapter:
 
         # Broadcast to all sites
         return np.full(N, _reduced_scalar(result), dtype=np.float64)
-    
+
     def compute_primary_fd(
         self,
         ctx: 'FDHAContext',
@@ -261,7 +268,7 @@ class LegacyModelAdapter:
             Array of shape (N, D); model errors propagate
         """
         from openquake.fdha.calc.utils.probability import _to_sites_x_displ
-        
+
         N = len(ctx)
         D = len(displacements)
 
@@ -310,7 +317,7 @@ class LegacyModelAdapter:
         result = self._call_model('get_prob', **kwargs)
 
         arr = np.asarray(result)
-        
+
         # Handle different output shapes
         if arr.shape == (N, D):
             return arr.astype(np.float64)
@@ -328,10 +335,10 @@ class LegacyModelAdapter:
             elif arr.size == N:
                 # Per-site scalar - broadcast to all displacements
                 return np.broadcast_to(arr.reshape(N, 1), (N, D)).copy().astype(np.float64)
-        
+
         # Scalar or unknown shape - use _to_sites_x_displ for normalization
         return _to_sites_x_displ(arr, N, D, red_cfg)
-    
+
     def compute_secondary_sr(
         self,
         ctx: 'FDHAContext',
@@ -339,18 +346,18 @@ class LegacyModelAdapter:
     ) -> np.ndarray:
         """
         Compute secondary (distributed) surface rupture probability.
-        
+
         Uses fully vectorized operations - no per-site fallback loops.
-        
+
         Args:
             ctx: FDHA context
             red_cfg: MC reduction config
-            
+
         Returns:
             Array of shape (N,)
         """
         from openquake.fdha.calc.utils.probability import _reduce_mc
-        
+
         N = len(ctx)
 
         style = self._resolve_style(ctx, 'secondary_surf_rup')
@@ -370,7 +377,7 @@ class LegacyModelAdapter:
         # Ensure version is string if present (Youngs2003SecondarySR expects string)
         if 'version' in kwargs:
             kwargs['version'] = str(kwargs['version'])
-        
+
         # Vectorized call - no fallback to per-site loops; errors propagate
         result = self._call_model('get_prob', **kwargs)
 
@@ -416,7 +423,7 @@ class LegacyModelAdapter:
         # Higher dimensional - reduce and broadcast
         return np.full(N, float(np.atleast_1d(_red(arr)).flat[0]),
                        dtype=np.float64)
-    
+
     def compute_secondary_fd(
         self,
         ctx: 'FDHAContext',
@@ -480,11 +487,11 @@ class LegacyModelAdapter:
             'style': style,
             **{k: v for k, v in self.model_params.items() if k != 'style'},
         }
-        
+
         # Ensure percentile is string if present (Youngs2003SecondaryFD expects string)
         if 'percentile' in kwargs:
             kwargs['percentile'] = str(kwargs['percentile'])
-        
+
         # Vectorized call; errors propagate
         result = self._call_model('get_prob', **kwargs)
         return _to_sites_x_displ(result, N, D, red_cfg)

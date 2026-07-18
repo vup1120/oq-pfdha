@@ -583,14 +583,14 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
                 seg = p2 - p1
                 seg_len2 = float(np.dot(seg, seg))
                 seg_len = float(np.sqrt(seg_len2))
-                
+
                 if seg_len2 == 0.0:
                     d = float(np.linalg.norm(pxy - p1))
                     if d < d_min:
                         d_min = d
                         x_best = cumul
                     continue
-                
+
                 t = float(np.clip(np.dot(pxy - p1, seg) / seg_len2, 0.0, 1.0))
                 closest = p1 + t * seg
                 d = float(np.linalg.norm(pxy - closest))
@@ -609,9 +609,9 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
             # x_proj_km is now guaranteed to be <= L_km
             ratio = x_proj_km / L_km if L_km > 0 else 0.0
             ratios.append(ratio)
-        
+
         ratios_arr = np.array(ratios, dtype=float)
-        
+
         # DIAGNOSTIC: Check for values outside [0, 1] before any clipping
         out_of_range = (ratios_arr < 0.0) | (ratios_arr > 1.0)
         if np.any(out_of_range):
@@ -625,7 +625,7 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
                 f"L_km={L_km:.4f}, trace_points={len(self.trace_points)}",
                 RuntimeWarning
             )
-        
+
         # Clip to [0, 1] to match single-site version behavior
         return np.clip(ratios_arr, 0.0, 1.0), L_km
 

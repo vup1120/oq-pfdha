@@ -17,8 +17,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.fdha.secondary_surf_displ.youngs2003` implements
-model of Youngs et al. (2003) into :class:`Youngs2003`
+Module :mod:`openquake.fdha.secondary_surf_displ.youngs2003` implements the
+model of Youngs et al. (2003) in :class:`Youngs2003SecondaryFD`.
 """
 
 import numpy as np
@@ -57,12 +57,12 @@ class Youngs2003SecondaryFD(BaseSecondarySurfDispl):
     _WC94_MD_INTERCEPT = -5.90
     _WC94_MD_SLOPE = 0.89
     _WC94_MD_SIGMA = 0.38
-    
+
     _D_TRUNCATION = 3.0  # ±3 sigma for truncation
     _NUM_INTEGRATION_POINTS = 100
     _ACCEPTED_PERCENTILES = {"85", "95", 85, 95}
     _GAMMA_SHAPE = 2.5  # Shape parameter 'a' for gamma distribution
-    
+
     # Scaling factors for different percentiles
     _PERCENTILE_SCALING = {
         "85": 4.058,
@@ -70,7 +70,7 @@ class Youngs2003SecondaryFD(BaseSecondarySurfDispl):
         85: 4.058,
         95: 5.535
     }
-    
+
     def __init__(self, percentile=None, style=None):
         """
         :param percentile: optional hanging-wall percentile curve pinned by
@@ -89,7 +89,7 @@ class Youngs2003SecondaryFD(BaseSecondarySurfDispl):
         self.style = check_style(type(self).__name__, style)
         # Pre-calculate common values
         self._norm_pdf_cache = {}
-    
+
     def get_prob(self, d, mag, rx, r, percentile=None):
         """
         Model of Youngs et al. (2003) for the probability of exceeding
@@ -111,7 +111,7 @@ class Youngs2003SecondaryFD(BaseSecondarySurfDispl):
             raise ValueError(
                 f"Invalid percentile '{percentile}'. Accepted values are: {', '.join(self._ACCEPTED_PERCENTILES)}"
             )
-        
+
         # Ensure inputs are arrays
         d = np.asarray(d)  # Shape (n_displacements,)
         rx = np.asarray(rx)  # Shape (n_sites,) or scalar
@@ -125,14 +125,14 @@ class Youngs2003SecondaryFD(BaseSecondarySurfDispl):
         # Calculate log-normal distribution parameters
         log_mean = self._WC94_MD_INTERCEPT + self._WC94_MD_SLOPE * mag
         sigma = self._WC94_MD_SIGMA
-        
+
         # Calculate truncation range for integration
         lower = 10 ** (log_mean - self._D_TRUNCATION * sigma)
         upper = 10 ** (log_mean + self._D_TRUNCATION * sigma)
-        
+
         # Use logarithmic spacing for the numerical integration
         logspace_vals = np.logspace(np.log10(lower), np.log10(upper), self._NUM_INTEGRATION_POINTS)
-        
+
         # Initialize output array
         prob_exceeding_d = np.zeros((n_sites, d.shape[0]))  # Shape (n_sites, n_displacements)
 
@@ -142,7 +142,7 @@ class Youngs2003SecondaryFD(BaseSecondarySurfDispl):
             prob_D_MD = self.get_prob_D_MD(D_MD, rx, r, percentile)  # Shape (n_sites, n_displacements)
             prob_max_disp = self.get_prob_max_displacement(max_disp, mag)  # Scalar
             prob_exceeding_d += prob_D_MD * prob_max_disp
-        
+
         return prob_exceeding_d
 
     def get_prob_D_MD(self, D_MD, rx, r, percentile="85"):
@@ -160,7 +160,7 @@ class Youngs2003SecondaryFD(BaseSecondarySurfDispl):
             raise ValueError(
                 f"Invalid percentile '{percentile}'. Accepted values are: {', '.join(self._ACCEPTED_PERCENTILES)}"
             )
-        
+
         # Ensure inputs are arrays
         D_MD = np.asarray(D_MD)  # Shape (n_displacements,)
         rx = np.asarray(rx)  # Shape (n_sites,) or scalar
@@ -188,14 +188,14 @@ class Youngs2003SecondaryFD(BaseSecondarySurfDispl):
         """
         Calculate the log-normal pdf of maximum displacement based on magnitude
         using Wells and Coppersmith (1994) for normal faulting
-        
+
         :param target_md: Maximum displacement in meters
         :param mag: Earthquake magnitude
         :returns: Probability of maximum displacement
         """
         # Create a cache key
         cache_key = round(mag, 2)
-        
+
         if cache_key in self._norm_pdf_cache:
             log_mean, log_max_disp, sigma, norm_factor = self._norm_pdf_cache[cache_key]
         else:
@@ -203,17 +203,17 @@ class Youngs2003SecondaryFD(BaseSecondarySurfDispl):
             log_mean = self._WC94_MD_INTERCEPT + self._WC94_MD_SLOPE * mag
             log_max_disp = np.log10(10 ** log_mean)  # This simplifies to log_mean but kept for clarity
             sigma = self._WC94_MD_SIGMA
-            
+
             # Calculate normalization factor
             lower = 10 ** (log_mean - self._D_TRUNCATION * sigma)
             upper = 10 ** (log_mean + self._D_TRUNCATION * sigma)
             logspace_vals = np.logspace(np.log10(lower), np.log10(upper), self._NUM_INTEGRATION_POINTS)
             prob = norm.pdf(np.log10(logspace_vals), loc=log_max_disp, scale=sigma)
             norm_factor = np.sum(prob)
-            
+
             # Store in cache
             self._norm_pdf_cache[cache_key] = (log_mean, log_max_disp, sigma, norm_factor)
-        
+
         # Calculate probability
         prob_max_displacement = norm.pdf(np.log10(target_md), loc=log_max_disp, scale=sigma)
         return prob_max_displacement / norm_factor

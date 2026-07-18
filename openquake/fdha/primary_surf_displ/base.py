@@ -19,7 +19,7 @@
 """
 Module :mod:`openquake.fdha.primary_surf_displ.base` defines abstract base
 classes for :class:`BasePrimarySurfDispl <BasePrimarySurfDispl>` and
- :class:`BaseSecondarySurfDispl <BaseSecondarySurfDispl>`  
+ :class:`BaseSecondarySurfDispl <BaseSecondarySurfDispl>`
 """
 
 import abc

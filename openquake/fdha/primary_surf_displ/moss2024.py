@@ -1,8 +1,14 @@
-# moss2024.py
 # -*- coding: utf-8 -*-
 """
-Module :mod:`openquake.fdha.primary_surf_displ.moss2024` implements
+Module :mod:`openquake.fdha.primary_surf_displ.moss2024` implements the
 Moss et al. (2024) primary surface fault displacement model.
+
+References
+----------
+Moss, R. E. S., Thompson, S. C., Kuo, C.-H., Younesi, K., & Baumont, D.
+(2024). New probabilistic fault displacement hazard models for reverse
+faulting. Earthquake Spectra, 41(4), 2838-2858.
+https://doi.org/10.1177/87552930241288560
 """
 import os
 import numpy as np

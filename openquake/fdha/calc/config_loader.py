@@ -33,26 +33,26 @@ class ConfigValidationError(ConfigurationError):
 def load_config(config_file: Union[str, Path]) -> Dict[str, Any]:
     """
     Unified configuration loader for v5 canonical INI files.
-    
+
     This is the canonical configuration loader that should be used throughout
     the codebase.
-    
+
     Args:
         config_file: Path to configuration file (INI)
-        
+
     Returns:
         Configuration dictionary with nested structure
-        
+
     Raises:
         ConfigurationError: If file cannot be read or parsed
     """
     config_path = Path(config_file)
-    
+
     if not config_path.exists():
         raise ConfigurationError(f"Configuration file not found: {config_file}")
-    
+
     ext = config_path.suffix.lower()
-    
+
     if ext == '.ini':
         return _load_ini_config(config_path)
     if ext == '.toml':
@@ -69,7 +69,7 @@ def load_config(config_file: Union[str, Path]) -> Dict[str, Any]:
 def _load_ini_config(config_path: Path) -> Dict[str, Any]:
     """
     Load configuration from INI file with support for nested sections and JSON values.
-    
+
     Handles:
     - Nested sections: [models.primary_surf_rup] -> config['models']['primary_surf_rup']
     - JSON values: displacement_measure_levels = {"FD": [...]}
@@ -81,27 +81,27 @@ def _load_ini_config(config_path: Path) -> Dict[str, Any]:
     cp.read(config_path)
 
     _reject_legacy_public_ini(cp, config_path)
-    
+
     config = {}
-    
+
     for section in cp.sections():
         # Split section name by dots for nested structure
         section_parts = section.split('.')
-        
+
         # Navigate/create nested structure
         current = config
         for part in section_parts:
             if part not in current:
                 current[part] = {}
             current = current[part]
-        
+
         # Parse each key-value pair
         for key, value in cp.items(section):
             current[key] = _parse_ini_value(value)
-    
+
     # Normalize INI-specific format to match TOML expected structure
     _normalize_ini_config(config, config_path)
-    
+
     return config
 
 
@@ -211,7 +211,7 @@ def validate_public_logic_tree_ini_file(config_path: Path, config: Dict[str, Any
 def _normalize_ini_config(config: Dict[str, Any], config_path: Path) -> None:
     """
     Normalize INI configuration to match TOML expected format.
-    
+
     Handles:
     - [geometry].corner_points (string) -> [site_location].corner_points (list)
     - [site_params].reference_vs30_value -> [site_location].vs30
@@ -222,7 +222,7 @@ def _normalize_ini_config(config: Dict[str, Any], config_path: Path) -> None:
     if 'geometry' in config and 'corner_points' in config['geometry']:
         if 'site_location' not in config:
             config['site_location'] = {}
-        
+
         corner_str = config['geometry']['corner_points']
         if isinstance(corner_str, str):
             # Parse "lon1 lat1, lon2 lat2, ..." format
@@ -242,19 +242,19 @@ def _normalize_ini_config(config: Dict[str, Any], config_path: Path) -> None:
                 centroid_lat = float(np.mean(corners_array[:, 1]))
                 config['site_location']['longitude'] = centroid_lon
                 config['site_location']['latitude'] = centroid_lat
-    
+
     # 2. Convert site_params.reference_vs30_value to site_location.vs30
     if 'site_params' in config and 'reference_vs30_value' in config['site_params']:
         if 'site_location' not in config:
             config['site_location'] = {}
         if 'vs30' not in config['site_location']:
             config['site_location']['vs30'] = config['site_params']['reference_vs30_value']
-    
+
     # 3. Convert calculation.displacement_measure_levels to parameters.target_displacement
     if 'calculation' in config and 'displacement_measure_levels' in config['calculation']:
         if 'parameters' not in config:
             config['parameters'] = {}
-        
+
         dml = config['calculation']['displacement_measure_levels']
         if isinstance(dml, dict) and 'FD' in dml:
             if 'target_displacement' not in config['parameters']:
@@ -269,7 +269,7 @@ def _normalize_ini_config(config: Dict[str, Any], config_path: Path) -> None:
 
     # 3c. OpenQuake-style [output] section: mean + quantiles.
     _normalize_output_section(config)
-    
+
     # 4. Copy case from parameters or calculation section
     if 'parameters' in config and 'case' in config['parameters']:
         pass  # Already set
@@ -277,7 +277,7 @@ def _normalize_ini_config(config: Dict[str, Any], config_path: Path) -> None:
         if 'parameters' not in config:
             config['parameters'] = {}
         config['parameters']['case'] = config['calculation']['case']
-    
+
     # 5. Handle rank1p5_traces_file if present
     if 'calculation' in config and 'rank1p5_traces_file' in config['calculation']:
         traces_file = config['calculation']['rank1p5_traces_file']
@@ -297,14 +297,14 @@ def _normalize_ini_config(config: Dict[str, Any], config_path: Path) -> None:
                         "Could not parse rank1p5_traces_file %s: %s; "
                         "continuing without rank1p5 traces.",
                         traces_path, exc)
-    
+
     # 6. Copy near_far_threshold_km from calculation to parameters
     if 'calculation' in config and 'near_far_threshold_km' in config['calculation']:
         if 'parameters' not in config:
             config['parameters'] = {}
         if 'near_far_threshold_km' not in config['parameters']:
             config['parameters']['near_far_threshold_km'] = config['calculation']['near_far_threshold_km']
-    
+
     # 7. Convert geometry.sites string to site_location.latitude/longitude
     #    Supports both single-site "lon lat" and multi-site "lon1 lat1, lon2 lat2 [,depth]..."
     if 'geometry' in config and 'sites' in config['geometry']:
@@ -484,26 +484,26 @@ def _parse_sites_csv(csv_path) -> List[Dict[str, Any]]:
 def _parse_ini_value(value: str) -> Any:
     """Parse an INI value, handling JSON, numbers, booleans and None."""
     value = value.strip()
-    
+
     if not value:
         return value
-    
+
     # Boolean
     if value.lower() in ('true', 'yes', 'on'):
         return True
     if value.lower() in ('false', 'no', 'off'):
         return False
-    
+
     # None
     if value.lower() in ('none', 'null'):
         return None
-    
+
     # Try JSON first (for lists, dicts, etc.)
     try:
         return json.loads(value.replace("'", '"'))
     except (json.JSONDecodeError, ValueError):
         pass
-    
+
     # Try numeric conversion
     try:
         if '.' in value:
@@ -512,13 +512,13 @@ def _parse_ini_value(value: str) -> Any:
             return int(value)
     except ValueError:
         pass
-    
+
     # Strip quotes if present
     if len(value) >= 2 and value.startswith('"') and value.endswith('"'):
         value = value[1:-1]
     elif len(value) >= 2 and value.startswith("'") and value.endswith("'"):
         value = value[1:-1]
-    
+
     # Keep as string
     return value
 

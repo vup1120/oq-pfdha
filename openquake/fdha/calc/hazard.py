@@ -106,15 +106,15 @@ def calculate_fdha_hazard(
 ) -> Dict[str, Any]:
     """
     Unified FDHA hazard calculation for both curves and maps.
-    
+
     This function replaces the separate hazard_curve.py and hazard_map_calculator.py
     implementations with a single, consistent calculation.
-    
+
     Args:
         calculator: Configured FDHA calculator with models and parameters
         sitecol: Optional SiteCollection override (for hazard maps with grid)
         show_progress: Show tqdm progress bar
-        
+
     Returns:
         Dictionary of numpy arrays:
         - 'imls': displacement levels (m), shape (n_displ,)
@@ -128,12 +128,12 @@ def calculate_fdha_hazard(
     # Use provided sitecol or calculator's sitecol
     if sitecol is None:
         sitecol = calculator.sitecol
-    
+
     n_sites = len(sitecol)
-    
+
     target_displacements = calculator.target_displacements
     n_displ = len(target_displacements)
-    
+
     logger.info("Starting FDHA hazard calculation: %d sites, %d displacement "
                 "levels", n_sites, n_displ)
 
@@ -144,17 +144,17 @@ def calculate_fdha_hazard(
         if 'max_distance_km' in section_cfg:
             max_dist = float(section_cfg['max_distance_km'])
             break
-    
+
     # Create context maker with caching
     cmaker = FDHAContextMaker(
         sitecol=sitecol,
         fdha_params=calculator.get_fdha_params(),
         maximum_distance=max_dist,
     )
-    
+
     # Check for Visini models
     use_visini, visini_calc = _setup_visini_calculator(calculator)
-    
+
     # Initialize rate accumulators
     rate_principal = np.zeros((n_sites, n_displ), dtype=np.float64)
     rate_distributed = np.zeros((n_sites, n_displ), dtype=np.float64)
@@ -165,7 +165,7 @@ def calculate_fdha_hazard(
     logger.debug("Available adapters: %s", list(adapters.keys()))
     if not adapters:
         logger.warning("No adapters available - models may not have loaded correctly")
-    
+
     # Reduction configs
     p_sr_red_cfg = calculator.p_sr_red_cfg
     s_sr_red_cfg = calculator.s_sr_red_cfg
@@ -211,7 +211,7 @@ def calculate_fdha_hazard(
             if not cmaker.is_surface_rupturing(rup):
                 continue
             n_surface_rupturing += 1
-            
+
             # Create context (returns None if all sites too far)
             ctx = cmaker.get_ctx(rup, investigation_time=investigation_time)
             if ctx is None:
@@ -233,7 +233,7 @@ def calculate_fdha_hazard(
                 calculator=calculator,
                 r_sigma_km=r_sigma_km,
             )
-            
+
             # Accumulate by site ID using vectorized operations. The context
             # invariant guarantees one contribution row per ctx site and
             # sids within the sitecol; a violation means a broken
@@ -314,10 +314,10 @@ def _setup_visini_calculator(
 ) -> Tuple[bool, Optional[Any]]:
     """
     Check for Visini models and initialize calculator if needed.
-    
+
     Args:
         calculator: FDHA calculator instance
-        
+
     Returns:
         Tuple of (use_visini: bool, visini_calc: Optional[VisiniSecondaryCalculator])
     """
@@ -339,22 +339,22 @@ def _setup_visini_calculator(
     sr_name = sr_model.__class__.__name__ if sr_model else ''
     fd_name = fd_model.__class__.__name__ if fd_model else ''
     logger.info("Using Visini model: SR=%s, FD=%s", sr_name, fd_name)
-    
+
     from openquake.fdha.calc.visini import VisiniSecondaryCalculator
     from openquake.fdha.calc.rank1p5_loader import attach_rank1p5_surfaces
-    
+
     # Attach rank1p5 surfaces from XML file if available
     attach_rank1p5_surfaces(calculator, getattr(calculator, 'config_path', None))
-    
+
     sec_rup_params = calculator.get_model_parameters('secondary_surf_rup')
     sec_displ_params = calculator.get_model_parameters('secondary_surf_displ')
-    
+
     # Get rupture_traces and rank1p5_traces from model parameters and config
     rupture_traces = sec_rup_params.get('rupture_traces', [])
-    
+
     # Try to get rank1p5_traces from config (TOML format)
     rank1p5_traces = calculator.config.get('rank1p5_ruptures', {}).get('trace', [])
-    
+
     # If empty, try to get from loaded XML surfaces (INI format with rank1p5_traces_file)
     if not rank1p5_traces and hasattr(calculator, 'rank1p5_surface_by_name'):
         # Convert TraceOnlySurfaceAdapter objects to trace dict format
@@ -366,8 +366,8 @@ def _setup_visini_calculator(
                 'name': name,
                 'geometry': {'type': 'Line', 'coords': coords}
             })
-    
-    
+
+
     visini_calc = VisiniSecondaryCalculator(
         base_sec_rup_params={k: v for k, v in sec_rup_params.items() if k not in ('combination', 'case')},
         base_sec_displ_params={k: v for k, v in sec_displ_params.items() if k not in ('combination', 'case')},
@@ -380,7 +380,7 @@ def _setup_visini_calculator(
         segment_sampling=sec_rup_params.get('segment_sampling', 'truncated'),
         distribution_type=sec_rup_params.get('distribution_type', 'uniform'),
     )
-    
+
     return True, visini_calc
 
 
@@ -427,11 +427,11 @@ def _compute_rupture_contribution(
     N_ctx = len(ctx)
     n_displ = len(target_displacements)
     rate = ctx.occurrence_rate[0]
-    
+
     # Initialize output arrays
     principal_contrib = np.zeros((N_ctx, n_displ), dtype=np.float64)
     distributed_contrib = np.zeros((N_ctx, n_displ), dtype=np.float64)
-    
+
     # =========================================================================
     # PRIMARY SURFACE RUPTURE PROBABILITY
     # =========================================================================
@@ -452,7 +452,7 @@ def _compute_rupture_contribution(
         )
     else:
         P_fd_primary = np.zeros((N_ctx, n_displ), dtype=np.float64)
-    
+
     # =========================================================================
     # AGGREGATE-DEFINITION PRIMARY MODEL: single-bucket path
     # =========================================================================
@@ -539,17 +539,17 @@ def _compute_rupture_contribution(
             P_sr_sec = adapters['secondary_sr'].compute_secondary_sr(ctx, s_sr_red_cfg)
         else:
             P_sr_sec = np.zeros(N_ctx, dtype=np.float64)
-        
+
         if 'secondary_fd' in adapters:
             P_fd_sec = adapters['secondary_fd'].compute_secondary_fd(
                 ctx, target_displacements, s_sr_red_cfg,
             )
         else:
             P_fd_sec = np.zeros((N_ctx, n_displ), dtype=np.float64)
-        
+
         # Combine: P(SR_sec) × P(FD_sec | SR_sec)
         P_dist_combined = P_sr_sec[:, np.newaxis] * P_fd_sec
-    
+
     # =========================================================================
     # COMBINE CONTRIBUTIONS: per W_p path
     # =========================================================================

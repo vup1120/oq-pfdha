@@ -17,8 +17,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.fdha.primary_surf_rup.moss_ross2011` implements
-model of Moss and Ross (2011) into :class:`MossRoss2011Primary`
+Module :mod:`openquake.fdha.primary_surf_rup.moss_ross2011` implements the
+model of Moss and Ross (2011) in :class:`MossRoss2011PrimarySR`.
 """
 
 import numpy as np
@@ -37,6 +37,7 @@ class MossRoss2011PrimarySR(BasePrimarySurfRup):
     Moss, R.E.S., and Ross, Z.E. (2011). Probabilistic fault displacement
     hazard analysis for reverse faults. Bulletin of the Seismological
     Society of America, 101(4), 1542-1553.
+    https://doi.org/10.1785/0120100248
     """
 
     def __init__(self, style=None):
