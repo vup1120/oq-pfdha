@@ -8,7 +8,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from typing import Union, List, Dict, Any, Optional
 from matplotlib.colors import LogNorm
-from matplotlib.ticker import LogFormatter, LogLocator, FuncFormatter
+from matplotlib.ticker import LogLocator, FuncFormatter
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +96,8 @@ def plot_hazard_map(
             ax.add_feature(land_feature)
         except Exception as e2:
             # Final fallback to simple features
-            logger.debug(f"NaturalEarth features not available, using simple features: {e2}")
+            logger.debug("NaturalEarth features not available, using simple "
+                         "features: %s", e2)
             ax.add_feature(cfeature.OCEAN, facecolor='#cce5ff', zorder=0)
             ax.add_feature(cfeature.LAND, facecolor='#f5f5f5', zorder=0)
     
@@ -123,8 +124,10 @@ def plot_hazard_map(
         # Fallback to standard borders
         ax.add_feature(cfeature.BORDERS, linestyle=':', linewidth=0.6, edgecolor='#7f8c8d', zorder=2)
 
-    # Use professional colormap (viridis for better perception)
-    cmap = plt.cm.get_cmap('viridis')
+    # Use professional colormap (viridis for better perception).
+    # plt.get_cmap, not plt.cm.get_cmap: the latter was removed in
+    # Matplotlib 3.9.
+    cmap = plt.get_cmap('viridis')
     
     # Combine grid sites and fault trace sites with same plot style
     all_lons = grid_lons
@@ -222,7 +225,7 @@ def plot_hazard_map(
     if plot_file:
         # Save with high resolution (at least 600 DPI as requested)
         plt.savefig(plot_file, dpi=600, bbox_inches='tight', facecolor='white')
-        logger.info(f"Hazard map plot saved to {plot_file} at 600 DPI")
+        logger.info("Hazard map plot saved to %s at 600 DPI", plot_file)
     else:
         plt.show()
 
@@ -253,7 +256,7 @@ def _save_single_curve(
 
     if plot_file:
         plt.savefig(plot_file, dpi=300, bbox_inches='tight')
-        logger.info(f"Hazard curve plot saved to {plot_file}")
+        logger.info("Hazard curve plot saved to %s", plot_file)
     else:
         plt.show()
     plt.close()
@@ -283,8 +286,10 @@ def plot_fault_displacement_hazard(
     if poes.ndim == 1:
         poes = poes.reshape(1, -1)
 
-    site_lons = results.get("site_lons") or []
-    site_lats = results.get("site_lats") or []
+    site_lons = results.get("site_lons")
+    site_lats = results.get("site_lats")
+    site_lons = [] if site_lons is None else list(site_lons)
+    site_lats = [] if site_lats is None else list(site_lats)
 
     n_sites = len(poes)
 
@@ -325,8 +330,13 @@ def save_results_to_json(
     Existing keys (``poes``, ``site_lons``, ``site_lats``, ...) are left
     unchanged, so single-site consumers are unaffected.
     """
-    # Additive per-site index: does not mutate the caller's dict
-    payload = dict(results)
+    # Additive per-site index: does not mutate the caller's dict.
+    # Numeric arrays are converted to plain lists here, at the
+    # serialisation boundary - the calculation returns numpy arrays.
+    payload = {
+        k: v.tolist() if isinstance(v, np.ndarray) else v
+        for k, v in results.items()
+    }
     if 'site_lons' in payload and 'site_lats' in payload and 'poes' in payload:
         poes_arr = np.asarray(payload['poes'])
         site_lons = payload['site_lons']
@@ -339,7 +349,7 @@ def save_results_to_json(
 
     with open(output_file, "w") as f:
         json.dump(payload, f, indent=2)
-    logger.info(f"Hazard curve results saved to {output_file}")
+    logger.info("Hazard curve results saved to %s", output_file)
 
 def save_map_to_json(
     hazard_map: np.ndarray,
@@ -361,4 +371,4 @@ def save_map_to_json(
     }
     with open(output_file, "w") as f:
         json.dump(data, f, indent=2)
-    logger.info(f"Hazard map data saved to {output_file}")
+    logger.info("Hazard map data saved to %s", output_file)

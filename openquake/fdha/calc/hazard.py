@@ -3,26 +3,19 @@
 Unified FDHA hazard calculation module.
 
 This module provides a single implementation for both hazard curve and
-hazard map calculations, eliminating code duplication and ensuring
-consistent results.
+hazard map calculations.
 """
 
 import numpy as np
 from tqdm import tqdm
 import logging
-from typing import Dict, Any, Optional, List, Tuple, TYPE_CHECKING
+from typing import Dict, Any, Optional, Tuple, TYPE_CHECKING
 
 from openquake.fdha.calc.contexts import FDHAContext, FDHAContextMaker
 from openquake.hazardlib.site import SiteCollection
-
-if TYPE_CHECKING:
-    from openquake.fdha.calc.calculators import BaseFaultRuptureCalculator
+from openquake.fdha.calc.calculators import BaseFaultRuptureCalculator
 
 logger = logging.getLogger(__name__)
-
-# Model names that indicate Visini et al. (2025) implementation
-VISINI_SR_NAMES = {'Visini2025SecondarySR'}
-VISINI_FD_NAMES = {'Visini2025SecondaryFD'}
 
 
 class ApplicabilityTracker:
@@ -36,8 +29,7 @@ class ApplicabilityTracker:
     accumulates, across all ruptures of a run, the ids of sites whose
     distributed contribution was computed at a distance outside that range
     (i.e. an extrapolation of the regression), then reports the offending
-    site count once at the end of the run. Purely advisory: results are
-    still computed, nothing changes numerically.
+    site count once at the end of the run.
 
     Sites where the distributed term carries zero weight are NOT counted:
     on the sigma = 0 (complementary) W_p path the distributed component is
@@ -124,14 +116,14 @@ def calculate_fdha_hazard(
         show_progress: Show tqdm progress bar
         
     Returns:
-        Dictionary containing:
-        - 'imls': List of displacement levels (m)
-        - 'poes': Exceedance rates array, shape (n_sites, n_displ)
-        - 'rate_principal': Principal contribution, shape (n_sites, n_displ)
-        - 'rate_distributed': Distributed contribution, shape (n_sites, n_displ)
-        - 'each_fault': Per-fault contributions dict
-        - 'site_lons': Site longitudes
-        - 'site_lats': Site latitudes
+        Dictionary of numpy arrays:
+        - 'imls': displacement levels (m), shape (n_displ,)
+        - 'poes': ANNUAL EXCEEDANCE RATES (historical key name, not
+          probabilities), shape (n_sites, n_displ)
+        - 'rate_principal': principal contribution, shape (n_sites, n_displ)
+        - 'rate_distributed': distributed contribution, shape (n_sites, n_displ)
+        - 'site_lons', 'site_lats': site coordinates, shape (n_sites,)
+        - 'n_sites', 'n_displ': ints
     """
     # Use provided sitecol or calculator's sitecol
     if sitecol is None:
@@ -142,8 +134,9 @@ def calculate_fdha_hazard(
     target_displacements = calculator.target_displacements
     n_displ = len(target_displacements)
     
-    logger.info(f"Starting FDHA hazard calculation: {n_sites} sites, {n_displ} displacement levels")
-    
+    logger.info("Starting FDHA hazard calculation: %d sites, %d displacement "
+                "levels", n_sites, n_displ)
+
     # Get max_distance from config (check multiple sections)
     max_dist = 50.0  # default
     for section in ['calculation', 'parameters', 'erf']:
@@ -153,10 +146,8 @@ def calculate_fdha_hazard(
             break
     
     # Create context maker with caching
-    sitecol_for_cmaker = sitecol
-    
     cmaker = FDHAContextMaker(
-        sitecol=sitecol_for_cmaker,
+        sitecol=sitecol,
         fdha_params=calculator.get_fdha_params(),
         maximum_distance=max_dist,
     )
@@ -167,17 +158,13 @@ def calculate_fdha_hazard(
     # Initialize rate accumulators
     rate_principal = np.zeros((n_sites, n_displ), dtype=np.float64)
     rate_distributed = np.zeros((n_sites, n_displ), dtype=np.float64)
-    each_fault: Dict[str, List] = {}
-    
+
     # Get model adapters
     adapters = calculator.adapters
-    
-    # Debug: log available adapters
-    logger.debug(f"Available adapters: {list(adapters.keys())}")
+
+    logger.debug("Available adapters: %s", list(adapters.keys()))
     if not adapters:
         logger.warning("No adapters available - models may not have loaded correctly")
-    for name, adapter in adapters.items():
-        logger.debug(f"  Adapter {name}: model={adapter.model.__class__.__name__}")
     
     # Reduction configs
     p_sr_red_cfg = calculator.p_sr_red_cfg
@@ -205,26 +192,21 @@ def calculate_fdha_hazard(
         'calculation', {}).get('investigation_time')
 
     # Process each fault source
-    # Convert to list immediately to avoid iterator exhaustion issues
-    fault_sources_list = list(calculator.fault_sources.values())
-
-    iterator = tqdm(fault_sources_list, desc="Computing hazard") if show_progress else fault_sources_list
+    fault_sources = calculator.fault_sources.values()
+    iterator = tqdm(fault_sources, desc="Computing hazard") \
+        if show_progress else fault_sources
 
     for src in iterator:
-        logger.info(f"Processing fault: {src.name}")
+        logger.info("Processing fault: %s", src.name)
         investigation_time = _resolve_investigation_time(
             src, ini_investigation_time)
-        
-        fault_rate = np.zeros((n_sites, n_displ), dtype=np.float64)
+
         n_ruptures = 0
         n_surface_rupturing = 0
-        
-        # Convert iter_ruptures to list to avoid iterator exhaustion issues
-        ruptures_list = list(src.iter_ruptures())
-        
-        for rup in ruptures_list:
+
+        for rup in src.iter_ruptures():
             n_ruptures += 1
-            
+
             # Skip buried ruptures
             if not cmaker.is_surface_rupturing(rup):
                 continue
@@ -253,9 +235,9 @@ def calculate_fdha_hazard(
             )
             
             # Accumulate by site ID using vectorized operations. The context
-            # invariant guarantees one contribution row per ctx site; a
-            # mismatch means a broken adapter/kernel, not a condition to
-            # paper over.
+            # invariant guarantees one contribution row per ctx site and
+            # sids within the sitecol; a violation means a broken
+            # adapter/kernel/cmaker, not a condition to paper over.
             sids = ctx.sids
             if len(sids) != principal_contrib.shape[0]:
                 raise AssertionError(
@@ -263,64 +245,35 @@ def calculate_fdha_hazard(
                     f"vs {principal_contrib.shape[0]} contribution rows")
             if len(sids) == 0:
                 continue
-                
-            valid_mask = sids < n_sites
-            
-            if np.all(valid_mask):
-                # For single site case, use direct array addition (matching old implementation)
-                # This is more efficient and avoids potential broadcasting issues with np.add.at
-                if n_sites == 1 and len(sids) == 1:
-                    # Direct array addition for single site (matches old implementation)
-                    rate_principal[0] += principal_contrib[0]
-                    rate_distributed[0] += distributed_contrib[0]
-                    fault_rate[0] += principal_contrib[0] + distributed_contrib[0]
-                else:
-                    # Multiple sites - use scatter-add
-                    np.add.at(rate_principal, sids, principal_contrib)
-                    np.add.at(rate_distributed, sids, distributed_contrib)
-                    np.add.at(fault_rate, sids, principal_contrib + distributed_contrib)
-            else:
-                # Filter to valid sids only
-                valid_sids = sids[valid_mask]
-                np.add.at(rate_principal, valid_sids, principal_contrib[valid_mask])
-                np.add.at(rate_distributed, valid_sids, distributed_contrib[valid_mask])
-                np.add.at(fault_rate, valid_sids, (principal_contrib + distributed_contrib)[valid_mask])
-        
-        logger.debug(f"  {src.name}: {n_ruptures} ruptures, {n_surface_rupturing} surface-rupturing")
-        
-        each_fault[f"fault_{src.name}"] = fault_rate.tolist()
-    
+            if int(sids.max()) >= n_sites or int(sids.min()) < 0:
+                raise AssertionError(
+                    f"context sids outside the site collection: range "
+                    f"[{sids.min()}, {sids.max()}] vs {n_sites} sites")
+
+            np.add.at(rate_principal, sids, principal_contrib)
+            np.add.at(rate_distributed, sids, distributed_contrib)
+
+        logger.debug("  %s: %d ruptures, %d surface-rupturing",
+                     src.name, n_ruptures, n_surface_rupturing)
+
     # Applicability advisory: one warning per model per run (C4).
     applicability_tracker.emit()
 
     # Log cache statistics
     stats = cmaker.get_cache_stats()
-    logger.info(
-        f"Distance cache: {stats['hits']} hits, {stats['misses']} misses, "
-        f"{stats['hit_rate']:.1%} hit rate"
-    )
-    
-    # Total exceedance rate
-    total_rate = rate_principal + rate_distributed
-    
-    # Extract site coordinates
-    site_lons = cmaker._lons.tolist()
-    site_lats = cmaker._lats.tolist()
-    
+    logger.info("Distance cache: %d hits, %d misses, %.1f%% hit rate",
+                stats['hits'], stats['misses'], 100.0 * stats['hit_rate'])
+
     return {
-        # Primary keys (new format)
-        'imls': target_displacements.tolist(),
-        'poes': total_rate.tolist(),
-        'rate_principal': rate_principal.tolist(),
-        'rate_distributed': rate_distributed.tolist(),
-        'each_fault': each_fault,
-        'site_lons': site_lons,
-        'site_lats': site_lats,
+        'imls': np.asarray(target_displacements, dtype=np.float64),
+        # 'poes' holds ANNUAL EXCEEDANCE RATES; the key name is historical.
+        'poes': rate_principal + rate_distributed,
+        'rate_principal': rate_principal,
+        'rate_distributed': rate_distributed,
+        'site_lons': np.asarray(cmaker._lons, dtype=np.float64),
+        'site_lats': np.asarray(cmaker._lats, dtype=np.float64),
         'n_sites': n_sites,
         'n_displ': n_displ,
-        # Backward compatibility aliases (old hazard_map_calculator.py format)
-        'displacements': target_displacements.tolist(),
-        'annual_rate_total': total_rate.tolist(),
     }
 
 
@@ -370,16 +323,22 @@ def _setup_visini_calculator(
     """
     sr_model = calculator.secondary_surf_rup_model
     fd_model = calculator.secondary_surf_displ_model
-    
-    sr_name = sr_model.__class__.__name__ if sr_model else ''
-    fd_name = fd_model.__class__.__name__ if fd_model else ''
-    
-    use_visini = sr_name in VISINI_SR_NAMES or fd_name in VISINI_FD_NAMES
-    
+
+    # A model declares it needs the combined Visini pipeline via the
+    # SECONDARY_PIPELINE class attribute (base default 'generic'); the kernel
+    # never matches class names, so a Visini subclass or renamed variant keeps
+    # the correct routing (see BaseSecondarySurfRup.SECONDARY_PIPELINE).
+    use_visini = (
+        getattr(sr_model, 'SECONDARY_PIPELINE', 'generic') == 'visini'
+        or getattr(fd_model, 'SECONDARY_PIPELINE', 'generic') == 'visini'
+    )
+
     if not use_visini:
         return False, None
-    
-    logger.info(f"Using Visini model: SR={sr_name}, FD={fd_name}")
+
+    sr_name = sr_model.__class__.__name__ if sr_model else ''
+    fd_name = fd_model.__class__.__name__ if fd_model else ''
+    logger.info("Using Visini model: SR=%s, FD=%s", sr_name, fd_name)
     
     from openquake.fdha.calc.visini import VisiniSecondaryCalculator
     from openquake.fdha.calc.rank1p5_loader import attach_rank1p5_surfaces
@@ -644,101 +603,3 @@ def _compute_rupture_contribution(
     )
 
     return principal_contrib, distributed_contrib
-
-
-def rates_to_poes(
-    rates: np.ndarray,
-    investigation_time: float = 1.0
-) -> np.ndarray:
-    """
-    Convert annual exceedance rates to probabilities of exceedance.
-    
-    Uses Poisson model: POE = 1 - exp(-rate × time)
-    
-    Args:
-        rates: Annual exceedance rates
-        investigation_time: Time period in years
-        
-    Returns:
-        Probabilities of exceedance
-    """
-    return 1.0 - np.exp(-rates * investigation_time)
-
-
-def poes_to_rates(
-    poes: np.ndarray,
-    investigation_time: float = 1.0
-) -> np.ndarray:
-    """
-    Convert probabilities of exceedance to annual rates.
-    
-    Inverse of Poisson model: rate = -ln(1 - POE) / time
-    
-    Args:
-        poes: Probabilities of exceedance
-        investigation_time: Time period in years
-        
-    Returns:
-        Annual exceedance rates
-    """
-    # Clip POE to avoid log(0)
-    poes_clipped = np.clip(poes, 0.0, 1.0 - 1e-10)
-    return -np.log(1.0 - poes_clipped) / investigation_time
-
-
-def interpolate_hazard_map(
-    rates: np.ndarray,
-    imls: np.ndarray,
-    return_period: float
-) -> np.ndarray:
-    """
-    Interpolate hazard to specific return period.
-    
-    Uses vectorized operations for efficient computation across all sites.
-    
-    Args:
-        rates: Exceedance rates, shape (n_sites, n_imls)
-        imls: Intensity measure levels (displacement values)
-        return_period: Target return period in years
-        
-    Returns:
-        Interpolated displacement values for each site
-    """
-    target_rate = 1.0 / return_period
-    n_sites = rates.shape[0]
-    imls = np.asarray(imls)
-    
-    # Pre-compute log values (vectorized)
-    log_imls = np.log(imls)
-    log_imls_reversed = log_imls[::-1]
-    log_target = np.log(target_rate)
-    
-    # Get first and last rates for all sites (vectorized)
-    first_rates = rates[:, 0]
-    last_rates = rates[:, -1]
-    
-    # Initialize result
-    result = np.zeros(n_sites, dtype=np.float64)
-    
-    # Case 1: Rate higher than all IMLs - use min IML
-    mask_high = target_rate >= first_rates
-    result[mask_high] = imls[0]
-    
-    # Case 2: Rate lower than all IMLs - use max IML
-    mask_low = target_rate <= last_rates
-    result[mask_low] = imls[-1]
-    
-    # Case 3: Interpolate in log-log space
-    mask_interp = ~mask_high & ~mask_low
-    
-    if np.any(mask_interp):
-        # Process interpolation sites
-        interp_indices = np.where(mask_interp)[0]
-        
-        # Vectorized log-space interpolation
-        for idx in interp_indices:
-            site_rates = rates[idx, :]
-            log_rates_reversed = np.log(site_rates[::-1] + 1e-30)
-            result[idx] = np.exp(np.interp(log_target, log_rates_reversed, log_imls_reversed))
-    
-    return result

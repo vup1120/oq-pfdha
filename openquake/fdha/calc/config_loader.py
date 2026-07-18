@@ -7,11 +7,12 @@ The public v5 configuration surface is INI-only.
 """
 
 import json
+import logging
 import configparser
 from pathlib import Path
 from typing import Dict, Any, Optional, Union, List
-from dataclasses import dataclass, field
 
+logger = logging.getLogger(__name__)
 
 # Canonical example for OpenQuake-style FDHA classical + logic-tree layout.
 _FDHA_CANONICAL_JOB_INI_REL = Path(
@@ -27,65 +28,6 @@ class ConfigurationError(Exception):
 class ConfigValidationError(ConfigurationError):
     """Exception raised when configuration validation fails"""
     pass
-
-
-@dataclass
-class ERFConfig:
-    """Earthquake Rupture Forecast configuration"""
-    rupture_mesh_spacing: float = 0.5
-    width_of_mfd_bin: float = 0.1
-    
-    def __post_init__(self):
-        """Validate configuration after initialization"""
-        if self.rupture_mesh_spacing <= 0:
-            raise ConfigValidationError("rupture_mesh_spacing must be > 0")
-        if self.width_of_mfd_bin <= 0:
-            raise ConfigValidationError("width_of_mfd_bin must be > 0")
-
-
-@dataclass
-class CalculationConfig:
-    """Calculation configuration"""
-    target_displacements: list = field(default_factory=lambda: [0.001, 0.01, 0.1, 1.0, 10.0])
-    investigation_time: float = 1.0
-    rupture_mesh_spacing: float = 2.0
-    source_model_file: Optional[str] = None
-    source_model_logic_tree_file: Optional[str] = None
-
-    def get_source_model_paths(self) -> List[str]:
-        """
-        Get list of source model paths from configuration.
-        Returns a list containing source_model_file or source_model_logic_tree_file if present.
-        """
-        paths = []
-        if self.source_model_file:
-            paths.append(self.source_model_file)
-        if self.source_model_logic_tree_file:
-            paths.append(self.source_model_logic_tree_file)
-        return paths
-    
-    def __post_init__(self):
-        """Validate configuration after initialization"""
-        if self.investigation_time <= 0:
-            raise ConfigValidationError("investigation_time must be > 0")
-        if self.rupture_mesh_spacing <= 0:
-            raise ConfigValidationError("rupture_mesh_spacing must be > 0")
-        if not self.target_displacements:
-            raise ConfigValidationError("target_displacements cannot be empty")
-
-
-@dataclass
-class FDHAConfiguration:
-    """Main FDHA configuration container"""
-    erf: ERFConfig = field(default_factory=ERFConfig)
-    calculation: CalculationConfig = field(default_factory=CalculationConfig)
-    source_model_file: Optional[str] = None
-    output_dir: Optional[str] = None
-    
-    def __post_init__(self):
-        """Validate configuration after initialization"""
-        if self.source_model_file and not Path(self.source_model_file).exists():
-            raise ConfigValidationError(f"Source model file not found: {self.source_model_file}")
 
 
 def load_config(config_file: Union[str, Path]) -> Dict[str, Any]:
@@ -276,8 +218,6 @@ def _normalize_ini_config(config: Dict[str, Any], config_path: Path) -> None:
     - [calculation].displacement_measure_levels -> [parameters].target_displacement
     - [calculation].rank1p5_traces_file parsing
     """
-    import os
-    
     # 1. Convert geometry corner_points string to site_location corner_points list
     if 'geometry' in config and 'corner_points' in config['geometry']:
         if 'site_location' not in config:
@@ -349,8 +289,14 @@ def _normalize_ini_config(config: Dict[str, Any], config_path: Path) -> None:
                     traces = _parse_rank1p5_traces_xml(str(traces_path))
                     if traces:
                         config['rank1p5_ruptures'] = {'trace': traces}
-                except Exception:
-                    pass  # Silently ignore parsing errors
+                except Exception as exc:
+                    # Optional auxiliary input: an unparseable file is
+                    # tolerated (the run proceeds without rank1p5 traces)
+                    # but no longer silently.
+                    logger.warning(
+                        "Could not parse rank1p5_traces_file %s: %s; "
+                        "continuing without rank1p5 traces.",
+                        traces_path, exc)
     
     # 6. Copy near_far_threshold_km from calculation to parameters
     if 'calculation' in config and 'near_far_threshold_km' in config['calculation']:
@@ -390,56 +336,46 @@ def _normalize_ini_config(config: Dict[str, Any], config_path: Path) -> None:
 
 
 def _parse_rank1p5_traces_xml(xml_path: str) -> List[Dict[str, Any]]:
-    """Parse rank1p5 traces from XML file."""
+    """Parse rank1p5 traces from XML file.
+
+    Trace elements may appear with or without the NRML namespace; the
+    namespaced form is tried first, then the bare form as a fallback.
+    """
     import xml.etree.ElementTree as ET
-    
+
     tree = ET.parse(xml_path)
     root = tree.getroot()
-    
-    # Handle namespaces - the elements have full namespace URLs
+
     nrml_ns = 'http://openquake.org/xmlns/nrml/0.5'
     gml_ns = 'http://www.opengis.net/gml'
-    
-    traces = []
-    
-    # Find all trace elements under rank1p5Ruptures
-    # Use iteration with namespace-qualified tags
-    for trace in root.iter(f'{{{nrml_ns}}}trace'):
-        name = trace.get('name')
-        # Find posList within LineString
-        pos_list = trace.find(f'.//{{{gml_ns}}}posList')
-        if pos_list is not None and pos_list.text:
-            coords_text = pos_list.text.strip().split()
+
+    def _collect(trace_tag: str, pos_list_tags: List[str]) -> List[Dict[str, Any]]:
+        traces = []
+        for trace in root.iter(trace_tag):
+            name = trace.get('name')
+            pos_list = None
+            for tag in pos_list_tags:
+                pos_list = trace.find(tag)
+                if pos_list is not None:
+                    break
+            if pos_list is None or not pos_list.text:
+                continue
             # coords are "lon1 lat1 lon2 lat2 ..."
-            coords = []
-            for i in range(0, len(coords_text), 2):
-                if i + 1 < len(coords_text):
-                    coords.append([float(coords_text[i]), float(coords_text[i + 1])])
+            coords_text = pos_list.text.strip().split()
+            coords = [
+                [float(coords_text[i]), float(coords_text[i + 1])]
+                for i in range(0, len(coords_text) - 1, 2)
+            ]
             if name and coords:
                 traces.append({
                     'name': name,
                     'geometry': {'type': 'Line', 'coords': coords}
                 })
-    
-    # Try without namespace if no traces found
+        return traces
+
+    traces = _collect(f'{{{nrml_ns}}}trace', [f'.//{{{gml_ns}}}posList'])
     if not traces:
-        for trace in root.iter('trace'):
-            name = trace.get('name')
-            pos_list = trace.find(f'.//{{{gml_ns}}}posList')
-            if pos_list is None:
-                pos_list = trace.find('.//posList')
-            if pos_list is not None and pos_list.text:
-                coords_text = pos_list.text.strip().split()
-                coords = []
-                for i in range(0, len(coords_text), 2):
-                    if i + 1 < len(coords_text):
-                        coords.append([float(coords_text[i]), float(coords_text[i + 1])])
-                if name and coords:
-                    traces.append({
-                        'name': name,
-                        'geometry': {'type': 'Line', 'coords': coords}
-                    })
-    
+        traces = _collect('trace', [f'.//{{{gml_ns}}}posList', './/posList'])
     return traces
 
 
@@ -546,12 +482,7 @@ def _parse_sites_csv(csv_path) -> List[Dict[str, Any]]:
 
 
 def _parse_ini_value(value: str) -> Any:
-    """
-    Parse INI value, handling JSON, numbers, booleans.
-    
-    This matches the logic from calculators.py._parse_ini_value() to ensure
-    consistent behavior.
-    """
+    """Parse an INI value, handling JSON, numbers, booleans and None."""
     value = value.strip()
     
     if not value:
@@ -676,33 +607,9 @@ def resolve_output_mean(config: Dict[str, Any]) -> bool:
     return bool(out.get('mean', True))
 
 
-def load_fdha_config(config_file: Union[str, Path]) -> FDHAConfiguration:
+def load_fdha_config(config_file: Union[str, Path]) -> None:
     """Legacy TOML configuration entry point kept only as an explicit hard stop."""
     raise ConfigurationError(
         "TOML configuration files are no longer supported. "
         "Use `load_config()` with a v5 canonical INI job instead."
     )
-
-
-def resolve_path(path: Union[str, Path], base_dir: Optional[Union[str, Path]] = None) -> Path:
-    """
-    Resolve relative paths to absolute paths
-    
-    Args:
-        path: Path to resolve
-        base_dir: Base directory for relative paths
-        
-    Returns:
-        Resolved absolute path
-    """
-    path = Path(path)
-    
-    if path.is_absolute():
-        return path
-    
-    if base_dir is None:
-        base_dir = Path.cwd()
-    else:
-        base_dir = Path(base_dir)
-    
-    return base_dir / path

@@ -80,8 +80,30 @@ class LegacyModelAdapter:
             self.model_type = 'secondary_fd'
         else:
             self.model_type = 'unknown'
-            logger.warning(f"Could not determine model type for: {class_name}")
-    
+            logger.warning("Could not determine model type for: %s", class_name)
+
+    def _resolve_style(self, ctx: 'FDHAContext', ini_section: str) -> str:
+        """Resolve the faulting style for a model call.
+
+        Priority: explicit ``style`` model parameter, else derived from the
+        rupture rake (``ctx.style``). Models with restricted style support
+        (Youngs2003*: only 'all'/'normal') reject anything else with a
+        configuration-level message pointing at ``ini_section``.
+        """
+        style = self.model_params.get('style')
+        if style is None:
+            style = ctx.style[0]  # Derived from rake angle
+        model_name = self.model.__class__.__name__
+        if 'Youngs2003' in model_name and style not in ('all', 'normal'):
+            raise ValueError(
+                f"Model {model_name} only supports style='all' or style='normal', "
+                f"but got '{style}' (derived from rake={ctx.rake[0]}). "
+                f"Please specify style explicitly in job.ini:\n"
+                f"  [models.{ini_section}.parameters]\n"
+                f"  style = all"
+            )
+        return style
+
     def _get_method_params(self, method_name: str) -> set:
         """
         Get valid parameter names for a method (cached).
@@ -171,23 +193,9 @@ class LegacyModelAdapter:
         from openquake.fdha.calc.utils.probability import _reduce_mc
         
         N = len(ctx)
-        
-        # Style priority: model_params > derived from rake
-        style = self.model_params.get('style')
-        if style is None:
-            style = ctx.style[0]  # Derived from rake angle
-        
-        # Handle models that don't support all styles (e.g., Youngs2003 only accepts 'all' or 'normal')
-        model_name = self.model.__class__.__name__
-        if 'Youngs2003' in model_name and style not in ('all', 'normal'):
-            raise ValueError(
-                f"Model {model_name} only supports style='all' or style='normal', "
-                f"but got '{style}' (derived from rake={ctx.rake[0]}). "
-                f"Please specify style explicitly in job.ini:\n"
-                f"  [models.primary_surf_rup.parameters]\n"
-                f"  style = all"
-            )
-        
+
+        style = self._resolve_style(ctx, 'primary_surf_rup')
+
         # Build kwargs; vs30 comes from the site collection (with NaN for
         # sites lacking a value and no reference_vs30_value configured).
         # NaN is converted to None so that models requiring vs30 (e.g.
@@ -256,22 +264,9 @@ class LegacyModelAdapter:
         
         N = len(ctx)
         D = len(displacements)
-        
-        # Style priority: model_params > derived from rake
-        style = self.model_params.get('style')
-        if style is None:
-            style = ctx.style[0]  # Derived from rake angle
-        
-        # Validate style for models with limited support
+
+        style = self._resolve_style(ctx, 'primary_surf_displ')
         model_name = self.model.__class__.__name__
-        if 'Youngs2003' in model_name and style not in ('all', 'normal'):
-            raise ValueError(
-                f"Model {model_name} only supports style='all' or style='normal', "
-                f"but got '{style}' (derived from rake={ctx.rake[0]}). "
-                f"Please specify style explicitly in job.ini:\n"
-                f"  [models.primary_surf_displ.parameters]\n"
-                f"  style = all"
-            )
 
         # Wrong-class output_type misconfiguration (C4 contract): raise here
         # with a configuration-level message before the model call (same
@@ -357,23 +352,9 @@ class LegacyModelAdapter:
         from openquake.fdha.calc.utils.probability import _reduce_mc
         
         N = len(ctx)
-        
-        # Style priority: model_params > derived from rake
-        style = self.model_params.get('style')
-        if style is None:
-            style = ctx.style[0]  # Derived from rake angle
-        
-        # Validate style for models with limited support
-        model_name = self.model.__class__.__name__
-        if 'Youngs2003' in model_name and style not in ('all', 'normal'):
-            raise ValueError(
-                f"Model {model_name} only supports style='all' or style='normal', "
-                f"but got '{style}' (derived from rake={ctx.rake[0]}). "
-                f"Please specify style explicitly in job.ini:\n"
-                f"  [models.secondary_surf_rup.parameters]\n"
-                f"  style = all"
-            )
-        
+
+        style = self._resolve_style(ctx, 'secondary_surf_rup')
+
         # Build kwargs with vectorized arrays; r follows the model's declared
         # multi-fault reference line (e.g. Visini2025 -> nearest segment).
         r_sel, _x_L_sel, _L_sel = self._ctx_metrics(ctx)
@@ -394,12 +375,22 @@ class LegacyModelAdapter:
         result = self._call_model('get_prob', **kwargs)
 
         arr = np.asarray(result)
-        
+
+        def _red(a):
+            return _reduce_mc(a, method=red_cfg.get('method', 'median'),
+                              q=red_cfg.get('q', 50))
+
+        def _per_site_or_broadcast(reduced):
+            result_arr = np.atleast_1d(reduced)
+            if result_arr.size == N:
+                return result_arr.astype(np.float64)
+            return np.full(N, float(result_arr.flat[0]), dtype=np.float64)
+
         # Handle different output shapes
         if arr.ndim == 0:
             # Scalar result - broadcast to all sites
             return np.full(N, float(arr), dtype=np.float64)
-        
+
         if arr.ndim == 1:
             if arr.size == N:
                 # Per-site results
@@ -409,53 +400,22 @@ class LegacyModelAdapter:
                 return np.full(N, float(arr[0]), dtype=np.float64)
             else:
                 # Reduce MC samples and broadcast
-                reduced = _reduce_mc(
-                    arr,
-                    method=red_cfg.get('method', 'median'),
-                    q=red_cfg.get('q', 50)
-                )
-                return np.full(N, float(np.atleast_1d(reduced).flat[0]), dtype=np.float64)
-        
+                return _per_site_or_broadcast(_red(arr))
+
         if arr.ndim == 2:
             # (N, n_mc) or (n_mc, N) shape - reduce MC dimension
             if arr.shape[0] == N:
-                reduced = _reduce_mc(
-                    arr,
-                    method=red_cfg.get('method', 'median'),
-                    q=red_cfg.get('q', 50)
-                )
-                result_arr = np.atleast_1d(reduced)
-                if result_arr.size == N:
-                    return result_arr.astype(np.float64)
-                else:
-                    return np.full(N, float(result_arr.flat[0]), dtype=np.float64)
+                return _per_site_or_broadcast(_red(arr))
             elif arr.shape[1] == N:
-                reduced = _reduce_mc(
-                    arr.T,
-                    method=red_cfg.get('method', 'median'),
-                    q=red_cfg.get('q', 50)
-                )
-                result_arr = np.atleast_1d(reduced)
-                if result_arr.size == N:
-                    return result_arr.astype(np.float64)
-                else:
-                    return np.full(N, float(result_arr.flat[0]), dtype=np.float64)
+                return _per_site_or_broadcast(_red(arr.T))
             else:
                 # Unknown shape - reduce and broadcast
-                reduced = _reduce_mc(
-                    arr,
-                    method=red_cfg.get('method', 'median'),
-                    q=red_cfg.get('q', 50)
-                )
-                return np.full(N, float(np.atleast_1d(reduced).flat[0]), dtype=np.float64)
-        
+                return np.full(N, float(np.atleast_1d(_red(arr)).flat[0]),
+                               dtype=np.float64)
+
         # Higher dimensional - reduce and broadcast
-        reduced = _reduce_mc(
-            arr,
-            method=red_cfg.get('method', 'median'),
-            q=red_cfg.get('q', 50)
-        )
-        return np.full(N, float(np.atleast_1d(reduced).flat[0]), dtype=np.float64)
+        return np.full(N, float(np.atleast_1d(_red(arr)).flat[0]),
+                       dtype=np.float64)
     
     def compute_secondary_fd(
         self,
@@ -483,23 +443,9 @@ class LegacyModelAdapter:
 
         N = len(ctx)
         D = len(displacements)
-        
-        # Style priority: model_params > derived from rake
-        style = self.model_params.get('style')
-        if style is None:
-            style = ctx.style[0]  # Derived from rake angle
-        
-        # Validate style for models with limited support
-        model_name = self.model.__class__.__name__
-        if 'Youngs2003' in model_name and style not in ('all', 'normal'):
-            raise ValueError(
-                f"Model {model_name} only supports style='all' or style='normal', "
-                f"but got '{style}' (derived from rake={ctx.rake[0]}). "
-                f"Please specify style explicitly in job.ini:\n"
-                f"  [models.secondary_surf_displ.parameters]\n"
-                f"  style = all"
-            )
-        
+
+        style = self._resolve_style(ctx, 'secondary_surf_displ')
+
         # Build kwargs; r/x_L/L follow the model's declared multi-fault
         # reference line (e.g. Visini2025 -> nearest segment, raw GC2 x/L).
         r_sel, x_L_sel, L_sel = self._ctx_metrics(ctx)

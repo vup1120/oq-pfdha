@@ -39,7 +39,6 @@ def compute_hazard_map(
     calc = cfg.get('calculation', {})
     if return_period is None:
         return_period = float(calc.get('return_period', para.get('return_period', 100000)))
-    principal_dist = float(calc.get('r_threshold_km', para.get('r_threshold_km', 0.1)))
 
     # Create grid of points
     corner_coords = np.array([
@@ -71,8 +70,8 @@ def compute_hazard_map(
         hdf5path=hdf5path,
         **converter_params
     )
-    
-    logger.info(f"Loaded {len(fault_sources)} fault sources")
+
+    logger.info("Loaded %d fault sources", len(fault_sources))
     
     def build_surface(source) -> Optional[object]:
         """Return an OpenQuake surface instance suitable for distance queries."""
@@ -129,7 +128,7 @@ def compute_hazard_map(
             )
     
     from openquake.fdha.calc.utils.rupture_distance import (
-        VectorizedRuptureDistanceCalculator, _extract_fault_trace_from_mesh,
+        VectorizedRuptureDistanceCalculator,
         _sections_info, SURFACE_DEPTH_TOLERANCE_KM,
         trace_polyline_for_source, resample_polyline,
     )
@@ -152,7 +151,7 @@ def compute_hazard_map(
                 sitecol, surface, reference_line_method='segments')
             distances = calc.calculate_site_to_trace_distances()
             dist_arrays.append(distances)
-            logger.debug(f"Got distances for source {source_id}")
+            logger.debug("Got distances for source %s", source_id)
         except Exception as exc:
             logger.warning(
                 "Failed to compute distances for source '%s': %s",
@@ -168,7 +167,8 @@ def compute_hazard_map(
         dist_matrix = np.vstack(dist_arrays)  # shape (n_sources, n_sites)
         min_dist = dist_matrix.min(axis=0)
         active_mask = min_dist <= max_dist
-        logger.info(f"Distance filtering: {int(active_mask.sum())}/{len(sites)} sites within {max_dist} km")
+        logger.info("Distance filtering: %d/%d sites within %s km",
+                    int(active_mask.sum()), len(sites), max_dist)
     # Extract active grid SiteCollection
     active_grid_sites = [sites[i] for i in np.where(active_mask)[0]]
     # Extract trace points at zero depth from rupture mesh (not XML fault_trace)
@@ -224,17 +224,20 @@ def compute_hazard_map(
         )
     
     combined_sitecol = SiteCollection(combined_sites)
-    logger.info(f"Computing hazard map for {len(combined_sites)} sites ({len(active_grid_sites)} grid + {len(trace_sites)} trace)")
-    # Compute hazard map rates
+    logger.info("Computing hazard map for %d sites (%d grid + %d trace)",
+                len(combined_sites), len(active_grid_sites), len(trace_sites))
+    # Compute hazard map rates. Reuse the sources parsed above for the
+    # distance pre-filter instead of re-parsing the source model XML.
     calculator = BaseFaultRuptureCalculator(
         config_path,
-        source_model_path,
+        [],
         hdf5path=hdf5path,
+        fault_sources=fault_sources,
         **converter_params
     )
     result = calculate_fdha_hazard(calculator, combined_sitecol)
     rate_keys = {
-        "total": "annual_rate_total",
+        "total": "poes",
         "principal": "rate_principal",
         "distributed": "rate_distributed",
     }
@@ -242,24 +245,15 @@ def compute_hazard_map(
         raise ValueError(
             f"rate_component must be one of {list(rate_keys)}, got {rate_component!r}"
         )
-    rates = result[rate_keys[rate_component]]
+    rates = np.asarray(result[rate_keys[rate_component]], dtype=float)
     logger.info(
         "Hazard map displacement inversion uses %s exceedance rates (%s)",
         rate_component,
         rate_keys[rate_component],
     )
 
-    # Ensure rates is a numpy array
-    if isinstance(rates, list):
-        rates = np.array(rates)
-    elif not isinstance(rates, np.ndarray):
-        rates = np.array(rates)
-
     # Invert hazard curves to displacements for target return period
     imls = np.array(cfg['parameters']['target_displacement'])
-    #if return_period is not None:
-    #    target_rate = 1.0 / float(return_period)
-    #else:
     target_rate = 1.0 / return_period
     displacements = get_map_from_curves(imls, rates, target_rate)
 

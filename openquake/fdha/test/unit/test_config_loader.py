@@ -2,73 +2,20 @@
 Unit tests: Configuration loader and validation
 
 Tests the config_loader module functionality, including:
-- Configuration loading
-- Parameter validation
-- Default value handling
-- Relative/absolute path resolution
+- Configuration loading (INI parsing, multi-site geometry)
+- Legacy entry-point rejection
+- Coordinate validation
 """
 
 import pytest
 
 pytestmark = pytest.mark.unit
-import tempfile
-import os
-from pathlib import Path
 from openquake.fdha.calc.config_loader import (
     load_config,
     load_fdha_config,
-    FDHAConfiguration,
-    ERFConfig,
-    CalculationConfig,
     ConfigurationError,
     ConfigValidationError
 )
-
-
-class TestERFConfig:
-    """Test ERF configuration"""
-    
-    def test_default_values(self):
-        """Test default values"""
-        erf = ERFConfig()
-        assert erf.rupture_mesh_spacing == 0.5
-        assert erf.width_of_mfd_bin == 0.1
-    
-    def test_custom_values(self):
-        """Test custom values"""
-        erf = ERFConfig(rupture_mesh_spacing=1.5, width_of_mfd_bin=0.05)
-        assert erf.rupture_mesh_spacing == 1.5
-        assert erf.width_of_mfd_bin == 0.05
-    
-    def test_validation_rupture_mesh_spacing_negative(self):
-        """Test negative rupture mesh spacing"""
-        with pytest.raises(ConfigValidationError, match="rupture_mesh_spacing.*> 0"):
-            ERFConfig(rupture_mesh_spacing=-1.0)
-    
-    def test_validation_rupture_mesh_spacing_zero(self):
-        """Test zero rupture mesh spacing"""
-        with pytest.raises(ConfigValidationError, match="rupture_mesh_spacing.*> 0"):
-            ERFConfig(rupture_mesh_spacing=0.0)
-    
-    def test_validation_width_of_mfd_bin_negative(self):
-        """Test negative MFD bin width"""
-        with pytest.raises(ConfigValidationError, match="width_of_mfd_bin.*> 0"):
-            ERFConfig(width_of_mfd_bin=-0.1)
-
-
-class TestCalculationConfig:
-    """Test calculation configuration"""
-    
-    def test_absolute_path(self, tmp_path):
-        """Test absolute path"""
-        source_file = tmp_path / "source_model.xml"
-        source_file.write_text("<sourceModel/>")
-        
-        calc = CalculationConfig(source_model_file=str(source_file))
-        paths = calc.get_source_model_paths()
-        assert len(paths) == 1
-        assert Path(paths[0]).is_absolute()
-        assert Path(paths[0]).exists()
 
 
 class TestLegacyTomlConfiguration:

@@ -165,11 +165,11 @@ def load_rank1p5_traces(
                     name=name,
                     source_id=source_id
                 )
-                logger.debug(f"Loaded trace '{name}' with {len(coords)} points")
+                logger.debug("Loaded trace '%s' with %d points", name, len(coords))
             else:
-                logger.warning(f"Trace '{name}' has no coordinates, skipping")
-    
-    logger.info(f"Loaded {len(surfaces)} traces from: {filepath}")
+                logger.warning("Trace '%s' has no coordinates, skipping", name)
+
+    logger.info("Loaded %d traces from: %s", len(surfaces), filepath)
     return surfaces
 
 
@@ -243,4 +243,4 @@ def attach_rank1p5_surfaces(calculator, config_path: Optional[str] = None):
     calculator.rank1p5_surface_by_name = by_name
     calculator.rank1p5_surfaces = list(by_name.values())
     
-    logger.info(f"Attached {len(by_name)} rank 1.5 surfaces to calculator")
+    logger.info("Attached %d rank 1.5 surfaces to calculator", len(by_name))

@@ -86,9 +86,8 @@ class FDHAContext:
 
     # Derived properties (computed on demand)
     _style: Optional[np.ndarray] = field(default=None, repr=False)
-    _hw_fw: Optional[np.ndarray] = field(default=None, repr=False)
-    _near_far_threshold_km: float = field(default=0.2, repr=False)
-    
+
+
     def __len__(self) -> int:
         """Return number of site-rupture pairs."""
         return len(self.sids)
@@ -131,47 +130,6 @@ class FDHAContext:
         return self._style
     
     @property
-    def hw_fw(self) -> np.ndarray:
-        """
-        Hanging wall ('HW') or footwall ('FW') indicator.
-        
-        Based on sign of rx (perpendicular distance).
-        Positive rx = hanging wall side.
-        """
-        if self._hw_fw is None:
-            self._hw_fw = np.where(self.rx >= 0, 'HW', 'FW')
-        return self._hw_fw
-    
-    @property
-    def near_far(self) -> np.ndarray:
-        """
-        Near-field ('near') or far-field ('far') label for each site.
-
-        A site is 'near' when its distance to the trace ``r`` is
-        <= ``near_far_threshold_km`` (default 0.2 km), otherwise 'far'.
-        This regime label is consumed *inside* the secondary (Visini) SR
-        computation for the along-strike Monte Carlo (Rank 2). It is NOT the
-        principal/distributed split: that decision uses the separate, smaller
-        ``r_threshold_km`` (default 0.1 km) via ``get_principal_mask``.
-        """
-        return np.where(self.r <= self._near_far_threshold_km, 'near', 'far')
-    
-    @property
-    def r_m(self) -> np.ndarray:
-        """Distance to trace in meters."""
-        return self.r * 1000.0
-    
-    @property
-    def rx_m(self) -> np.ndarray:
-        """Signed perpendicular distance in meters."""
-        return self.rx * 1000.0
-    
-    @property
-    def L_m(self) -> np.ndarray:
-        """Fault length in meters."""
-        return self.L * 1000.0
-    
-    @property
     def site_coords(self) -> Optional[np.ndarray]:
         """
         Site coordinates as (N, 2) array of (lon, lat) pairs.
@@ -210,7 +168,6 @@ class FDHAContext:
                 method: {key: arr[mask] for key, arr in metrics.items()}
                 for method, metrics in self.ref_metrics.items()
             } if self.ref_metrics is not None else None,
-            _near_far_threshold_km=self._near_far_threshold_km,
         )
 
     def metrics_for(self, method: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -227,30 +184,6 @@ class FDHAContext:
             m = self.ref_metrics[method]
             return m['r'], m['x_L'], m['L']
         return self.r, self.x_L, self.L
-
-    def get_principal_mask(self, r_threshold_km: float) -> np.ndarray:
-        """
-        Get boolean mask for sites within principal rupture zone.
-        
-        Args:
-            r_threshold_km: Distance threshold in km
-            
-        Returns:
-            Boolean array where True = principal zone
-        """
-        return self.r <= r_threshold_km
-    
-    def get_distributed_mask(self, r_threshold_km: float) -> np.ndarray:
-        """
-        Get boolean mask for sites in distributed rupture zone.
-        
-        Args:
-            r_threshold_km: Distance threshold in km
-            
-        Returns:
-            Boolean array where True = distributed zone
-        """
-        return self.r > r_threshold_km
 
 
 class FDHAContextMaker:
@@ -280,36 +213,31 @@ class FDHAContextMaker:
     def __init__(
         self,
         sitecol,
-        fdha_params: dict[str, any],
+        fdha_params: Dict[str, Any],
         maximum_distance: float = 50.0
     ):
         """
         Initialize context maker.
-        
+
         Args:
             sitecol: OpenQuake SiteCollection
-            fdha_params: Dict of FDHA distance thresholds (km) with keys:
+            fdha_params: FDHA parameter dict (the calculator's
+                ``get_fdha_params()``). The context maker reads
+                'surface_rupture_depth_tolerance_km',
+                'multifault_reference_lines' and 'reference_vs30_value'.
+                The two distance thresholds it may also carry are consumed
+                elsewhere and are easily conflated - they are independent and
+                have different defaults:
                 - 'r_threshold_km' (default 0.1): the principal/distributed
-                  split. Sites with r <= threshold are handled by the
-                  *primary* (on-trace) SR x FD models; sites beyond it by the
-                  *secondary* (distributed) models. This chooses which model
-                  family applies and is enforced during hazard-curve
-                  integration (see ``get_principal_mask`` /
-                  ``get_distributed_mask`` and ``hazard.py``).
+                  split, applied during hazard integration (W_p, see
+                  ``hazard.py`` / ``location_weight``);
                 - 'near_far_threshold_km' (default 0.2): the near/far regime
-                  split used *inside* the secondary (Visini) computation to
-                  label each site 'near' or 'far' for the along-strike Monte
-                  Carlo (SR Rank 2). It tunes behaviour within the secondary
-                  model rather than selecting the model family (see the
-                  ``near_far`` property).
-                The two thresholds are independent and have different defaults
-                (0.1 vs 0.2 km); do not conflate them.
+                  label used *inside* the secondary Visini computation
+                  (see ``calc.visini``).
             maximum_distance: Maximum source-site distance in km
         """
         self.sitecol = sitecol
         self.maximum_distance = maximum_distance
-        self.r_threshold_km = fdha_params.get('r_threshold_km', 0.1)
-        self.near_far_threshold_km = fdha_params.get('near_far_threshold_km', 0.2)
         # Depth tolerance for the surface-rupturing test; a job parameter
         # ([calculation].surface_rupture_depth_tolerance_km), defaulting to
         # the historical class constant.
@@ -364,7 +292,7 @@ class FDHAContextMaker:
         if ref_vs30 is not None:
             self._vs30[~np.isfinite(self._vs30)] = float(ref_vs30)
         
-        logger.debug(f"FDHAContextMaker initialized with {self._n_sites} sites")
+        logger.debug("FDHAContextMaker initialized with %d sites", self._n_sites)
     
     def _extract_coords_fallback(self, sitecol) -> Tuple[np.ndarray, np.ndarray]:
         """Extract coordinates using fallback methods."""
@@ -669,7 +597,6 @@ class FDHAContextMaker:
             lons=self._lons.copy(),
             lats=self._lats.copy(),
             ref_metrics=ref_metrics,
-            _near_far_threshold_km=self.near_far_threshold_km,
         )
 
         # Filter by maximum distance
@@ -679,10 +606,10 @@ class FDHAContextMaker:
 
         return ctx
     
-    def get_cache_stats(self) -> dict[str, any]:
+    def get_cache_stats(self) -> Dict[str, Any]:
         """
         Return cache hit/miss statistics.
-        
+
         Returns:
             Dict with 'hits', 'misses', 'hit_rate', 'cached_surfaces'
         """
@@ -693,9 +620,3 @@ class FDHAContextMaker:
             'hit_rate': self._cache_hits / total if total > 0 else 0.0,
             'cached_surfaces': len(self._dist_cache),
         }
-    
-    def clear_cache(self):
-        """Clear the distance calculator cache."""
-        self._dist_cache.clear()
-        self._cache_hits = 0
-        self._cache_misses = 0

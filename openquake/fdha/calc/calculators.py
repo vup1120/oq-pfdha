@@ -6,7 +6,6 @@ import os
 import inspect
 import logging
 import numpy as np
-from tqdm import tqdm
 from openquake.hazardlib.site import Site, SiteCollection
 from openquake.hazardlib.geo import Point
 from openquake.fdha.calc.utils.parsing import parse_source_model_faults
@@ -39,7 +38,6 @@ class BaseFaultRuptureCalculator:
     def __init__(self, config_path, source_model_paths, hdf5path='',
                  fault_sources=None, **converterparams):
         # Save config path (as absolute path) for path resolution
-        import os
         if isinstance(config_path, (str, bytes, os.PathLike)):
             self.config_path = os.path.abspath(config_path)
         else:
@@ -58,7 +56,8 @@ class BaseFaultRuptureCalculator:
         self._initialize_models()
         # Initialize calculation parameters
         self._initialize_calculation_params()
-        logger.debug(f"Initialized {self.__class__.__name__} with config {config_path}")
+        logger.debug("Initialized %s with config %s",
+                     self.__class__.__name__, config_path)
 
     @staticmethod
     def _load_configuration(config_path):
@@ -126,8 +125,11 @@ class BaseFaultRuptureCalculator:
                     f"Lavrentiadis2023PrimaryFD_principal sum-of-principal "
                     f"variant)."
                 )
-        logger.debug(f"Models: primary_surf_rup={self.primary_surf_rup_model}, primary_surf_displ={self.primary_surf_displ_model}, "
-                     f"secondary_surf_rup={self.secondary_surf_rup_model}, secondary_surf_displ={self.secondary_surf_displ_model}")
+        logger.debug(
+            "Models: primary_surf_rup=%s, primary_surf_displ=%s, "
+            "secondary_surf_rup=%s, secondary_surf_displ=%s",
+            self.primary_surf_rup_model, self.primary_surf_displ_model,
+            self.secondary_surf_rup_model, self.secondary_surf_displ_model)
 
     @staticmethod
     def _instantiate_model(model_cfg):
@@ -410,10 +412,9 @@ class FaultRuptureProbabilityCalculator(BaseFaultRuptureCalculator):
             n = len(sites_list)
             if n > 100:
                 logger.warning(
-                    f"Multi-site job has {n} sites (> 100). "
-                    "Runtime scales with site count via the per-rupture distance loop "
-                    "in VectorizedRuptureDistanceCalculator."
-                )
+                    "Multi-site job has %d sites (> 100). Runtime scales "
+                    "with site count via the per-rupture distance loop in "
+                    "VectorizedRuptureDistanceCalculator.", n)
             # SiteCollection([Site(...)]) is required (not from_points) so that
             # the 'vs30' field is present in the structured array - FDHAContextMaker
             # reads sitecol.vs30 and from_points omits that field.
@@ -427,7 +428,7 @@ class FaultRuptureProbabilityCalculator(BaseFaultRuptureCalculator):
                     kwargs['vs30'] = float(site_vs30)
                 oq_sites.append(Site(**kwargs))
             self.sitecol = SiteCollection(oq_sites)
-            logger.debug(f"Initialized {n} sites from sites_list")
+            logger.debug("Initialized %d sites from sites_list", n)
         else:
             # Single-site path (unchanged - backward compatible)
             lat = site_cfg.get('latitude')
@@ -439,7 +440,8 @@ class FaultRuptureProbabilityCalculator(BaseFaultRuptureCalculator):
                 if vs30 is not None:
                     kwargs['vs30'] = vs30
                 self.sitecol = SiteCollection([Site(**kwargs)])
-                logger.debug(f"Initialized point site at ({lon}, {lat}) vs30={vs30}")
+                logger.debug("Initialized point site at (%s, %s) vs30=%s",
+                             lon, lat, vs30)
             else:
                 raise ValueError(
                     "site_location must include latitude and longitude for hazard_curve"
