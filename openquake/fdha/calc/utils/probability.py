@@ -232,13 +232,3 @@ def _to_sites_x_displ(
     val = float(_reduce_mc(A, method=method, q=q_val))
     return np.full((n_sites, n_displ), val, dtype=float)
 
-
-
-
-
-
-
-
-
-
-

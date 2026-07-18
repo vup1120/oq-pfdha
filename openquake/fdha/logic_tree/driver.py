@@ -382,7 +382,7 @@ class FdhaLogicTree:
             res = calculate_fdha_hazard(
                 branch_calc, sites.combined_sitecol, show_progress=False,
             )
-            branch_rates = np.asarray(res["annual_rate_total"], dtype=float)
+            branch_rates = np.asarray(res["poes"], dtype=float)
             branch_principal = np.asarray(res["rate_principal"], dtype=float)
             branch_distributed = np.asarray(res["rate_distributed"], dtype=float)
             # Explicit pre-aggregation shape guard: bail out loudly when a

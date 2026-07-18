@@ -27,9 +27,11 @@ def run_calculation(
     return_period: float = None,
     calculation_type: str = None,
 ):
-    logger.info(f"Starting calculation with config={config_path}, source_model={source_model_path}, "
-                f"plot={plot}, output={output_file}, plot_file={plot_file}, "
-                f"return_period={return_period}, calculation_type={calculation_type}")
+    logger.info(
+        "Starting calculation with config=%s, source_model=%s, plot=%s, "
+        "output=%s, plot_file=%s, return_period=%s, calculation_type=%s",
+        config_path, source_model_path, plot, output_file, plot_file,
+        return_period, calculation_type)
 
     config = BaseFaultRuptureCalculator._load_configuration(config_path)
     site_config = config.get("site_location", {})

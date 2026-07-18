@@ -13,7 +13,7 @@ Case selection logic (per the paper's example narrative):
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import List, Optional
 import numpy as np
 from openquake.hazardlib.site import SiteCollection
 from openquake.fdha.calc.utils.rupture_distance import (
@@ -64,9 +64,8 @@ class SiteFaultClassifier:
         """Return ``"case1"``, ``"case2"`` or ``"case3"``."""
         if self.case:
             return self.case
-        # !!!! NEED TO CHECK THIS LOGIC
         if not self.rank1p5_surfaces:
-            return "case3"
+            return "case1"
 
         # Threshold in kilometers for the existing calculators
         near_thresh_km = self.near_radius_m / 1000.0
@@ -110,58 +109,3 @@ def combine_probabilities(prob_list: List[np.ndarray]) -> np.ndarray:
         return prob_list[0]
     one_minus = [1.0 - P for P in prob_list]
     return 1.0 - np.prod(one_minus, axis=0)
-
-
-def decide_combinations_for_site(
-    site: Any = None,
-    sitecol: Optional[SiteCollection] = None,
-    rank1p5_surfaces: Optional[Any] = None,
-    case: Optional[str] = None,
-    near_radius_m: float = 1000.0,
-    r_distance_m: Optional[float] = None,  # accepted for interface parity (unused)
-    style: Optional[str] = None,           # accepted and ignored
-    **kwargs,
-) -> List[str]:
-    """
-    Decide which combinations (A, B, C) apply at a site, based on Case 1/2/3 logic.
-
-    Parameters
-    ----------
-    site : optional
-        Deprecated parameter, use 'sitecol' instead.
-    sitecol : SiteCollection, optional
-        For a point site (or multiple points).
-    rank1p5_surfaces : list or dict[name->surface]
-        Rank 1.5 surfaces (objects must support get_fault_trace() and get_min_distance()).
-    case: 
-    near_radius_m : float
-        Distance threshold (default 1000 m).
-    r_distance_m : float, optional
-        Accepted for API compatibility with scripts; not used here.
-    style : str, optional
-        Accepted and ignored.
-
-    Returns
-    -------
-    list[str]
-        A list like ['A'], ['A','B'], or ['A','B','C'].
-    """
-    # Normalize rank1p5 surfaces to a list
-    if isinstance(rank1p5_surfaces, dict):
-        r15_list = list(rank1p5_surfaces.values())
-    else:
-        r15_list = rank1p5_surfaces or []
-
-    if case is not None:
-        return choose_combinations(case)
-
-    if sitecol is None:
-        raise ValueError("'sitecol' is required.")
-
-    clf = SiteFaultClassifier(
-        sitecol=sitecol,
-        rank1p5_surfaces=r15_list,
-        near_radius_m=near_radius_m,
-    )
-    case = clf.classify_site()
-    return choose_combinations(case)

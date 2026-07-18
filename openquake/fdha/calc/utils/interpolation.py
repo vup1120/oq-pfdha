@@ -9,34 +9,6 @@ from typing import Union, List
 # Use the same EPSILON as OpenQuake Engine
 EPSILON = 1e-30
 
-def interpolate_poe(
-    imls: np.ndarray,
-    poes: np.ndarray,
-    target: float
-) -> float:
-    """
-    Interpolate probability of exceedance for a given displacement level.
-    
-    Parameters:
-    -----------
-    imls : array-like
-        Displacement levels (intensity measure levels)
-    poes : array-like
-        Probabilities of exceedance corresponding to each displacement level
-    target : float
-        Target displacement level to interpolate for
-        
-    Returns:
-    --------
-    float
-        Interpolated probability of exceedance for the target displacement
-    """
-    if target <= imls[0]:
-        return poes[0]
-    if target >= imls[-1]:
-        return poes[-1]
-    return np.exp(np.interp(np.log(target), np.log(imls), np.log(poes)))
-
 def compute_hazard_maps(
     curves: np.ndarray,
     imls: np.ndarray,

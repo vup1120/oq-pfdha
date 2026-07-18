@@ -122,6 +122,13 @@ class BaseSecondarySurfDispl(metaclass=abc.ABCMeta):
     #: See BasePrimarySurfDispl.MULTIFAULT_REFERENCE_LINE.
     MULTIFAULT_REFERENCE_LINE = "lcp"
 
+    #: Distributed-contribution pipeline the hazard kernel routes this model
+    #: through; see BaseSecondarySurfRup.SECONDARY_PIPELINE. ``"generic"``
+    #: (default) = adapter ``P(SR) x P(FD)``; ``"visini"`` = combined
+    #: A/B/C + rank-2 Monte Carlo path. Declared on the class so the kernel
+    #: never matches model names.
+    SECONDARY_PIPELINE = "generic"
+
     #: Displacement definition (see :data:`DISPLACEMENT_DEFINITIONS`); every
     #: model in this slot predicts off-fault displacement, so the base-class
     #: default is ``"distributed"``.

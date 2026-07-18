@@ -6,6 +6,8 @@ import os
 import importlib
 from pathlib import Path
 
+import numpy as np
+
 # Add parent directories to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent.parent))
 
@@ -39,8 +41,8 @@ def main():
     # Save results
     with open(results_path, 'w') as f:
         json.dump({
-            'imls': results['imls'],
-            'poes': results['poes']
+            'imls': np.asarray(results['imls']).tolist(),
+            'poes': np.asarray(results['poes']).tolist()
         }, f, indent=2)
     
     print(f"\nResults saved to: {results_path}")

@@ -37,6 +37,16 @@ class BaseSecondarySurfRup(metaclass=abc.ABCMeta):
     #: declarative pattern. Irrelevant for single-strand sources.
     MULTIFAULT_REFERENCE_LINE = "lcp"
 
+    #: Distributed-contribution pipeline the hazard kernel must route this
+    #: model through. ``"generic"`` (default) = the standard adapter path
+    #: ``P(SR) x P(FD)``; ``"visini"`` = the combined A/B/C combination +
+    #: rank-2 Monte Carlo path in :class:`~openquake.fdha.calc.visini.
+    #: VisiniSecondaryCalculator`, which needs site coordinates and rank-1.5
+    #: traces the generic interface does not carry. Declared on the model
+    #: class so the kernel never matches class names; a Visini subclass or
+    #: renamed variant keeps the correct routing automatically.
+    SECONDARY_PIPELINE = "generic"
+
     @abc.abstractmethod
     def get_prob(self):
         """
