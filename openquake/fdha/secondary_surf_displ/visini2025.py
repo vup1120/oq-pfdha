@@ -101,6 +101,11 @@ class Visini2025SecondaryFD(BaseSecondarySurfDispl):
     # no smoothed ECS/LCP reference line applies.
     MULTIFAULT_REFERENCE_LINE = "segments"
 
+    # Route the distributed contribution through VisiniSecondaryCalculator
+    # (combined A/B/C combination + rank-2 Monte Carlo), not the generic
+    # P(SR) x P(FD) adapter path (see BaseSecondarySurfDispl.SECONDARY_PIPELINE).
+    SECONDARY_PIPELINE = "visini"
+
     def __init__(self, n_sigma: float = 3.0, truncation_eps: float = None,
                  style=None, scaling_model=None, tpfm=None, case=None,
                  rupture_traces=None) -> None:
