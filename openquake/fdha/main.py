@@ -39,10 +39,10 @@ def setup_logging(verbose: bool = False):
 def parse_config_file(config_path: str) -> Dict[str, Any]:
     """
     Parse configuration file (INI or TOML) using unified loader.
-    
+
     Args:
         config_path: Path to configuration file
-        
+
     Returns:
         Configuration dictionary
     """
@@ -297,7 +297,7 @@ Examples:
   fdha job.ini --plot curve.png
 """
     )
-    
+
     # Positional argument for config file
     parser.add_argument(
         'job_ini',
@@ -320,7 +320,7 @@ Examples:
         action='store_true',
         help='Verbose output'
     )
-    
+
     return parser
 
 
@@ -328,19 +328,19 @@ def main():
     """Main entry point."""
     parser = create_parser()
     args = parser.parse_args()
-    
+
     # Setup logging
     setup_logging(args.verbose)
-    
+
     # Check config file exists
     if not os.path.exists(args.job_ini):
         print(f"Error: Configuration file not found: {args.job_ini}")
         sys.exit(1)
-    
+
     # Handle --plot argument
     plot_show = args.plot == 'show'
     plot_file = args.plot if args.plot and args.plot != 'show' else None
-    
+
     try:
         results = run_calculation(
             config_path=args.job_ini,

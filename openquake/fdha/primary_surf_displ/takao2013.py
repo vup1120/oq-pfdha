@@ -17,8 +17,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.fdha.primary_surf_displ.takao2013` implements
-model of Takao et al. (2013) into :class:`Takao2013`
+Module :mod:`openquake.fdha.primary_surf_displ.takao2013` implements the
+model of Takao et al. (2013) in :class:`Takao2013PrimaryFD`.
 """
 
 import numpy as np
@@ -93,14 +93,14 @@ class Takao2013PrimaryFD(BasePrimarySurfDispl):
             Earthquake magnitude (scalar)
         :param srl:
             Surface rupture length in km
-        :param norm_disp_type: 
+        :param norm_disp_type:
             Normalization displacement type. Valid options are "AD" or "MD".
         :returns:
             Probability of exceeding target displacement (m), shape (n_displacements, n_sites).
         """
         # Define the accepted Normalization displacement types
         accepted_version = ["AD", "MD"]
-        
+
         # Use Wells and Coppersmith 1994 law to estimate the surface rupture length (srl) in km
         srl = 10 ** (-2.86 + 0.63 * mag)
         # Validate the style
@@ -114,7 +114,7 @@ class Takao2013PrimaryFD(BasePrimarySurfDispl):
             raise ValueError(
                 f"Invalid style '{norm_disp_type}'. Accepted values are: {', '.join(accepted_version)}"
             )
-        
+
         # Convert inputs to numpy arrays
         d = np.atleast_1d(d)  # Shape (n_displacements,)
         X_L_ratio = np.atleast_1d(X_L_ratio)  # Shape (n_sites,)
@@ -140,7 +140,7 @@ class Takao2013PrimaryFD(BasePrimarySurfDispl):
             # (1994) maximum-displacement relation (constant term 0.3 larger)
             log_mean = -5.16 + 0.82 * mag
             sigma = 0.42
-            
+
         d_truncation = self.n_sigma  # ±n_sigma
         # Truncation bounds in log10 space
         lower = 10 ** (log_mean - d_truncation * sigma)
@@ -148,19 +148,19 @@ class Takao2013PrimaryFD(BasePrimarySurfDispl):
 
         # Use logspace values for numerical integration
         logspace_vals = np.logspace(np.log10(lower), np.log10(upper), self._N_INTEGRATION)
-        
+
         # Initialize output array: (n_displacements, n_sites)
         n_displacements = len(d)
         n_sites = len(X_L_ratio)
         prob_exceeding_d = np.zeros((n_displacements, n_sites))
-        
+
         # Vectorized integration over displacement values
         for disp in logspace_vals:
             D_NormD = d / disp  # Shape (n_displacements,)
             # Reshape for broadcasting: (n_displacements, 1) and (1, n_sites)
             D_NormD_reshaped = D_NormD[:, np.newaxis]  # Shape (n_displacements, 1)
             X_L_reshaped = X_L_ratio[np.newaxis, :]  # Shape (1, n_sites)
-            
+
             if norm_disp_type == "AD":
                 p3 = self.get_prob_D_AD(D_NormD_reshaped, X_L_reshaped, srl) * self.get_prob_avg_displacement(disp, mag)
                 prob_exceeding_d += p3
@@ -191,14 +191,14 @@ class Takao2013PrimaryFD(BasePrimarySurfDispl):
         else:
             a = np.exp(0.7 + 0.34 * x_L_ratio)
             b = np.exp(-1.4 + 1.82 * x_L_ratio)
-        
+
         return 1. - gamma.cdf(D_AD, a, loc=0, scale=b)
 
     def get_prob_avg_displacement(self, target_ad, mag: float) -> float:
         """
         Calculate the normalized normal pdf of log10(average displacement) based on magnitude
         using Wells and Coppersmith (1994) for all faulting
-        
+
         :param target_ad: Average displacement in meters
         :param magnitude: Earthquake magnitude
         :returns: Probability of average displacement
@@ -249,7 +249,7 @@ class Takao2013PrimaryFD(BasePrimarySurfDispl):
         """
         Calculate the log-normal pdf of maximum displacement based on magnitude
         using Wells and Coppersmith (1994) for all style of faultings
-        
+
         :param target_md: Maximum displacement in meters
         :param magnitude: Earthquake magnitude
         :returns: Probability of maximum displacement

@@ -20,8 +20,8 @@ Module :mod:`openquake.fdha.secondary_surf_displ.visini2025` implements
 the distributed (secondary) fault displacement model of Visini et al. (2025)
 in :class:`Visini2025SecondaryFD`.
 
-Reference
----------
+References
+----------
 Visini, F., Boncio, P., Valentini, A., Scotti, O., Nurminen, F., Baize, S.,
 & Pace, B. (2025). Empirical regressions for distributed faulting of dip-slip
 earthquakes. Earthquake Spectra, 41(4), 2968-3001.
@@ -206,7 +206,7 @@ class Visini2025SecondaryFD(BaseSecondarySurfDispl):
             # Broadcast X_L_ratio and dip to s's shape
             xlr_b = np.broadcast_to(np.asarray(X_L_ratio, dtype=float), s.shape)
             dip_b = np.broadcast_to(np.asarray(dip, dtype=float), s.shape)
-            
+
             # DIAGNOSTIC: Check for invalid X_L_ratio values
             xlr_min, xlr_max = float(np.min(xlr_b)), float(np.max(xlr_b))
             if xlr_min < 0.0 or xlr_max > 1.0:
@@ -442,7 +442,7 @@ class Visini2025SecondaryFD(BaseSecondarySurfDispl):
                 RuntimeWarning
             )
             norm_pos = max(0.0, min(1.0, norm_pos))
-        
+
         if r == 0.0:
             tpfm_loc = float(np.interp(norm_pos, x, T_mean))
         else:

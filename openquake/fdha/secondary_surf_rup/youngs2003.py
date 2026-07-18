@@ -75,7 +75,7 @@ class Youngs2003SecondarySR(BaseSecondarySurfRup):
                 version = self.version if self.version is not None else "3"
             # Normalize version to string
             version = str(version)
-            
+
             # Vectorize the hanging wall/footwall determination
             h = np.where(rx > 0., 1, 0)  # Shape (n_sites,) if rx is an array, else scalar
 

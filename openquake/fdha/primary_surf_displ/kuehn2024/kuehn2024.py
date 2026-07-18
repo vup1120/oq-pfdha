@@ -1,5 +1,3 @@
-# Corrected content for kuehn2024.py (Attempt 4)
-
 # -*- coding: utf-8 -*-
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 #
@@ -19,8 +17,14 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.fdha.primary_surf_displ.kuehn2024.kuehn2024` implements
-model of Kuehn et al. (2024) into :class:`Kuehn2024PrimaryFD`
+Module :mod:`openquake.fdha.primary_surf_displ.kuehn2024.kuehn2024`
+implements the model of Kuehn et al. (2024) in :class:`Kuehn2024PrimaryFD`.
+
+References
+----------
+Kuehn, N. M., Kottke, A. R., Sarmiento, A. C., Madugo, C. M., & Bozorgnia,
+Y. (2024). A fault displacement model based on the FDHI database. Earthquake
+Spectra, 41(4), 2783-2805. https://doi.org/10.1177/87552930241291077
 """
 
 
@@ -49,7 +53,8 @@ class Kuehn2024PrimaryFD(BasePrimarySurfDispl):
     ----------
     Kuehn, N. M., Kottke, A. R., Sarmiento, A. C., Madugo, C. M., &
     Bozorgnia, Y. (2024). A fault displacement model based on the FDHI
-    database.
+    database. Earthquake Spectra, 41(4), 2783-2805.
+    https://doi.org/10.1177/87552930241291077
 
     Model contract: DISPLACEMENT_DEFINITION = "aggregate",
     DISPLACEMENT_COMPONENT = "net" -- Kuehn et al. (2024) fit the FDHI
@@ -176,7 +181,7 @@ class Kuehn2024PrimaryFD(BasePrimarySurfDispl):
 
         else: # Not epistemic_uncertainty
             mean_coeffs_data = DATA_COEFFICIENTS[style]['mean']
-            
+
             if isinstance(mean_coeffs_data, pd.DataFrame):
                 if not mean_coeffs_data.empty:
                     if 'median' in mean_coeffs_data.index:
@@ -189,7 +194,7 @@ class Kuehn2024PrimaryFD(BasePrimarySurfDispl):
                     )
             elif isinstance(mean_coeffs_data, pd.Series):
                 single_coeffs_series = mean_coeffs_data
-            else: 
+            else:
                 raise TypeError(
                     f"Mean coefficients for style '{style}' must be a pandas Series or a DataFrame. "
                     f"Got {type(mean_coeffs_data)}."
@@ -248,11 +253,11 @@ class Kuehn2024PrimaryFD(BasePrimarySurfDispl):
         mu = self._calc_mean(coeffs, mag, X_L_ratio)
         std_mode = self._calc_std_mode_bilinear(coeffs, mag)
         std_within = self._calc_std_within(coeffs, X_L_ratio)
-        
+
         std_total = np.sqrt(std_mode**2 + std_within**2)
-        
+
         lam = coeffs['lambda']
-        model_id = coeffs.get('model_id', 1) 
+        model_id = coeffs.get('model_id', 1)
         return model_id, lam, mu, std_total, std_within, std_mode
 
     def _calc_normal(self, coeffs, mag, X_L_ratio):
@@ -273,12 +278,12 @@ class Kuehn2024PrimaryFD(BasePrimarySurfDispl):
     def _calc_reverse(self, coeffs, mag, X_L_ratio):
         mu = self._calc_mean(coeffs, mag, X_L_ratio)
         std_within = self._calc_std_within(coeffs, X_L_ratio)
-        
-        std_mode = float(coeffs['s_m,r']) 
-        
-        std_total = np.sqrt(std_mode**2 + std_within**2) 
 
-        lam = coeffs['lambda'] 
+        std_mode = float(coeffs['s_m,r'])
+
+        std_total = np.sqrt(std_mode**2 + std_within**2)
+
+        lam = coeffs['lambda']
         model_id = coeffs.get('model_id', 1)
         return model_id, lam, mu, std_total, std_within, std_mode
 
@@ -346,15 +351,15 @@ class Kuehn2024PrimaryFD(BasePrimarySurfDispl):
         stdv_s = float(np.asarray(stdv).item())
 
         if bc_param_s == 0:
-            return np.exp(mean_s + 0.5 * stdv_s**2) 
-        
+            return np.exp(mean_s + 0.5 * stdv_s**2)
+
         term_val = bc_param_s * mean_s + 1
-        
+
         if term_val <= 0:
-            return np.nan 
+            return np.nan
 
         return (np.power(term_val, 1 / bc_param_s) *
-                (1 + (stdv_s ** 2 * (1 - bc_param_s)) / 
+                (1 + (stdv_s ** 2 * (1 - bc_param_s)) /
                 (2 * (term_val) ** 2)))
 
 
@@ -365,7 +370,7 @@ class Kuehn2024PrimaryFD(BasePrimarySurfDispl):
         stdv_s = float(np.asarray(stdv).item())
         # quantile is already scalar
 
-        if quantile == -1: 
+        if quantile == -1:
             displ_meters = self._calc_analytic_mean(bc_param_s, mean_s, stdv_s)
             if np.isnan(displ_meters):
                  return np.nan

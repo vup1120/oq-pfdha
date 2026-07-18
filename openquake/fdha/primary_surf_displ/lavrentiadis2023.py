@@ -42,8 +42,9 @@ class Lavrentiadis2023PrimaryFD_aggregate(BasePrimarySurfDispl):
 
 	References
 	----------
-	Lavrentiadis, G., and Abrahamson, N.A. (2023). A fault displacement model
-	for probabilistic fault displacement hazard analysis.
+	Lavrentiadis, G., and Abrahamson, N.A. (2023). Fault-displacement models
+	for aggregate and principal displacements. Earthquake Spectra, 41(4),
+	2806-2837. https://doi.org/10.1177/87552930231201531
 
 	Model contract: DISPLACEMENT_DEFINITION = "aggregate",
 	DISPLACEMENT_COMPONENT = "net" -- STATIC, the class choice IS the
@@ -172,10 +173,10 @@ class Lavrentiadis2023PrimaryFD_aggregate(BasePrimarySurfDispl):
 		# Ensure d is an array and handle broadcasting
 		d = np.atleast_1d(d)
 		z = d ** 0.3
-		
+
 		# Reshape for proper broadcasting: (n_displacements, n_locations)
 		z = z[:, np.newaxis]  # Shape: (n_displacements, 1)
-		
+
 		# mu and sig arrays have shape (n_locations,)
 		# Broadcasting will create arrays of shape (n_displacements, n_locations)
 		ccdf_agg = scipystats.norm.sf(x=z, loc=mu_agg_p, scale=sig_agg)
@@ -194,7 +195,7 @@ class Lavrentiadis2023PrimaryFD_aggregate(BasePrimarySurfDispl):
 			prob = ccdf_seg_with_zero if include_zero_slip else ccdf_seg
 		else:
 			raise ValueError(f"Invalid output_type '{output_type}'")
-		
+
 		# Normalize output shape:
 		# - single site -> (n_displacements,)
 		# - single displacement -> (n_locations,)

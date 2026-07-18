@@ -17,7 +17,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.fdha.secondary_surf_rup.petersen2011` 
+Module :mod:`openquake.fdha.secondary_surf_rup.petersen2011`
 """
 
 import numpy as np
@@ -30,7 +30,7 @@ class Petersen2011SecondarySR(BaseSecondarySurfRup):
     Implementation of the Petersen et al. (2011) model for strike-slip faults
     with different pixel sizes
     """
-    
+
     # Define coefficients for different pixel sizes
     # Pixel ("cell") size parameters from Table 4 (Page 812, Petersen et al., 2011)
     PIXEL_SIZES = {
@@ -129,11 +129,11 @@ class Petersen2011SecondarySR(BaseSecondarySurfRup):
 
         # Convert distance from km to m
         r = r * 1000
-        
+
         # Validate distance range
         #if not (r >= 0).all() or (r > 2000).any():
         #    raise ValueError("Distance r must be non-negative and ≤ 2000 m")
-            
+
         if isinstance(pixel_size, str):
             try:
                 pixel_size = int(pixel_size)
@@ -146,7 +146,7 @@ class Petersen2011SecondarySR(BaseSecondarySurfRup):
         params = self.PIXEL_SIZES[pixel_size]
         a, b, _ = params["a"], params["b"], params["sigma"]
         near_params = self.NEAR_FIELD_POINTS[pixel_size]
-        
+
         if version == "default":
             # Far-field power function (Page 819, Eqn 20, Table 4)
             r_safe = np.where(r == 0, 0.1, r)  # Use 0.1 m as minimum distance
@@ -160,26 +160,26 @@ class Petersen2011SecondarySR(BaseSecondarySurfRup):
 
             # Initialize with default probability (p0)
             P_rupture = np.full_like(r, p0, dtype=float)
-            
+
             # Linear interpolation for r < r1
             mask_near = r < r1
             if np.any(mask_near):
                 # Interpolate between p0 and p1 at r1
                 P_rupture[mask_near] = p0 + (p1 - p0) * (r[mask_near] / r1)
-                
+
             # Linear interpolation for r1 <= r <= r2
             mask_mid = (r >= r1) & (r <= r2)
             if np.any(mask_mid):
                 # Interpolate between p1 and p2
                 P_rupture[mask_mid] = p1 + (p2 - p1) * ((r[mask_mid] - r1) / (r2 - r1))
-                
+
             # Use power function for far field (r > r2)
             mask_far = r > r2
             if np.any(mask_far):
                 r_safe = np.where(r[mask_far] == 0, 0.1, r[mask_far])
                 ln_P_far = a * np.log(r_safe) + b
                 P_rupture[mask_far] = np.exp(ln_P_far)
-                
+
             P_rupture = np.clip(P_rupture, 0, 1)  # Ensure probability is in [0, 1]
 
         # Return scalar if input was scalar, following Youngs2003 pattern

@@ -23,7 +23,7 @@ from openquake.fdha.calc.decision_tree import choose_combinations, combine_proba
 class VisiniSecondaryCalculator:
     """
     Optimized encapsulation of Visini (2025) secondary rupture/displacement computation.
-    
+
     Key optimizations over original:
     - Sites processed in batches by (HW/FW, near/far) groups
     - P_slice computed vectorized over all sites
@@ -56,11 +56,11 @@ class VisiniSecondaryCalculator:
         self.combos = combo_override or self._resolve_combos(case_label)
         self._a_diagnostics = None
         self._b_diagnostics = None
-        
+
         # Monte Carlo parameters for segment sampling and distribution type
         self.segment_sampling = segment_sampling
         self.distribution_type = distribution_type
-        
+
         # Precompute trace segment arrays for vectorized distance calculation
         self._trace_segments = self._precompute_trace_segments()
 
@@ -87,24 +87,24 @@ class VisiniSecondaryCalculator:
     def _compute_secondary_distance_vectorized(self, r_km_arr, site_coords):
         """
         OPTIMIZED: Vectorized distance computation for all sites at once.
-        
+
         Computes minimum distance (km) from each site to secondary rupture traces.
-        
+
         Parameters:
         -----------
         r_km_arr : array
             Fallback distances (km) if no traces found
         site_coords : array of shape (n_sites, 2)
             Site coordinates as (lon, lat)
-            
+
         Returns:
         --------
         array
             Minimum distance (km) for each site
         """
         r_km_arr = np.atleast_1d(r_km_arr)
-        
-        
+
+
         if not self._trace_segments or site_coords is None:
             return r_km_arr
 
@@ -121,24 +121,24 @@ class VisiniSecondaryCalculator:
             lat0 = np.deg2rad((a[1] + b[1] + np.mean(site_coords[:, 1])) / 3.0)
             k_lat = 111.0
             k_lon = 111.0 * np.cos(lat0)
-            
+
             # Convert all points to km
             p_xy = np.column_stack([site_coords[:, 0] * k_lon, site_coords[:, 1] * k_lat])
             a_xy = np.array([a[0] * k_lon, a[1] * k_lat])
             b_xy = np.array([b[0] * k_lon, b[1] * k_lat])
-            
+
             # Vectorized point-to-segment distance
             ab = b_xy - a_xy
             ap = p_xy - a_xy
             denom = np.dot(ab, ab)
-            
+
             if denom == 0.0:
                 d_km = np.linalg.norm(ap, axis=1)
             else:
                 t = np.clip(np.dot(ap, ab) / denom, 0.0, 1.0)
                 proj = a_xy + np.outer(t, ab)
                 d_km = np.linalg.norm(p_xy - proj, axis=1)
-            
+
             min_dists = np.minimum(min_dists, d_km)
 
         # Fallback to main r_km where no trace found
@@ -182,7 +182,7 @@ class VisiniSecondaryCalculator:
         x_L_arr = np.atleast_1d(np.asarray(x_L, dtype=float))
         dip_arr = np.atleast_1d(np.asarray(dip, dtype=float))
         target_displacements = np.asarray(target_displacements, dtype=float)
-        
+
         n_sites = len(r_arr)
         n_displ = len(target_displacements)
 
@@ -190,7 +190,7 @@ class VisiniSecondaryCalculator:
         r_m = r_arr * 1000.0
         rx_m = rx_arr * 1000.0
         L_m = L_arr * 1000.0
-        
+
         # For fault length, use the first value (constant per rupture)
         fault_length_m = float(L_m[0]) if L_m.size > 0 else 10000.0
 
@@ -201,26 +201,26 @@ class VisiniSecondaryCalculator:
         pixel_size = rup_kwargs.get("pixel_size", self.pixel_size)
 
         combo_probs = []
-        
+
         for comb in self.combos:
             # === OPTIMIZED: Classify all sites at once ===
-            
+
             # HW/FW classification (vectorized)
             hw_fw_arr = np.where(rx_arr < 0, 'FW', 'HW')
-            
+
             # Near/far classification based on r_km (vectorized)
             near_far_arr = np.where(r_arr <= self.near_far_threshold_km, 'near', 'far')
-            
+
             # Initialize r_sec_km to r_arr as fallback
             r_sec_km = r_arr.copy()
-            
+
             # For combination B, compute secondary distances for all sites at once
             if comb == "B" and self._trace_segments:
                 r_sec_km = self._compute_secondary_distance_vectorized(r_arr, site_coords)
                 r_for_pslice_m = r_sec_km * 1000.0
             else:
                 r_for_pslice_m = r_m
-            
+
             # === OPTIMIZED: Vectorized P_slice for all sites ===
             if comb in {"A", "B"}:
                 # Use the optimized vectorized method from the model
@@ -242,7 +242,7 @@ class VisiniSecondaryCalculator:
                     P_slice = np.atleast_1d(sr_result["P_slice"])
                     P_along = np.atleast_1d(sr_result["P_along_strike"])
                     P_total_sr = np.atleast_1d(sr_result["P_total"])
-                    
+
                     # Ensure arrays are the right size
                     if P_slice.size == 1:
                         P_slice = np.full(n_sites, float(P_slice[0]))
@@ -256,16 +256,16 @@ class VisiniSecondaryCalculator:
                     P_slice = np.atleast_1d(P_slice)
                     if P_slice.size == 1:
                         P_slice = np.full(n_sites, float(P_slice[0]))
-                    
+
                     P_along = np.zeros(n_sites, dtype=float)
                     for hw_fw in ['HW', 'FW']:
                         for near_far in ['near', 'far']:
                             mask = (hw_fw_arr == hw_fw) & (near_far_arr == near_far)
                             if not np.any(mask):
                                 continue
-                            
+
                             # Single MC call for this group (cached in model)
-                            # Uses across_strike_width for F-ratio lookup, 
+                            # Uses across_strike_width for F-ratio lookup,
                             # along_strike_width for Monte Carlo site window
                             p_along_group = sr_model.monte_carlo_rank2_occurrence(
                                 fault_length_m,
@@ -278,9 +278,9 @@ class VisiniSecondaryCalculator:
                                 along_strike_width=self.along_strike_width
                             )
                             P_along[mask] = p_along_group
-                    
+
                     P_total_sr = P_slice * P_along
-                
+
                 # Store diagnostics for first site
                 if n_sites > 0:
                     if comb == "A":
@@ -304,7 +304,7 @@ class VisiniSecondaryCalculator:
                             "P_along": float(P_along[0]) if hasattr(P_along, '__len__') else float(P_along),
                             "P_total": float(P_total_sr[0]) if hasattr(P_total_sr, '__len__') else float(P_total_sr),
                         }
-                
+
                 sr_prob_arr = np.atleast_1d(P_total_sr)
                 if sr_prob_arr.size == 1:
                     sr_prob_arr = np.full(n_sites, float(sr_prob_arr[0]))
@@ -319,14 +319,14 @@ class VisiniSecondaryCalculator:
                 sr_prob_arr = np.atleast_1d(sr_prob)
                 if sr_prob_arr.size == 1:
                     sr_prob_arr = np.full(n_sites, float(sr_prob_arr[0]))
-            
+
             # === OPTIMIZED: Vectorized FD model call ===
             if comb == "B" and self._trace_segments:
                 # r_sec_km was computed above for combination B
                 s_for_fd = r_sec_km * 1000.0  # Use secondary distance
             else:
                 s_for_fd = r_m
-            
+
             # Call FD model vectorized over sites. The FD coefficients are
             # style-specific too: pass the resolved style unless the FD
             # parameters already pin one explicitly.
@@ -342,13 +342,13 @@ class VisiniSecondaryCalculator:
                 combination=comb,
                 **fd_kwargs,
             )
-            
+
             # Reshape SR probabilities: sr_prob_arr is already (n_sites,) per-site values
             # No MC reduction needed since we computed per-site values directly
             sr_mat = sr_prob_arr.reshape(n_sites, 1)
-            
+
             fd_mat = _to_sites_x_displ(fd_prob, n_sites, n_displ, s_sr_red_cfg)
-            
+
             combo_probs.append(sr_mat * fd_mat)
 
         return combine_probabilities(combo_probs) if combo_probs else np.zeros((n_sites, n_displ))

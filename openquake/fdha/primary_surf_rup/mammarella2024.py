@@ -21,8 +21,8 @@ Module :mod:`openquake.fdha.primary_surf_rup.mammarella2024` implements
 Mammarella et al. (2024) primary surface-rupture probability (principal faulting)
 as a first-class model.
 
-Reference
----------
+References
+----------
 Mammarella, L., Visini, F., Boncio, P., Baize, S., Scotti, O., Beauval, C.,
 Pace, B., & Thompson, S. (2024). Conditional probability of surface rupture:
 a numerical approach for principal faulting. Earthquake Spectra.

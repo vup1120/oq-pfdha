@@ -17,16 +17,17 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.fdha.secondary_surf_rup.takao2013` implements
-model of Takao et al. (2013) into :class:`Takao2013SecondarySR`
+Module :mod:`openquake.fdha.secondary_surf_rup.takao2013` implements the
+model of Takao et al. (2013) in :class:`Takao2013SecondarySR`.
 
 Supported Fault Styles: Reverse and Strike-slip
 
-Reference:
-    Takao, M., Tsuchiyama, J., Annaka, T., & Kurita, T. (2013). Application of
-    probabilistic fault displacement hazard analysis in Japan. Journal of Japan
-    Association for Earthquake Engineering, 13(1), 17-36.
-    https://doi.org/10.5610/jaee.13.17
+References
+----------
+Takao, M., Tsuchiyama, J., Annaka, T., & Kurita, T. (2013). Application of
+probabilistic fault displacement hazard analysis in Japan. Journal of Japan
+Association for Earthquake Engineering, 13(1), 17-36.
+https://doi.org/10.5610/jaee.13.17
 """
 
 import numpy as np

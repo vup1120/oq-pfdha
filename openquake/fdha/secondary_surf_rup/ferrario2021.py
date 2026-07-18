@@ -17,15 +17,16 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """
-Module :mod:`openquake.fdha.secondary_surf_rup.ferrario_livio2021` implements
-model of Ferrario and Livio (2021) into :class:`FerrarioLivio2021SecondarySR`
+Module :mod:`openquake.fdha.secondary_surf_rup.ferrario2021` implements the
+model of Ferrario and Livio (2021) in :class:`FerrarioLivio2021SecondarySR`.
 
 Supported Fault Styles: Normal only
 
-Reference:
-    Ferrario, M. F., & Livio, F. (2021). Conditional probability of distributed
-    surface rupturing during normal-faulting earthquakes. Solid Earth, 12(5),
-    1197-1209. https://doi.org/10.5194/se-12-1197-2021
+References
+----------
+Ferrario, M. F., & Livio, F. (2021). Conditional probability of distributed
+surface rupturing during normal-faulting earthquakes. Solid Earth, 12(5),
+1197-1209. https://doi.org/10.5194/se-12-1197-2021
 """
 
 import numpy as np

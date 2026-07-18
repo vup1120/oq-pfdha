@@ -236,7 +236,7 @@ class BaseFaultRuptureCalculator:
         # Target displacements
         target_disp = self.config.get('parameters', {}).get('target_displacement', [0.001, 0.01, 0.1, 1.0, 10.0])
         self.target_displacements = np.array(target_disp, dtype=np.float64)
-        
+
         # Reduction configs for models that return an internal MC/epistemic
         # sample dimension. The default is the mean, which is exact (the
         # expectation commutes with the hazard integral), so jobs never need
@@ -250,7 +250,7 @@ class BaseFaultRuptureCalculator:
             'secondary_sr_reduction',
             self.config.get('parameters', {}).get(
                 'secondary_sr_reduction', self.p_sr_red_cfg))
-        
+
         # Principal/distributed split: r <= threshold -> primary (on-trace)
         # models, r > threshold -> secondary (distributed) models. Read from
         # [calculation] first, then [parameters]. Default 0.1 km. Must be
@@ -333,35 +333,35 @@ class BaseFaultRuptureCalculator:
             {getattr(m, 'MULTIFAULT_REFERENCE_LINE', 'lcp')
              for m in _models if m is not None} or {'lcp'}
         ))
-        
+
         # Initialize model adapters
         from openquake.fdha.calc.model_adapter import LegacyModelAdapter
         self.adapters = {}
-        
+
         if self.primary_surf_rup_model:
             self.adapters['primary_sr'] = LegacyModelAdapter(
                 self.primary_surf_rup_model,
                 self.get_model_parameters('primary_surf_rup')
             )
-        
+
         if self.primary_surf_displ_model:
             self.adapters['primary_fd'] = LegacyModelAdapter(
                 self.primary_surf_displ_model,
                 self.get_model_parameters('primary_surf_displ')
             )
-        
+
         if self.secondary_surf_rup_model:
             self.adapters['secondary_sr'] = LegacyModelAdapter(
                 self.secondary_surf_rup_model,
                 self.get_model_parameters('secondary_surf_rup')
             )
-        
+
         if self.secondary_surf_displ_model:
             self.adapters['secondary_fd'] = LegacyModelAdapter(
                 self.secondary_surf_displ_model,
                 self.get_model_parameters('secondary_surf_displ')
             )
-    
+
     def get_fdha_params(self):
         """
         Get the FDHA distance thresholds for the context maker.

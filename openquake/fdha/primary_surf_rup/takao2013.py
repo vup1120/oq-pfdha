@@ -69,5 +69,5 @@ class Takao2013PrimarySR(BasePrimarySurfRup):
 
         fx = -32.03 + 4.9 * m
         prob = np.exp(fx) / (1.0 + np.exp(fx))
-        
+
         return prob.item() if prob.shape == () else prob

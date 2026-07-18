@@ -34,11 +34,11 @@ def classify_style(rake: float) -> str:
 class FDHAContext:
     """
     Unified context for FDHA calculations.
-    
+
     All arrays have shape (N,) where N = number of site-rupture pairs.
     This follows the OpenQuake ContextMaker pattern where contexts are
     "flattened" arrays representing all site-rupture combinations.
-    
+
     Attributes:
         sids: Site indices, shape (N,)
         mag: Earthquake magnitude, shape (N,)
@@ -54,23 +54,23 @@ class FDHAContext:
     """
     # Site identification
     sids: np.ndarray
-    
+
     # Rupture parameters (broadcast to all sites)
     mag: np.ndarray
     rake: np.ndarray
     dip: np.ndarray
     ztor: np.ndarray
     occurrence_rate: np.ndarray
-    
+
     # Site parameters
     vs30: np.ndarray
-    
+
     # Distance parameters (all in km)
     r: np.ndarray
     rx: np.ndarray
     x_L: np.ndarray
     L: np.ndarray
-    
+
     # Site coordinates (for Visini model)
     lons: np.ndarray = field(default=None)
     lats: np.ndarray = field(default=None)
@@ -91,24 +91,24 @@ class FDHAContext:
     def __len__(self) -> int:
         """Return number of site-rupture pairs."""
         return len(self.sids)
-    
+
     def __post_init__(self):
         """Convert and validate arrays."""
         # Ensure proper dtypes
         self.sids = np.asarray(self.sids, dtype=np.uint32)
-        
+
         for name in ['mag', 'rake', 'dip', 'ztor', 'occurrence_rate',
                      'vs30', 'r', 'rx', 'x_L', 'L']:
             arr = getattr(self, name)
             if arr is not None:
                 setattr(self, name, np.asarray(arr, dtype=np.float64))
-        
+
         # Handle optional coordinate arrays
         if self.lons is not None:
             self.lons = np.asarray(self.lons, dtype=np.float64)
         if self.lats is not None:
             self.lats = np.asarray(self.lats, dtype=np.float64)
-        
+
         # Validate shapes
         N = len(self.sids)
         for name in ['mag', 'rake', 'dip', 'ztor', 'occurrence_rate',
@@ -116,37 +116,37 @@ class FDHAContext:
             arr = getattr(self, name)
             if arr is not None and len(arr) != N:
                 raise ValueError(f"{name} has length {len(arr)}, expected {N}")
-    
+
     @property
     def style(self) -> np.ndarray:
         """
         Faulting style derived from rake angle.
-        
+
         Returns:
             Array of strings: 'normal', 'reverse', or 'strike-slip'
         """
         if self._style is None:
             self._style = np.asarray([classify_style(r) for r in self.rake], dtype='U12')
         return self._style
-    
+
     @property
     def site_coords(self) -> Optional[np.ndarray]:
         """
         Site coordinates as (N, 2) array of (lon, lat) pairs.
-        
+
         Returns None if coordinates not available.
         """
         if self.lons is not None and self.lats is not None:
             return np.column_stack([self.lons, self.lats])
         return None
-    
+
     def filter(self, mask: np.ndarray) -> 'FDHAContext':
         """
         Return filtered context where mask is True.
-        
+
         Args:
             mask: Boolean array of shape (N,)
-            
+
         Returns:
             New FDHAContext with only masked elements
         """
@@ -189,27 +189,27 @@ class FDHAContext:
 class FDHAContextMaker:
     """
     Factory for creating FDHA contexts from ruptures and sites.
-    
+
     Follows the OpenQuake ContextMaker pattern with:
     - Distance filtering by maximum_distance
     - Caching of distance calculators by surface geometry
     - Pre-extraction of site arrays for efficiency
-    
+
     Example:
         cmaker = FDHAContextMaker(sitecol, fdha_params, max_distance=50.0)
-        
+
         for rup in source.iter_ruptures():
             ctx = cmaker.get_ctx(rup)
             if ctx is None:
                 continue  # All sites too far
-            
+
             # Use ctx for hazard calculation
             P_sr = adapter.compute_primary_sr(ctx, red_cfg)
     """
-    
+
     # Default tolerance for surface rupture detection
     SURFACE_DEPTH_TOLERANCE_KM = 0.5
-    
+
     def __init__(
         self,
         sitecol,
@@ -253,21 +253,21 @@ class FDHAContextMaker:
         # is the distance to the nearest surface-reaching section.
         self.multifault_reference_lines = tuple(
             fdha_params.get('multifault_reference_lines', ('lcp',)))
-        
+
         # Distance calculator cache: hash -> calculator
         self._dist_cache: Dict[int, Any] = {}
         self._cache_hits = 0
         self._cache_misses = 0
-        
+
         # Pre-extract site arrays from SiteCollection
         self._n_sites = len(sitecol)
-        
+
         # Site IDs
         if hasattr(sitecol, 'sids'):
             self._sids = np.asarray(sitecol.sids, dtype=np.uint32)
         else:
             self._sids = np.arange(self._n_sites, dtype=np.uint32)
-        
+
         # Coordinates - OpenQuake SiteCollection has .lons and .lats arrays
         if hasattr(sitecol, 'lons'):
             self._lons = np.asarray(sitecol.lons, dtype=np.float64)
@@ -278,7 +278,7 @@ class FDHAContextMaker:
         else:
             # Fallback: extract from array or sites
             self._lons, self._lats = self._extract_coords_fallback(sitecol)
-        
+
         # Vs30: per-site values from the collection, with NaN entries filled
         # from the optional [calculation].reference_vs30_value. There is NO
         # silent hardcoded default: without a reference value, vs30-less
@@ -291,14 +291,14 @@ class FDHAContextMaker:
         ref_vs30 = fdha_params.get('reference_vs30_value')
         if ref_vs30 is not None:
             self._vs30[~np.isfinite(self._vs30)] = float(ref_vs30)
-        
+
         logger.debug("FDHAContextMaker initialized with %d sites", self._n_sites)
-    
+
     def _extract_coords_fallback(self, sitecol) -> Tuple[np.ndarray, np.ndarray]:
         """Extract coordinates using fallback methods."""
         lons = []
         lats = []
-        
+
         for i in range(len(sitecol)):
             site = sitecol[i]
             if hasattr(site, 'location'):
@@ -313,9 +313,9 @@ class FDHAContextMaker:
                     raise ValueError(f"Cannot extract coordinates from site: {site}")
             else:
                 raise ValueError(f"Unknown site type: {type(site)}")
-        
+
         return np.array(lons, dtype=np.float64), np.array(lats, dtype=np.float64)
-    
+
     def _get_surface_hash(self, surface) -> int:
         """
         Create hash key from surface geometry.
@@ -410,7 +410,7 @@ class FDHAContextMaker:
         dx_km = dlon * 111.32 * np.cos(np.radians(max_abs_lat))
         dy_km = dlat * 110.57
         return bool(np.hypot(dx_km, dy_km) > self.maximum_distance)
-    
+
     def _get_distance_calculator(self, surface, reference_line_method: str = "ecs"):
         """
         Get or create cached distance calculator for surface.
@@ -441,29 +441,29 @@ class FDHAContextMaker:
             reference_line_method=reference_line_method)
         self._dist_cache[key] = calc
         return calc
-    
+
     def is_surface_rupturing(self, rupture, tolerance_km: float = None) -> bool:
         """
         Check if rupture reaches surface within tolerance.
-        
+
         Args:
             rupture: OpenQuake rupture object
             tolerance_km: Depth tolerance (default: SURFACE_DEPTH_TOLERANCE_KM)
-            
+
         Returns:
             True if rupture is surface-rupturing
         """
         if tolerance_km is None:
             tolerance_km = self.surface_depth_tolerance_km
-        
+
         depths = rupture.surface.mesh.depths
         if depths is None or depths.size == 0:
             # No depth information - conservatively include
             return True
-        
+
         min_depth = np.nanmin(depths)
         return min_depth <= tolerance_km
-    
+
     def get_ctx(self, rupture,
                 investigation_time: Optional[float] = None
                 ) -> Optional[FDHAContext]:
@@ -605,7 +605,7 @@ class FDHAContextMaker:
             ctx = ctx.filter(mask)
 
         return ctx
-    
+
     def get_cache_stats(self) -> Dict[str, Any]:
         """
         Return cache hit/miss statistics.

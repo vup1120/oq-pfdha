@@ -63,11 +63,11 @@ def plot_hazard_map(
     # Color normalization
     all_vals = np.concatenate([grid_disp, trace_vals]) if trace_vals.size > 0 else grid_disp
     norm = LogNorm(vmin=max(1e-5, np.min(all_vals)), vmax=np.max(all_vals))
-    
+
     # Plot setup with larger figure size
     fig = plt.figure(figsize=(14, 10))
     ax = plt.axes(projection=ccrs.PlateCarree())
-    
+
     # Enhanced geographic background with high-resolution NaturalEarth features
     try:
         # Use high-resolution (10m) NaturalEarth features for better coastline quality
@@ -100,7 +100,7 @@ def plot_hazard_map(
                          "features: %s", e2)
             ax.add_feature(cfeature.OCEAN, facecolor='#cce5ff', zorder=0)
             ax.add_feature(cfeature.LAND, facecolor='#f5f5f5', zorder=0)
-    
+
     # High-resolution coastline and borders
     try:
         # Try high-resolution coastline first
@@ -112,7 +112,7 @@ def plot_hazard_map(
     except Exception:
         # Fallback to standard coastline
         ax.add_feature(cfeature.COASTLINE, linewidth=1.0, edgecolor='#2c3e50', zorder=2)
-    
+
     try:
         # Try high-resolution borders
         borders_10m = cfeature.NaturalEarthFeature(
@@ -128,18 +128,18 @@ def plot_hazard_map(
     # plt.get_cmap, not plt.cm.get_cmap: the latter was removed in
     # Matplotlib 3.9.
     cmap = plt.get_cmap('viridis')
-    
+
     # Combine grid sites and fault trace sites with same plot style
     all_lons = grid_lons
     all_lats = grid_lats
     all_disp = grid_disp
-    
+
     if trace_vals.size > 0:
         # Combine fault trace sites with grid sites
         all_lons = np.concatenate([grid_lons, trace_lons])
         all_lats = np.concatenate([grid_lats, trace_lats])
         all_disp = np.concatenate([grid_disp, trace_vals])
-    
+
     # Scatter all sites with unified styling
     grid_scatter = ax.scatter(
         all_lons, all_lats, c=all_disp,
@@ -151,17 +151,17 @@ def plot_hazard_map(
     # Enhanced colorbar with more tick labels
     cbar = plt.colorbar(grid_scatter, ax=ax, extend='both', pad=0.02, shrink=0.8)
     cbar.set_label('Displacement (m)', fontsize=13, fontweight='bold', labelpad=15)
-    
+
     # Calculate appropriate number of ticks based on data range
     vmin = norm.vmin
     vmax = norm.vmax
     log_range = np.log10(vmax) - np.log10(vmin)
-    
+
     # Set more tick labels - aim for ~10-15 major ticks
     num_ticks = max(10, min(20, int(log_range * 3) + 1))
     cbar.ax.yaxis.set_major_locator(LogLocator(base=10, numticks=num_ticks))
     cbar.ax.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10)))
-    
+
     # Custom formatter: use simplified scientific notation (10^-1 instead of 1×10^-1)
     def scientific_formatter(x, pos):
         """Format all values in simplified scientific notation"""
@@ -170,7 +170,7 @@ def plot_hazard_map(
         # Use scientific notation - only show 10^exp, skip mantissa if it's 1
         exp = int(np.floor(np.log10(abs(x))))
         mantissa = x / (10 ** exp)
-        
+
         # If mantissa is close to 1, just show 10^exp
         if abs(mantissa - 1.0) < 0.01:
             if exp == 0:
@@ -182,9 +182,9 @@ def plot_hazard_map(
             return f'{mantissa:.1f}'
         else:
             return f'{mantissa:.1f}×10$^{{{exp}}}$'
-    
+
     cbar.ax.yaxis.set_major_formatter(FuncFormatter(scientific_formatter))
-    
+
     # Improve tick label appearance: bold, larger font
     cbar.ax.tick_params(labelsize=13, length=4, width=1)
     cbar.ax.tick_params(which='minor', length=2, width=0.5)
@@ -192,11 +192,11 @@ def plot_hazard_map(
     for label in cbar.ax.yaxis.get_ticklabels():
         label.set_fontweight('bold')
         label.set_fontsize(13)
-    
+
     # Enhanced axis labels with degree symbols
     ax.set_xlabel('Longitude (°)', fontsize=12, fontweight='bold', labelpad=10)
     ax.set_ylabel('Latitude (°)', fontsize=12, fontweight='bold', labelpad=10)
-    
+
     # Enhanced title
     ax.set_title(
         title if title is not None else 'Fault Displacement Hazard Map',
@@ -204,15 +204,15 @@ def plot_hazard_map(
         fontweight='bold',
         pad=20,
     )
-    
+
     # Enhanced gridlines
-    gl = ax.gridlines(draw_labels=True, linestyle='--', alpha=0.6, linewidth=0.8, 
+    gl = ax.gridlines(draw_labels=True, linestyle='--', alpha=0.6, linewidth=0.8,
                       color='gray', zorder=1)
     gl.top_labels = False
     gl.right_labels = False
     gl.xlabel_style = {'size': 10, 'weight': 'normal'}
     gl.ylabel_style = {'size': 10, 'weight': 'normal'}
-    
+
     # No legend needed since all sites use same style
 
     # Set extent

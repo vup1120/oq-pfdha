@@ -4,8 +4,8 @@
 Module :mod:`openquake.fdha.secondary_surf_displ.moss2022` implements
 Moss et al. (2022) distributed (secondary) surface fault displacement model.
 
-Reference
----------
+References
+----------
 Moss, R., Thompson, S., Kuo, C.-H., Younesi, K., and Baumont, D. (2022).
 Reverse Fault PFDHA. Report GIRS-2022-05 (Revised 1/17/2024).
 DOI: 10.34948/N3F595

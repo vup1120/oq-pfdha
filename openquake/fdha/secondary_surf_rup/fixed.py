@@ -27,22 +27,22 @@ from openquake.fdha.secondary_surf_rup.base import BaseSecondarySurfRup
 class FixedSecondarySR(BaseSecondarySurfRup):
     """
     Fixed probability model for Secondary Surface Rupture.
-    
+
     Returns a constant P(SR) value regardless of magnitude, distance,
     or other parameters. This is useful when the user wants to set
     the secondary surface rupture probability to a fixed value.
-    
+
     Parameters
     ----------
     value : float, optional
         The fixed probability value to return. Must be between 0 and 1.
         Default is 1.0.
     """
-    
+
     def __init__(self, value=1.0):
         """
         Initialize the FixedSecondarySR model.
-        
+
         Parameters
         ----------
         value : float, optional
@@ -52,14 +52,14 @@ class FixedSecondarySR(BaseSecondarySurfRup):
         self.value = float(value)
         if not 0.0 <= self.value <= 1.0:
             raise ValueError(f"Value must be between 0 and 1, got {self.value}")
-    
+
     def get_prob(self, mag=None, rx=None, r=None, **kwargs):
         """
         Return the fixed probability value.
-        
+
         This method accepts any keyword arguments but ignores them all,
         always returning the fixed probability value set at initialization.
-        
+
         Parameters
         ----------
         mag : float, optional
@@ -70,14 +70,14 @@ class FixedSecondarySR(BaseSecondarySurfRup):
             Distance from fault trace (ignored).
         **kwargs : dict
             Any other keyword arguments (ignored).
-        
+
         Returns
         -------
         float
             The fixed probability value.
         """
         return self.value
-    
+
     def __repr__(self):
         return f"FixedSecondarySR(value={self.value})"
 

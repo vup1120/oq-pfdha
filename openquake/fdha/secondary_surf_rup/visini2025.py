@@ -23,8 +23,8 @@ distributed (secondary) rupture occurrence model of Visini et al. (2025) in
 
 Supported fault styles: normal and reverse (dip-slip).
 
-Reference
----------
+References
+----------
 Visini, F., Boncio, P., Valentini, A., Scotti, O., Nurminen, F., Baize, S.,
 & Pace, B. (2025). Empirical regressions for distributed faulting of dip-slip
 earthquakes. Earthquake Spectra, 41(4), 2968-3001.
@@ -180,26 +180,26 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
                 }
             }
         }
-        
+
         # Lognormal parameters (precomputed)
         self._logn_params = {
             "reverse": {"HW": (3.622, 1.589), "FW": (3.801, 1.542)},
             "normal": {"HW": (3.546, 1.358), "FW": (3.390, 1.472)}
         }
-        
+
         # DR length min/max bounds
         self._drlengths_min_max = {
             "reverse": {"HW": (8.0, 248.0), "FW": (10.0, 249.0)},
             "normal":  {"HW": (8.0, 137.0), "FW": (6.0, 131.0)}
         }
-        
+
         # Width bins for F-ratio lookup
         self._width_bins = [10, 20, 50, 100, 200, 500]
-        
+
         # Monte Carlo cache: key -> P_along_strike value
         # This is the critical optimization - we cache MC results
         self._mc_cache = {}
-        
+
         # Precompute PDF tables for each (mechanism, hw_fw) pair
         self._pdf_tables = {}
         self._precompute_pdf_tables()
@@ -211,18 +211,18 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
                 logn_mu, logn_sigma = self._logn_params[mechanism][hw_fw]
                 t1, t2 = self._drlengths_min_max[mechanism][hw_fw]
                 t1i, t2i = int(t1), int(t2)
-                
+
                 x = np.arange(t1i, t2i + 1, dtype=float)
                 pdf = lognorm(s=logn_sigma, scale=np.exp(logn_mu)).pdf(x)
                 pdf = pdf / np.sum(pdf)
-                
+
                 self._pdf_tables[(mechanism, hw_fw)] = (x, pdf, t1i, t2i)
 
     def get_prob(self, mag, r, rx, style=None, pixel_size=None,
                  combination="A"):
         """
         Required method for BaseSecondarySurfRup.
-        
+
         OPTIMIZED: Accepts both scalar and array inputs for r and rx.
         """
         # Fall back to constructor-pinned values (call argument wins)
@@ -239,9 +239,9 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
     def get_prob_slice(self, mag, r, rx, style, pixel_size, combination):
         """
         Calculate logistic regression probability P_slice.
-        
+
         OPTIMIZED: Fully vectorized over all sites.
-        
+
         Parameters:
         -----------
         mag : float
@@ -256,7 +256,7 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
             Width of the slice (m)
         combination : str
             'A', 'B', or 'C'
-            
+
         Returns:
         --------
         float or array
@@ -272,27 +272,27 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
         # Get coefficients (single lookup)
         coeffs = self.coeffs_occurrence[style][pixel_size][combination]
         a, b, c, d = coeffs['a'], coeffs['b'], coeffs['c'], coeffs['d']
-        
+
         # Convert to arrays for vectorized computation
         r_arr = np.atleast_1d(np.asarray(r, dtype=float))
         rx_arr = np.atleast_1d(np.asarray(rx, dtype=float))
-        
+
         # Ensure same shape via broadcasting
         r_arr, rx_arr = np.broadcast_arrays(r_arr, rx_arr)
-        
+
         # FW indicator: 1 for footwall (rx < 0), 0 for hanging wall
         # VECTORIZED over all sites
         fw = np.where(rx_arr < 0, 1, 0)
-        
+
         # Equation 2 from paper: linear predictor (VECTORIZED)
         y = a + b * mag + c * r_arr + d * fw
-        
+
         # Equation 1 from paper: logistic function
         # Using numerically stable form: 1/(1+exp(y)) = sigmoid(-y)
         # p = 1 - exp(y)/(1+exp(y)) = 1/(1+exp(y))
         exp_y = np.exp(y)
         p = 1.0 - exp_y / (1.0 + exp_y)
-        
+
         # Return scalar if input was scalar
         if p.size == 1:
             return float(p[0])
@@ -306,24 +306,24 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
         return self.get_prob_slice(mag, r, rx, style, pixel_size, combination)
 
     def _get_mc_cache_key(self, fault_length, across_strike_width, along_strike_width,
-                          hanging_wall_or_footwall, mechanism, near_or_far, 
+                          hanging_wall_or_footwall, mechanism, near_or_far,
                           distribution_type="uniform"):
         """
         Generate cache key for Monte Carlo results.
-        
+
         MATHEMATICAL JUSTIFICATION:
         P_along_strike depends ONLY on these parameters because:
         1. fault_length determines total DR length = fault_length × F_ratio
         2. across_strike_width determines F_ratio lookup (Table 3)
         3. along_strike_width determines Monte Carlo site window
         4. mechanism determines lognormal parameters and F_ratio
-        5. HW/FW determines lognormal parameters and F_ratio  
+        5. HW/FW determines lognormal parameters and F_ratio
         6. near/far determines F_ratio
         7. distribution_type determines which placement algorithm is used
-        
+
         The site is always placed at fault center (standardized), so individual
         site distances do NOT affect P_along_strike.
-        
+
         We discretize fault_length to 100m bins and along_strike_width to 10m bins
         to limit cache size while maintaining accuracy.
         """
@@ -331,7 +331,7 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
         fl_rounded = int(round(fault_length / 100.0) * 100)
         # Round along_strike_width to nearest 10m for cache efficiency
         along_rounded = int(round(along_strike_width / 10.0) * 10)
-        return (fl_rounded, across_strike_width, along_rounded, hanging_wall_or_footwall, 
+        return (fl_rounded, across_strike_width, along_rounded, hanging_wall_or_footwall,
                 mechanism, near_or_far, distribution_type)
 
     def monte_carlo_rank2_occurrence(self, fault_length, across_strike_width,
@@ -342,16 +342,16 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
                                     along_strike_width=None):
         """
         Monte Carlo simulation to compute P_along_strike.
-        
-        OPTIMIZED: Results are cached by (fault_length, across_strike_width, 
+
+        OPTIMIZED: Results are cached by (fault_length, across_strike_width,
         along_strike_width, mechanism, hw_fw, near_far, distribution_type, segment_sampling).
-        
+
         Parameters:
         -----------
         fault_length : float
             Total fault length in meters
         across_strike_width : int
-            Site width perpendicular to PF (m). 
+            Site width perpendicular to PF (m).
             Must be one of: 10, 20, 50, 100, 200, 500.
             Used for F-ratio lookup (Table 3).
             (Formerly named 'site_width' - backward compatible)
@@ -371,7 +371,7 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
             - "exponential": Only run exponential distribution (clustered)
             - "average": Run both and return (P_uniform + P_exponential) / 2
         segment_sampling : str
-            "truncated" (default): Use truncated lognormal with 16th-84th percentile 
+            "truncated" (default): Use truncated lognormal with 16th-84th percentile
                         bounds per MATLAB specification
             "legacy": Use raw lognormal clipped to [10, fault_length]
                      for backward compatibility with previous results
@@ -379,7 +379,7 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
             Site extent parallel to PF (m). Can be any positive value.
             Used only for intersection check in Monte Carlo.
             If None, uses across_strike_width for backward compatibility (square site).
-            
+
         Returns:
         --------
         float
@@ -388,9 +388,9 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
         # Backward compatibility: if along_strike_width not provided, use across_strike_width
         if along_strike_width is None:
             along_strike_width = across_strike_width
-        
+
         mechanism_lower = mechanism.lower()
-        
+
         # Validate across_strike_width (should be in predefined bins, but find closest)
         closest_across = min(self._width_bins, key=lambda x: abs(x - across_strike_width))
         if across_strike_width not in self._width_bins:
@@ -399,29 +399,29 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
                 f"across_strike_width={across_strike_width} not in {self._width_bins}, "
                 f"using closest value {closest_across} for F-ratio lookup"
             )
-        
+
         # Validate along_strike_width (any positive value)
         if along_strike_width <= 0:
             raise ValueError(f"along_strike_width must be positive, got {along_strike_width}")
-        
+
         # Validate distribution_type
         if distribution_type not in ("uniform", "exponential", "average"):
             raise ValueError(
                 f"distribution_type must be 'uniform', 'exponential', or 'average', "
                 f"got '{distribution_type}'"
             )
-        
+
         # Validate segment_sampling
         if segment_sampling not in ("legacy", "truncated"):
             raise ValueError(
                 f"segment_sampling must be 'legacy' or 'truncated', "
                 f"got '{segment_sampling}'"
             )
-        
+
         # Check cache first (include segment_sampling in cache key)
         if use_cache:
             cache_key = self._get_mc_cache_key(
-                fault_length, closest_across, along_strike_width, hanging_wall_or_footwall, 
+                fault_length, closest_across, along_strike_width, hanging_wall_or_footwall,
                 mechanism_lower, near_or_far, distribution_type
             ) + (segment_sampling,)
             if cache_key in self._mc_cache:
@@ -438,11 +438,11 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
 
         # Get lognormal parameters for segment length sampling
         logn_mu, logn_sigma = self._logn_params[mechanism_lower][hanging_wall_or_footwall]
-        
+
         # For truncated sampling, get precomputed PDF table
         if segment_sampling == "truncated":
             x_vals, pdf_vals, t1i, t2i = self._pdf_tables[(mechanism_lower, hanging_wall_or_footwall)]
-        
+
         # Local RNG (no global np.random.seed() pollution), seeded
         # deterministically from the physical inputs: identical parameters
         # must give identical P_along_strike across runs and processes,
@@ -457,7 +457,7 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
 
         hits_uniform = 0
         hits_exponential = 0
-        
+
         run_uniform = distribution_type in ("uniform", "average")
         run_exponential = distribution_type in ("exponential", "average")
 
@@ -476,12 +476,12 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
                     seg_len = min(seg_len, float(fault_length))
                 segments.append(seg_len)
                 total += seg_len
-            
+
             if not segments:
                 continue
-            
+
             num_segments = len(segments)
-            
+
             # ===== UNIFORM DISTRIBUTION (Fix 4: randperm style) =====
             if run_uniform:
                 # Fix 4: Use choice(replace=False) + sort + overlap adjustment
@@ -491,20 +491,20 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
                 else:
                     # Fallback if more segments than positions
                     positions = rng.integers(0, L, size=num_segments)
-                
+
                 centro_unif = np.sort(positions).astype(float)
-                
+
                 # Compute cumulative semi-lengths for overlap adjustment
                 semi_lengths = np.array(segments) / 2.0
                 cum_semi = np.cumsum(semi_lengths)
-                
+
                 # Adjust overlapping segments by shifting (MATLAB overlap fix)
                 for g in range(1, len(centro_unif)):
                     gap = centro_unif[g] - centro_unif[g - 1]
                     threshold = int(cum_semi[g - 1])
                     if gap < threshold:
                         centro_unif[g] = centro_unif[g] + threshold
-                
+
                 # Check if any segment hits the site
                 site_hit_unif = False
                 for j, seg_len in enumerate(segments):
@@ -516,38 +516,38 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
                     if end >= start and end >= site_lo and start <= site_hi:
                         site_hit_unif = True
                         break
-                
+
                 if site_hit_unif:
                     hits_uniform += 1
-            
+
             # ===== EXPONENTIAL DISTRIBUTION (Fix 2: clustered placement) =====
             if run_exponential:
                 # Fix 2: Random starting position + exponential inter-segment gaps
                 mean_distance = L / num_segments
                 starting_pos = rng.integers(1, L + 1)
                 interdistance = rng.exponential(mean_distance, num_segments)
-                
+
                 ini_s = float(starting_pos)
                 site_hit_exp = False
-                
+
                 for j in range(num_segments):
                     end_s = ini_s + segments[j]
-                    
+
                     # Wrap-around when position exceeds fault length
                     if ini_s > L or end_s > L:
                         ini_s = ini_s - L
                         end_s = end_s - L
-                    
+
                     start_i = int(np.floor(ini_s))
                     end_i = int(np.ceil(end_s))
-                    
+
                     # Check overlap with site window
                     if end_i >= start_i and end_i >= site_lo and start_i <= site_hi:
                         site_hit_exp = True
-                    
+
                     # Next segment starts after current end + exponential gap
                     ini_s = end_s + int(interdistance[j])
-                
+
                 if site_hit_exp:
                     hits_exponential += 1
 
@@ -567,7 +567,7 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
 
         return prob_result
 
-    def calculate_rank2_total_probability(self, mag, r, rx, style, 
+    def calculate_rank2_total_probability(self, mag, r, rx, style,
                                          across_strike_width, along_strike_width=None,
                                          combination=None, fault_length=None,
                                          near_or_far=None, num_simulations=10000,
@@ -575,9 +575,9 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
                                          segment_sampling="truncated"):
         """
         Calculate total probability P(site) = P(across) × P(along).
-        
+
         OPTIMIZED: P_slice is vectorized, P_along is cached.
-        
+
         Parameters:
         -----------
         mag : float
@@ -589,7 +589,7 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
         style : str
             'normal' or 'reverse'
         across_strike_width : int
-            Site width perpendicular to PF (m). 
+            Site width perpendicular to PF (m).
             Must be one of: 10, 20, 50, 100, 200, 500.
             Used for P(across) coefficient lookup (Table 2) and F-ratio lookup (Table 3).
         along_strike_width : float, optional
@@ -608,7 +608,7 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
             "uniform", "exponential", or "average"
         segment_sampling : str
             "truncated" or "legacy"
-            
+
         Returns:
         --------
         dict with P_slice (P_across), P_along_strike, P_total
@@ -616,14 +616,14 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
         # Backward compatibility: if along_strike_width not provided, use across_strike_width
         if along_strike_width is None:
             along_strike_width = across_strike_width
-        
+
         # P(across) uses across_strike_width for coefficient lookup
         P_slice = self.get_prob_slice(mag, r, rx, style, across_strike_width, combination)
-        
+
         # P(along) uses both dimensions
         hw_or_fw = 'FW' if np.any(np.asarray(rx) < 0) else 'HW'
         mechanism = style.lower()
-        
+
         P_along = self.monte_carlo_rank2_occurrence(
             fault_length,
             across_strike_width,
@@ -635,17 +635,17 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
             segment_sampling=segment_sampling,
             along_strike_width=along_strike_width
         )
-        
+
         # Total probability
         P_total = P_slice * P_along
-        
+
         return {
             "P_slice": P_slice,
             "P_along_strike": P_along,
             "P_total": P_total
         }
 
-    def calculate_rank2_total_probability_vectorized(self, mag, r_array, rx_array, 
+    def calculate_rank2_total_probability_vectorized(self, mag, r_array, rx_array,
                                                      style, across_strike_width, combination,
                                                      fault_length, along_strike_width=None,
                                                      near_far_array=None, num_simulations=10000,
@@ -653,9 +653,9 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
                                                      segment_sampling="truncated"):
         """
         FULLY VECTORIZED calculation for all sites at once.
-        
+
         This is the main optimization entry point for hazard map calculations.
-        
+
         Parameters:
         -----------
         mag : float
@@ -667,7 +667,7 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
         style : str
             'normal' or 'reverse'
         across_strike_width : int
-            Site width perpendicular to PF (m). 
+            Site width perpendicular to PF (m).
             Must be one of: 10, 20, 50, 100, 200, 500.
             Used for P(across) coefficient lookup (Table 2) and F-ratio lookup (Table 3).
         combination : str
@@ -686,7 +686,7 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
             "uniform", "exponential", or "average"
         segment_sampling : str
             "truncated" or "legacy"
-            
+
         Returns:
         --------
         dict with arrays:
@@ -697,39 +697,39 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
         # Backward compatibility: if along_strike_width not provided, use across_strike_width
         if along_strike_width is None:
             along_strike_width = across_strike_width
-        
+
         r_arr = np.atleast_1d(np.asarray(r_array, dtype=float))
         rx_arr = np.atleast_1d(np.asarray(rx_array, dtype=float))
         near_far_arr = np.atleast_1d(near_far_array)
-        
+
         n_sites = len(r_arr)
         mechanism = style.lower()
-        
+
         # Step 1: Compute P_slice for ALL sites at once (vectorized)
         # P(across) uses across_strike_width for coefficient lookup
         P_slice = self.get_prob_slice(mag, r_arr, rx_arr, style, across_strike_width, combination)
         P_slice = np.atleast_1d(P_slice)
-        
+
         # Step 2: Compute P_along for each unique (hw_fw, near_far) group
         # There are at most 4 groups: (HW,near), (HW,far), (FW,near), (FW,far)
         hw_fw_arr = np.where(rx_arr < 0, 'FW', 'HW')
-        
+
         # Get unique groups
         P_along = np.zeros(n_sites, dtype=float)
-        
+
         for hw_fw in ['HW', 'FW']:
             for near_far in ['near', 'far']:
                 mask = (hw_fw_arr == hw_fw) & (near_far_arr == near_far)
                 if not np.any(mask):
                     continue
-                    
+
                 # Single MC call for this group (cached)
                 # P(along) uses both dimensions
                 p_along_group = self.monte_carlo_rank2_occurrence(
                     fault_length,
                     across_strike_width,
                     hw_fw,
-                    mechanism, 
+                    mechanism,
                     near_far,
                     num_simulations=num_simulations,
                     distribution_type=distribution_type,
@@ -737,9 +737,9 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
                     along_strike_width=along_strike_width
                 )
                 P_along[mask] = p_along_group
-        
+
         P_total = P_slice * P_along
-        
+
         return {
             "P_slice": P_slice,
             "P_along_strike": P_along,
@@ -749,7 +749,7 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
     def clear_cache(self):
         """Clear the Monte Carlo cache."""
         self._mc_cache.clear()
-        
+
     def get_cache_stats(self):
         """Return cache statistics for debugging."""
         return {

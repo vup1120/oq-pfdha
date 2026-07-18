@@ -20,17 +20,18 @@
 Module :mod:`openquake.fdha.secondary_surf_rup.takao2014` implements
 the model of Takao et al. (2014) in :class:`Takao2014SecondarySR`
 
-Reference:
-    Takao, M., Ueta, K., Annaka, T., Kurita, T., Nakase, H., Kyoya, T., &
-    Kato, J. (2014). Reliability improvement of probabilistic fault
-    displacement hazard analysis. Journal of Japan Association for
-    Earthquake Engineering, 14(2), 16-36. https://doi.org/10.5610/jaee.14.2_16
-    (in Japanese with English abstract).
+References
+----------
+Takao, M., Ueta, K., Annaka, T., Kurita, T., Nakase, H., Kyoya, T., &
+Kato, J. (2014). Reliability improvement of probabilistic fault
+displacement hazard analysis. Journal of Japan Association for
+Earthquake Engineering, 14(2), 16-36. https://doi.org/10.5610/jaee.14.2_16
+(in Japanese with English abstract).
 
-    An English description of the model (magnitude-independent logistic
-    regression on ln(r + c3) for 500/250/100/50 m unit cells) is given by
-    Nishizaka et al. (2026), Seismological Research Letters,
-    https://doi.org/10.1785/0220250293.
+An English description of the model (magnitude-independent logistic
+regression on ln(r + c3) for 500/250/100/50 m unit cells) is given by
+Nishizaka et al. (2026), Seismological Research Letters,
+https://doi.org/10.1785/0220250293.
 """
 
 import numpy as np
@@ -40,7 +41,7 @@ from openquake.fdha.secondary_surf_rup.base import BaseSecondarySurfRup
 
 class Takao2014SecondarySR(BaseSecondarySurfRup):
     """Implementation of the Takao et al. (2014) model for reverse and strike-slip faults"""
-    
+
     def __init__(self, pixel_size=None):
         """
         :param pixel_size: optional pixel (cell) size in meters pinned by
@@ -54,7 +55,7 @@ class Takao2014SecondarySR(BaseSecondarySurfRup):
     def get_prob(self, r: float, pixel_size: int = None):
         """
         Calculates probability of surface rupture for reverse and strike-slip faults
-        
+
         :param r:
             The distance to the principal fault in km
         :param pixel_size:
@@ -74,10 +75,10 @@ class Takao2014SecondarySR(BaseSecondarySurfRup):
             100: (-6.135, -1.427, 0.2),
             50: (-6.988, -1.410, 0.2)
         }
-        
+
         if pixel_size not in coefficients:
             raise ValueError(f"Invalid pixel size. Must be one of {list(coefficients.keys())} meters")
-            
+
         C1, C2, C3 = coefficients[pixel_size]
         # Logistic regression z = C1 + C2*ln(r + C3); the model is
         # independent of earthquake magnitude (Takao et al., 2014).
