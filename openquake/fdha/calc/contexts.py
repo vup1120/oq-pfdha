@@ -310,6 +310,12 @@ class FDHAContextMaker:
         self.maximum_distance = maximum_distance
         self.r_threshold_km = fdha_params.get('r_threshold_km', 0.1)
         self.near_far_threshold_km = fdha_params.get('near_far_threshold_km', 0.2)
+        # Depth tolerance for the surface-rupturing test; a job parameter
+        # ([calculation].surface_rupture_depth_tolerance_km), defaulting to
+        # the historical class constant.
+        self.surface_depth_tolerance_km = float(fdha_params.get(
+            'surface_rupture_depth_tolerance_km',
+            self.SURFACE_DEPTH_TOLERANCE_KM))
         # Reference-line methods required by the configured models on
         # multi-section ruptures (union of the models' declared
         # MULTIFAULT_REFERENCE_LINE attributes, collected by the calculator -
@@ -345,11 +351,18 @@ class FDHAContextMaker:
             # Fallback: extract from array or sites
             self._lons, self._lats = self._extract_coords_fallback(sitecol)
         
-        # Vs30
+        # Vs30: per-site values from the collection, with NaN entries filled
+        # from the optional [calculation].reference_vs30_value. There is NO
+        # silent hardcoded default: without a reference value, vs30-less
+        # sites stay NaN and only models that actually require vs30 reject
+        # the job (via the adapter's NaN -> None conversion).
         if hasattr(sitecol, 'vs30'):
-            self._vs30 = np.asarray(sitecol.vs30, dtype=np.float64)
+            self._vs30 = np.asarray(sitecol.vs30, dtype=np.float64).copy()
         else:
-            self._vs30 = np.full(self._n_sites, 760.0, dtype=np.float64)
+            self._vs30 = np.full(self._n_sites, np.nan, dtype=np.float64)
+        ref_vs30 = fdha_params.get('reference_vs30_value')
+        if ref_vs30 is not None:
+            self._vs30[~np.isfinite(self._vs30)] = float(ref_vs30)
         
         logger.debug(f"FDHAContextMaker initialized with {self._n_sites} sites")
     
@@ -513,7 +526,7 @@ class FDHAContextMaker:
             True if rupture is surface-rupturing
         """
         if tolerance_km is None:
-            tolerance_km = self.SURFACE_DEPTH_TOLERANCE_KM
+            tolerance_km = self.surface_depth_tolerance_km
         
         depths = rupture.surface.mesh.depths
         if depths is None or depths.size == 0:
@@ -622,15 +635,23 @@ class FDHAContextMaker:
 
         # Occurrence rate: parametric ruptures carry it directly;
         # non-parametric (PMF) ruptures get the Poisson-equivalent
-        # annual rate from the probability of zero events.
+        # annual rate from the probability of zero events. A rupture with
+        # neither, or a PMF with P(0 events) = 0 (infinite equivalent rate),
+        # must fail loudly rather than leak NaN/inf into the rate arrays.
         occurrence_rate = getattr(rupture, 'occurrence_rate', None)
         if occurrence_rate is None:
             probs = getattr(rupture, 'probs_occur', None)
-            if probs is not None and len(probs) > 0:
-                t = 1.0 if investigation_time is None else float(investigation_time)
-                occurrence_rate = -np.log(float(probs[0])) / t
-            else:
-                occurrence_rate = np.nan
+            if probs is None or len(probs) == 0:
+                raise ValueError(
+                    f"Rupture (mag={mag}) has neither occurrence_rate nor "
+                    f"probs_occur; cannot derive an annual rate")
+            p0 = float(probs[0])
+            if p0 <= 0.0:
+                raise ValueError(
+                    f"Rupture (mag={mag}) has P(0 events)={p0}; the PMF has "
+                    f"no finite Poisson-equivalent annual rate")
+            t = 1.0 if investigation_time is None else float(investigation_time)
+            occurrence_rate = -np.log(p0) / t
 
         # Build context with all sites
         ctx = FDHAContext(

@@ -107,25 +107,36 @@ class LegacyModelAdapter:
         
         return self._signature_cache[cache_key]
     
-    def _call_safely(self, method_name: str, **kwargs) -> Any:
+    def _call_model(self, method_name: str, **kwargs) -> Any:
         """
-        Call model method with only the parameters it accepts.
-        
+        Call a model method with only the parameters it accepts.
+
+        Errors propagate: a crashing model must fail the job, not be
+        converted into a silently-zero hazard contribution. A model
+        returning None is a contract violation and is rejected too.
+
         Args:
             method_name: Name of method to call
             **kwargs: All possible parameters
-            
+
         Returns:
-            Method result or None on error
+            Method result (never None)
         """
         valid_params = self._get_method_params(method_name)
         filtered = {k: v for k, v in kwargs.items() if k in valid_params}
-        
+
+        method = getattr(self.model, method_name)
         try:
-            return getattr(self.model, method_name)(**filtered)
+            result = method(**filtered)
         except Exception as e:
-            logger.error(f"Error calling {self.model.__class__.__name__}.{method_name}: {e}")
-            return None
+            raise RuntimeError(
+                f"{self.model.__class__.__name__}.{method_name} failed: {e}"
+            ) from e
+        if result is None:
+            raise RuntimeError(
+                f"{self.model.__class__.__name__}.{method_name} returned "
+                f"None; models must return probabilities")
+        return result
     
     def _ctx_metrics(self, ctx: 'FDHAContext'):
         """(r, x_L, L) arrays for this model's declared reference-line method.
@@ -143,19 +154,19 @@ class LegacyModelAdapter:
         self,
         ctx: 'FDHAContext',
         red_cfg: Dict[str, Any]
-    ) -> Optional[np.ndarray]:
+    ) -> np.ndarray:
         """
         Compute primary surface rupture probability.
-        
+
         Primary SR is typically magnitude-dependent only, but some models
         may include epistemic uncertainty (MC samples).
-        
+
         Args:
             ctx: FDHA context with rupture/site parameters
             red_cfg: MC reduction config {'method': 'median', 'q': 50}
-            
+
         Returns:
-            Array of shape (N,) or None on error
+            Array of shape (N,); model errors propagate
         """
         from openquake.fdha.calc.utils.probability import _reduce_mc
         
@@ -177,18 +188,23 @@ class LegacyModelAdapter:
                 f"  style = all"
             )
         
-        # Build kwargs; vs30 comes from the site collection (reference_vs30_value
-        # when no per-site value is given) and is needed by e.g. Moss2013PrimarySR.
+        # Build kwargs; vs30 comes from the site collection (with NaN for
+        # sites lacking a value and no reference_vs30_value configured).
+        # NaN is converted to None so that models requiring vs30 (e.g.
+        # Moss2013PrimarySR) reject the job with their own clear message
+        # instead of silently misclassifying the site (NaN fails every
+        # comparison, which would have meant "soft soil").
+        _vs30_0 = float(ctx.vs30[0])
         kwargs = {
             'mag': float(ctx.mag[0]),
             'dip': float(ctx.dip[0]),
             'dip_mu': float(ctx.dip[0]),
             'seismothickness': self.model_params.get('seismothickness', 15.0),
-            'vs30': float(ctx.vs30[0]),
+            'vs30': _vs30_0 if np.isfinite(_vs30_0) else None,
             'style': style,
             **{k: v for k, v in self.model_params.items() if k != 'style'},
         }
-        
+
         def _reduced_scalar(res):
             res_red = _reduce_mc(
                 res,
@@ -204,17 +220,15 @@ class LegacyModelAdapter:
         if unique_vs30.size > 1 and 'vs30' in self._get_method_params('get_prob'):
             out = np.zeros(N, dtype=np.float64)
             for v in unique_vs30:
-                result = self._call_safely('get_prob', **{**kwargs, 'vs30': float(v)})
-                if result is None:
-                    return None
-                out[ctx.vs30 == v] = _reduced_scalar(result)
+                v = float(v)
+                result = self._call_model('get_prob', **{
+                    **kwargs, 'vs30': v if np.isfinite(v) else None})
+                mask = np.isnan(ctx.vs30) if np.isnan(v) else ctx.vs30 == v
+                out[mask] = _reduced_scalar(result)
             return out
 
         # Call model
-        result = self._call_safely('get_prob', **kwargs)
-
-        if result is None:
-            return None
+        result = self._call_model('get_prob', **kwargs)
 
         # Broadcast to all sites
         return np.full(N, _reduced_scalar(result), dtype=np.float64)
@@ -224,19 +238,19 @@ class LegacyModelAdapter:
         ctx: 'FDHAContext',
         displacements: np.ndarray,
         red_cfg: Dict[str, Any]
-    ) -> Optional[np.ndarray]:
+    ) -> np.ndarray:
         """
         Compute primary fault displacement probability.
-        
+
         Uses fully vectorized operations - no per-displacement fallback loops.
-        
+
         Args:
             ctx: FDHA context
             displacements: Target displacement levels (m)
             red_cfg: MC reduction config
-            
+
         Returns:
-            Array of shape (N, D) or None on error
+            Array of shape (N, D); model errors propagate
         """
         from openquake.fdha.calc.utils.probability import _to_sites_x_displ
         
@@ -259,10 +273,9 @@ class LegacyModelAdapter:
                 f"  style = all"
             )
 
-        # Wrong-class output_type misconfiguration (C4 contract): raise HERE,
-        # before _call_safely, which would otherwise swallow the model's own
-        # ValueError into silent zero hazard (same pre-call pattern as the
-        # Youngs2003 style check above; cf. commit d541dbc3). The class
+        # Wrong-class output_type misconfiguration (C4 contract): raise here
+        # with a configuration-level message before the model call (same
+        # pre-call pattern as the Youngs2003 style check above). The class
         # choice IS the displacement definition - Lavrentiadis2023PrimaryFD_aggregate
         # serves only the aggregate variants; the sum-of-principal
         # disp_prnc_prime metric lives in Lavrentiadis2023PrimaryFD_principal
@@ -298,13 +311,9 @@ class LegacyModelAdapter:
             **{k: v for k, v in self.model_params.items() if k != 'style'},
         }
 
-        # Vectorized call - no fallback loops
-        result = self._call_safely('get_prob', **kwargs)
-        
-        if result is None:
-            logger.warning(f"compute_primary_fd returned None for {self.model.__class__.__name__}")
-            return np.zeros((N, D), dtype=np.float64)
-        
+        # Vectorized call - no fallback loops; errors propagate
+        result = self._call_model('get_prob', **kwargs)
+
         arr = np.asarray(result)
         
         # Handle different output shapes
@@ -381,13 +390,9 @@ class LegacyModelAdapter:
         if 'version' in kwargs:
             kwargs['version'] = str(kwargs['version'])
         
-        # Vectorized call - no fallback to per-site loops
-        result = self._call_safely('get_prob', **kwargs)
-        
-        if result is None:
-            logger.warning(f"compute_secondary_sr returned None for {self.model.__class__.__name__}")
-            return np.zeros(N, dtype=np.float64)
-        
+        # Vectorized call - no fallback to per-site loops; errors propagate
+        result = self._call_model('get_prob', **kwargs)
+
         arr = np.asarray(result)
         
         # Handle different output shapes
@@ -534,13 +539,6 @@ class LegacyModelAdapter:
         if 'percentile' in kwargs:
             kwargs['percentile'] = str(kwargs['percentile'])
         
-        # Try vectorized call
-        result = self._call_safely('get_prob', **kwargs)
-        
-        if result is not None:
-            normalized = _to_sites_x_displ(result, N, D, red_cfg)
-            return normalized
-        
-        # Return zeros on error
-        logger.warning(f"compute_secondary_fd failed for {self.model.__class__.__name__}")
-        return np.zeros((N, D), dtype=np.float64)
+        # Vectorized call; errors propagate
+        result = self._call_model('get_prob', **kwargs)
+        return _to_sites_x_displ(result, N, D, red_cfg)

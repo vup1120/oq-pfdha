@@ -11,12 +11,26 @@ from openquake.hazardlib.site import Site, SiteCollection
 from openquake.hazardlib.geo import Point
 from openquake.fdha.calc.utils.parsing import parse_source_model_faults
 from openquake.fdha.calc.config_loader import load_config
-from openquake.fdha.primary_surf_rup import *
-from openquake.fdha.primary_surf_displ import *
-from openquake.fdha.secondary_surf_rup import *
-from openquake.fdha.secondary_surf_displ import *
+from openquake.fdha import (
+    primary_surf_rup, primary_surf_displ,
+    secondary_surf_rup, secondary_surf_displ,
+)
 
 logger = logging.getLogger(__name__)
+
+#: Explicit model registry (class name -> class), built from the four model
+#: family packages at import time - the FDHA analogue of gsim.registry.
+MODEL_REGISTRY = {
+    name: obj
+    for pkg in (primary_surf_rup, primary_surf_displ,
+                secondary_surf_rup, secondary_surf_displ)
+    for name, obj in vars(pkg).items()
+    if inspect.isclass(obj) and obj.__module__.startswith('openquake.fdha')
+}
+
+#: Parameters consumed by LegacyModelAdapter itself (not by the model's
+#: constructor or get_prob): accepted in any uncertaintyModel block.
+ADAPTER_PARAMS = frozenset({'style', 'seismothickness'})
 
 class BaseFaultRuptureCalculator:
     """
@@ -121,22 +135,41 @@ class BaseFaultRuptureCalculator:
             return None
         model_type = model_cfg['type']
         params = model_cfg.get('parameters', {})
-        
-        # Look up class by name in current globals or imported modules.
+
         # A typo'd model name must fail the job loudly: returning None here
         # would silently zero the corresponding hazard contribution.
         try:
-            model_class = globals()[model_type]
+            model_class = MODEL_REGISTRY[model_type]
         except KeyError:
             raise ValueError(
                 f"Unknown FDHA model class '{model_type}'; check the "
                 f"uncertaintyModel / [models] configuration")
 
-        # Check which parameters the model's __init__ accepts
-        sig = inspect.signature(model_class.__init__)
-        init_params = set(sig.parameters.keys()) - {'self'}
+        # Accepted parameter names: the constructor's, get_prob's (call-time
+        # parameters forwarded by LegacyModelAdapter), and the adapter's own.
+        # An unknown parameter must fail the job loudly - silently dropping
+        # it would let a typo change the results without a word.
+        init_sig = inspect.signature(model_class.__init__).parameters
+        init_params = set(init_sig) - {'self'}
+        accepts_any = any(p.kind is inspect.Parameter.VAR_KEYWORD
+                          for p in init_sig.values())
+        get_prob = getattr(model_class, 'get_prob', None)
+        call_params = set()
+        if get_prob is not None:
+            call_sig = inspect.signature(get_prob).parameters
+            call_params = set(call_sig) - {'self'}
+            accepts_any |= any(p.kind is inspect.Parameter.VAR_KEYWORD
+                               for p in call_sig.values())
+        if not accepts_any:
+            unknown = set(params) - init_params - call_params - ADAPTER_PARAMS
+            if unknown:
+                raise ValueError(
+                    f"{model_type}: unknown parameter(s) {sorted(unknown)}. "
+                    f"Accepted constructor parameters: "
+                    f"{sorted(init_params - {'args', 'kwargs'})}; call-time "
+                    f"parameters: {sorted(call_params - init_params)}")
 
-        # Only pass parameters that the constructor accepts
+        # Only pass parameters that the constructor accepts by name
         constructor_params = {k: v for k, v in params.items() if k in init_params}
 
         # Constructor errors (e.g. an invalid scaling_model) must propagate:
@@ -144,22 +177,17 @@ class BaseFaultRuptureCalculator:
         # silently-zero hazard contribution.
         return model_class(**constructor_params)
 
-    def call_model_safely(self, model, method, **kwargs):
-        if model is None:
-            logger.warning(f"No model for method {method}")
-            return None
-        try:
-            func = getattr(model, method)
-            sig = inspect.signature(func)
-            # Pass only supported parameters
-            filtered = {k: v for k, v in kwargs.items() if k in sig.parameters}
-            return func(**filtered)
-        except Exception as e:
-            logger.error(f"Error calling {model}.{method}: {e}")
-            return None
-
     def get_model_parameters(self, name):
         return self.config.get('models', {}).get(name, {}).get('parameters', {})
+
+    def _calc_param(self, key, default):
+        """Read a calculation parameter: [calculation] wins over
+        [parameters]; only a missing key (None) falls through, so an
+        explicit falsy value like 0 is honored."""
+        value = self.config.get('calculation', {}).get(key)
+        if value is None:
+            value = self.config.get('parameters', {}).get(key)
+        return default if value is None else value
 
     @staticmethod
     def _validate_hazard_reduction(name, cfg):
@@ -223,11 +251,20 @@ class BaseFaultRuptureCalculator:
         
         # Principal/distributed split: r <= threshold -> primary (on-trace)
         # models, r > threshold -> secondary (distributed) models. Read from
-        # [calculation] first, then [parameters]. Default 0.1 km.
+        # [calculation] first, then [parameters]. Default 0.1 km. Must be
+        # strictly positive: a zero-width principal zone would make the
+        # on-trace assignment a floating-point lottery, and "distributed
+        # only" is expressed by leaving the primary FD slot empty, not by
+        # squeezing the geometry.
         self.r_threshold_km = float(
-            self.config.get('calculation', {}).get('r_threshold_km') or
-            self.config.get('parameters', {}).get('r_threshold_km', 0.1)
-        )
+            self._calc_param('r_threshold_km', 0.1))
+        if self.r_threshold_km <= 0.0:
+            raise ValueError(
+                f"r_threshold_km must be strictly positive "
+                f"(got {self.r_threshold_km}). To compute distributed "
+                f"hazard only, leave the primary FD slot "
+                f"(fdhaPrimaryFDModel) unconfigured instead; to model "
+                f"rupture-location uncertainty, use r_sigma_km > 0.")
 
         # Near/far regime split used *inside* the secondary (Visini) SR Rank 2
         # Monte Carlo; distinct from r_threshold_km and not a model selector.
@@ -255,10 +292,22 @@ class BaseFaultRuptureCalculator:
         # (model_adapter.NEAR_FIELD_FLOOR_KM); the distributed occurrence
         # cell size is the secondary model's own pixel_size from the FD
         # logic tree. Neither is a job parameter.
-        self.r_sigma_km = float(
-            self.config.get('calculation', {}).get('r_sigma_km') or
-            self.config.get('parameters', {}).get('r_sigma_km', 0.0)
-        )
+        self.r_sigma_km = float(self._calc_param('r_sigma_km', 0.0))
+        if self.r_sigma_km < 0.0:
+            raise ValueError(
+                f"r_sigma_km must be >= 0 (got {self.r_sigma_km})")
+
+        # Depth tolerance (km) for the surface-rupturing test: ruptures whose
+        # minimum depth exceeds it contribute no displacement hazard.
+        self.surface_rupture_depth_tolerance_km = float(self._calc_param(
+            'surface_rupture_depth_tolerance_km', 0.5))
+
+        # Reference vs30 (m/s) for sites without their own value. Optional:
+        # when absent, vs30-less sites carry NaN and only models that
+        # actually require vs30 (e.g. Moss 2013) reject the job.
+        _ref_vs30 = self._calc_param('reference_vs30_value', None)
+        self.reference_vs30_value = (
+            None if _ref_vs30 is None else float(_ref_vs30))
 
         # Case label for Visini models. The logic-tree branch typically sets
         # 'case' as a parameter of the secondary-model uncertaintyModel (it
@@ -330,6 +379,9 @@ class BaseFaultRuptureCalculator:
             # Rupture-location uncertainty (W_p); see
             # docs/design/rupture_location_uncertainty.md.
             'r_sigma_km': self.r_sigma_km,
+            'surface_rupture_depth_tolerance_km':
+                self.surface_rupture_depth_tolerance_km,
+            'reference_vs30_value': self.reference_vs30_value,
         }
 
 

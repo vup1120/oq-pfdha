@@ -252,22 +252,15 @@ def calculate_fdha_hazard(
                 r_sigma_km=r_sigma_km,
             )
             
-            # Accumulate by site ID using vectorized operations
+            # Accumulate by site ID using vectorized operations. The context
+            # invariant guarantees one contribution row per ctx site; a
+            # mismatch means a broken adapter/kernel, not a condition to
+            # paper over.
             sids = ctx.sids
-            # Ensure sids length matches principal_contrib first dimension
             if len(sids) != principal_contrib.shape[0]:
-                # If mismatch, use first site ID for all contributions
-                if principal_contrib.shape[0] == 1:
-                    if len(sids) > 0:
-                        sids = sids[:1]  # Take first site ID only
-                    else:
-                        # sids is empty but principal_contrib has shape (1, n_displ)
-                        # This means all sites were filtered out, skip accumulation
-                        continue
-                else:
-                    raise ValueError(f"sids length ({len(sids)}) doesn't match principal_contrib shape[0] ({principal_contrib.shape[0]})")
-            
-            # Skip if sids is empty (all sites filtered out)
+                raise AssertionError(
+                    f"context/contribution shape mismatch: {len(sids)} sids "
+                    f"vs {principal_contrib.shape[0]} contribution rows")
             if len(sids) == 0:
                 continue
                 
@@ -484,13 +477,13 @@ def _compute_rupture_contribution(
     # PRIMARY SURFACE RUPTURE PROBABILITY
     # =========================================================================
     if 'primary_sr' in adapters:
+        # Model errors propagate: a crashing model fails the job instead of
+        # silently zeroing this rupture's hazard.
         P_sr = adapters['primary_sr'].compute_primary_sr(ctx, p_sr_red_cfg)
-        if P_sr is None:
-            return principal_contrib, distributed_contrib
     else:
         # Default: assume surface rupture always occurs
         P_sr = np.ones(N_ctx, dtype=np.float64)
-    
+
     # =========================================================================
     # PRIMARY FAULT DISPLACEMENT PROBABILITY
     # =========================================================================
@@ -498,8 +491,6 @@ def _compute_rupture_contribution(
         P_fd_primary = adapters['primary_fd'].compute_primary_fd(
             ctx, target_displacements, p_sr_red_cfg
         )
-        if P_fd_primary is None:
-            P_fd_primary = np.zeros((N_ctx, n_displ), dtype=np.float64)
     else:
         P_fd_primary = np.zeros((N_ctx, n_displ), dtype=np.float64)
     

@@ -47,7 +47,7 @@ import numpy as np
 from functools import lru_cache
 from scipy.stats import lognorm
 
-from openquake.fdha.params import check_positive, check_style
+from openquake.fdha.params import check_choice, check_positive, check_style
 from openquake.fdha.secondary_surf_rup.base import BaseSecondarySurfRup
 
 
@@ -73,7 +73,8 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
     MULTIFAULT_REFERENCE_LINE = "segments"
 
     def __init__(self, style=None, pixel_size=None, segment_sampling=None,
-                 rupture_traces=None):
+                 rupture_traces=None, along_strike_width=None,
+                 distribution_type=None):
         """
         :param style: optional coefficient-set selector pinned by the
             logic-tree branch ('normal' or 'reverse'); ``None`` defers to
@@ -86,6 +87,12 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
         :param rupture_traces: optional list of rank-1.5 trace names used by
             combination B, consumed by the secondary calculation pipeline;
             stored as given.
+        :param along_strike_width: optional along-strike site-cell width in
+            meters (defaults to ``pixel_size`` downstream), consumed by the
+            secondary calculation pipeline.
+        :param distribution_type: optional Rank-2 placement algorithm
+            ('uniform', 'exponential' or 'average'), consumed by the
+            secondary calculation pipeline.
         """
         super().__init__()
         self.style = check_style(type(self).__name__, style,
@@ -95,6 +102,11 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
         self.segment_sampling = (None if segment_sampling is None
                                  else str(segment_sampling))
         self.rupture_traces = rupture_traces
+        self.along_strike_width = check_positive(
+            type(self).__name__, "along_strike_width", along_strike_width)
+        self.distribution_type = check_choice(
+            type(self).__name__, "distribution_type", distribution_type,
+            ("uniform", "exponential", "average"))
 
         # Logistic regression coefficients from Table 2 (unchanged)
         self.coeffs_occurrence = {
