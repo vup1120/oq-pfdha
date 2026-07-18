@@ -57,6 +57,26 @@ def test_calc_param_honors_explicit_zero():
     assert calc._calc_param('r_threshold_km', 0.1) == 0.1
 
 
+def test_zero_r_threshold_rejected():
+    """A zero-width principal zone is rejected with guidance: r == 0 exactly
+    is a floating-point lottery, and 'distributed only' is expressed by an
+    empty primary FD slot instead."""
+    calc = BaseFaultRuptureCalculator.__new__(BaseFaultRuptureCalculator)
+    for bad in (0, 0.0, -1.0):
+        calc.config = {'calculation': {'r_threshold_km': bad},
+                       'parameters': {}, 'models': {}}
+        with pytest.raises(ValueError, match="strictly positive"):
+            calc._initialize_calculation_params()
+
+
+def test_negative_r_sigma_rejected():
+    calc = BaseFaultRuptureCalculator.__new__(BaseFaultRuptureCalculator)
+    calc.config = {'calculation': {'r_sigma_km': -0.05},
+                   'parameters': {}, 'models': {}}
+    with pytest.raises(ValueError, match="r_sigma_km"):
+        calc._initialize_calculation_params()
+
+
 def _one_site_ctx(vs30=760.0):
     return FDHAContext(
         sids=np.array([0]), mag=np.array([6.5]), rake=np.array([0.0]),

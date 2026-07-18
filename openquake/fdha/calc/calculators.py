@@ -251,10 +251,20 @@ class BaseFaultRuptureCalculator:
         
         # Principal/distributed split: r <= threshold -> primary (on-trace)
         # models, r > threshold -> secondary (distributed) models. Read from
-        # [calculation] first, then [parameters]. Default 0.1 km. An explicit
-        # zero is honored (`is None` checks, not `or`: 0 is falsy).
+        # [calculation] first, then [parameters]. Default 0.1 km. Must be
+        # strictly positive: a zero-width principal zone would make the
+        # on-trace assignment a floating-point lottery, and "distributed
+        # only" is expressed by leaving the primary FD slot empty, not by
+        # squeezing the geometry.
         self.r_threshold_km = float(
             self._calc_param('r_threshold_km', 0.1))
+        if self.r_threshold_km <= 0.0:
+            raise ValueError(
+                f"r_threshold_km must be strictly positive "
+                f"(got {self.r_threshold_km}). To compute distributed "
+                f"hazard only, leave the primary FD slot "
+                f"(fdhaPrimaryFDModel) unconfigured instead; to model "
+                f"rupture-location uncertainty, use r_sigma_km > 0.")
 
         # Near/far regime split used *inside* the secondary (Visini) SR Rank 2
         # Monte Carlo; distinct from r_threshold_km and not a model selector.
@@ -283,6 +293,9 @@ class BaseFaultRuptureCalculator:
         # cell size is the secondary model's own pixel_size from the FD
         # logic tree. Neither is a job parameter.
         self.r_sigma_km = float(self._calc_param('r_sigma_km', 0.0))
+        if self.r_sigma_km < 0.0:
+            raise ValueError(
+                f"r_sigma_km must be >= 0 (got {self.r_sigma_km})")
 
         # Depth tolerance (km) for the surface-rupturing test: ruptures whose
         # minimum depth exceeds it contribute no displacement hazard.
