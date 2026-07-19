@@ -358,7 +358,7 @@ def run_logic_tree_calculator(config_path: Path) -> Dict[str, Any]:
         if result.mode == "hazard_curve":
             return {
                 "imls": list(result.d0),
-                "poes": result.mean_rates,
+                "rates": result.mean_rates,
             }
 
         if result.mode == "hazard_map":
@@ -391,9 +391,9 @@ def regression_test_benchmark(benchmark: BenchmarkConfig):
             
             # Print summary
             print(f"[GENERATE] Keys: {list(result.keys())}")
-            if 'poes' in result:
-                poes = np.array(result['poes'])
-                print(f"[GENERATE] poes shape: {poes.shape}, range: [{poes.min():.6e}, {poes.max():.6e}]")
+            if 'rates' in result:
+                rates = np.array(result['rates'])
+                print(f"[GENERATE] rates shape: {rates.shape}, range: [{rates.min():.6e}, {rates.max():.6e}]")
             
             if should_generate_golden():
                 pytest.skip(f"Generated golden file for {benchmark.name}")

@@ -104,8 +104,8 @@ def test_xml_time_span_scales_rates_without_ini_key(tmp_path):
     relative to the 1.0-yr model (rate = -ln(P0) / t)."""
     calc1 = _run_multifault(tmp_path, "1.0", "")
     calc2 = _run_multifault(tmp_path, "2.0", "")
-    rates1 = np.asarray(calc1.run()["poes"], dtype=float)
-    rates2 = np.asarray(calc2.run()["poes"], dtype=float)
+    rates1 = np.asarray(calc1.run()["rates"], dtype=float)
+    rates2 = np.asarray(calc2.run()["rates"], dtype=float)
     assert rates1.max() > 0.0, "baseline rates are zero - vacuous test"
     np.testing.assert_allclose(rates2, rates1 * 0.5, rtol=1e-10)
 
@@ -121,6 +121,6 @@ def test_conflicting_ini_time_raises(tmp_path):
 def test_matching_ini_time_is_accepted(tmp_path):
     calc_match = _run_multifault(tmp_path, "2.0", "investigation_time = 2.0\n")
     calc_bare = _run_multifault(tmp_path, "2.0", "")
-    r_match = np.asarray(calc_match.run()["poes"], dtype=float)
-    r_bare = np.asarray(calc_bare.run()["poes"], dtype=float)
+    r_match = np.asarray(calc_match.run()["rates"], dtype=float)
+    r_bare = np.asarray(calc_bare.run()["rates"], dtype=float)
     np.testing.assert_allclose(r_match, r_bare, rtol=1e-12)

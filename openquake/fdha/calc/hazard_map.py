@@ -12,7 +12,7 @@ from openquake.hazardlib.site import Site, SiteCollection
 from openquake.hazardlib.geo.surface.simple_fault import SimpleFaultSurface
 from openquake.fdha.calc.utils.interpolation import get_map_from_curves
 from openquake.fdha.calc.utils.parsing import parse_source_model_faults
-from openquake.fdha.calc.config_loader import load_config
+from openquake.fdha.calc.config_loader import load_config, get_max_distance_km
 from .hazard import calculate_fdha_hazard
 from .calculators import BaseFaultRuptureCalculator
 
@@ -32,7 +32,7 @@ def compute_hazard_map(
     cfg = load_config(config_path)
     geom = cfg['geometry']
     spacing = float(geom.get('region_grid_spacing', 0.01))
-    max_dist = float(geom.get('max_distance_km', 10.0))
+    max_dist = get_max_distance_km(cfg, default=10.0)
     vs30 = cfg.get('site_location', {}).get('vs30', None)
 
     para = cfg['parameters']
@@ -237,7 +237,7 @@ def compute_hazard_map(
     )
     result = calculate_fdha_hazard(calculator, combined_sitecol)
     rate_keys = {
-        "total": "poes",
+        "total": "rates",
         "principal": "rate_principal",
         "distributed": "rate_distributed",
     }

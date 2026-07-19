@@ -511,8 +511,8 @@
     "model": "M11",
     "figure": "fig4c_leteil_principal_M11.csv",
     "post_factor": 1.0,
-    "max_relerr_assert_range": 6.395410199971709,
-    "max_relerr_full": 6.395410199971709,
+    "max_relerr_assert_range": 6.395410199971695,
+    "max_relerr_full": 6.395410199971695,
     "assert_max_relerr": null,
     "assert_dmax_m": null,
     "ratio": [

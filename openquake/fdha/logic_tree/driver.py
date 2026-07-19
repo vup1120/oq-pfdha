@@ -15,6 +15,7 @@ from typing import Any, Optional, Sequence
 import numpy as np
 
 from openquake.fdha.calc.config_loader import (
+    get_max_distance_km,
     load_config,
     resolve_output_mean,
     resolve_output_quantiles,
@@ -288,7 +289,7 @@ class FdhaLogicTree:
                 "'lon1 lat1, lon2 lat2, ...')."
             )
         spacing = float(geom.get("region_grid_spacing", 0.1))
-        max_dist = float(geom.get("max_distance_km", 10.0))
+        max_dist = get_max_distance_km(cfg, default=10.0)
         vs30 = cfg.get("site_location", {}).get("vs30", None)
 
         para = cfg.get("parameters", {})
@@ -380,7 +381,7 @@ class FdhaLogicTree:
             res = calculate_fdha_hazard(
                 branch_calc, sites.combined_sitecol, show_progress=False,
             )
-            branch_rates = np.asarray(res["poes"], dtype=float)
+            branch_rates = np.asarray(res["rates"], dtype=float)
             branch_principal = np.asarray(res["rate_principal"], dtype=float)
             branch_distributed = np.asarray(res["rate_distributed"], dtype=float)
             # Explicit pre-aggregation shape guard: bail out loudly when a
@@ -1380,7 +1381,7 @@ def _run_single(config_path: str, fault_sources: Optional[dict] = None):
             **converter_params,
         )
     res = calc.run()
-    return (res["poes"], res["rate_principal"], res["rate_distributed"],
+    return (res["rates"], res["rate_principal"], res["rate_distributed"],
             res["imls"], res["site_lons"], res["site_lats"])
 
 

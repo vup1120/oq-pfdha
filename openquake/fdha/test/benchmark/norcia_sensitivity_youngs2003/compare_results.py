@@ -42,39 +42,39 @@ def main():
     
     # Extract arrays
     imls = np.array(results['imls'])
-    poes = np.array(results['poes'])
+    rates = np.array(results['rates'])
     
     # Handle both 1D and 2D arrays - flatten to 1D
-    if poes.ndim == 2:
-        if poes.shape[0] == 1:
-            poes = poes[0]  # Single site: take first row
+    if rates.ndim == 2:
+        if rates.shape[0] == 1:
+            rates = rates[0]  # Single site: take first row
         else:
-            poes = poes.flatten()  # Multiple sites: flatten
+            rates = rates.flatten()  # Multiple sites: flatten
     
     # Ensure both are 1D
-    poes = poes.flatten()
+    rates = rates.flatten()
     
     print("="*80)
     print("COMPARISON: Current Implementation vs Reference Values")
     print("="*80)
     
     # Check lengths
-    if len(imls) != len(poes):
-        print(f"❌ IML and POE count mismatch: imls={len(imls)}, poes={len(poes)}")
+    if len(imls) != len(rates):
+        print(f"❌ IML and POE count mismatch: imls={len(imls)}, rates={len(rates)}")
         return 1
     
     if len(imls) != len(ref_Youngs_N):
         print(f"⚠️  IML and reference count mismatch: imls={len(imls)}, ref={len(ref_Youngs_N)}")
         print(f"Using minimum length: {min(len(imls), len(ref_Youngs_N))}")
-        min_len = min(len(imls), len(poes), len(ref_Youngs_N))
+        min_len = min(len(imls), len(rates), len(ref_Youngs_N))
         imls = imls[:min_len]
-        poes = poes[:min_len]
+        rates = rates[:min_len]
         ref_Youngs_N = ref_Youngs_N[:min_len]
     
     # Calculate differences
-    abs_diff = np.abs(poes - ref_Youngs_N)
-    rel_diff = np.abs((poes - ref_Youngs_N) / (ref_Youngs_N + 1e-20)) * 100
-    ratio = poes / (ref_Youngs_N + 1e-20)
+    abs_diff = np.abs(rates - ref_Youngs_N)
+    rel_diff = np.abs((rates - ref_Youngs_N) / (ref_Youngs_N + 1e-20)) * 100
+    ratio = rates / (ref_Youngs_N + 1e-20)
     
     max_abs_diff = np.max(abs_diff)
     max_rel_diff = np.max(rel_diff)
@@ -95,7 +95,7 @@ def main():
     rtol = 1e-2  # 1% relative tolerance for reference comparison
     atol = 1e-6
     
-    if np.allclose(poes, ref_Youngs_N, rtol=rtol, atol=atol):
+    if np.allclose(rates, ref_Youngs_N, rtol=rtol, atol=atol):
         print(f"\n✅ Results match reference within tolerance (rtol={rtol}, atol={atol})")
         return 0
     else:
@@ -106,7 +106,7 @@ def main():
         n_diff = 0
         for i in range(len(imls)):
             if abs_diff[i] > atol or rel_diff[i] > rtol * 100:
-                print(f"{imls[i]:>10.4f} {poes[i]:>15.6e} {ref_Youngs_N[i]:>15.6e} {abs_diff[i]:>15.6e} {rel_diff[i]:>12.4f} {ratio[i]:>10.2f}")
+                print(f"{imls[i]:>10.4f} {rates[i]:>15.6e} {ref_Youngs_N[i]:>15.6e} {abs_diff[i]:>15.6e} {rel_diff[i]:>12.4f} {ratio[i]:>10.2f}")
                 n_diff += 1
         if n_diff == 0:
             print("(All values within tolerance)")

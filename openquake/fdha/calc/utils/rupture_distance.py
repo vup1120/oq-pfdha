@@ -1,14 +1,39 @@
 # -*- coding: utf-8 -*-
-"""Site-to-rupture-trace distance calculators (scalar and vectorized)."""
+"""Site-to-rupture-trace distance calculators (scalar and vectorized).
+
+Relation to openquake.hazardlib
+-------------------------------
+Shared with hazardlib: multi-section GC2 (``geo.multiline.MultiLine``, via
+:mod:`openquake.fdha.calc.utils.segments`) and the ``EARTH_RADIUS`` used by
+:func:`resample_polyline`. The remaining overlaps with the hazardlib
+surface-distance stack are deliberate divergences, load-bearing for FDHA:
+
+* ``r`` is the horizontal distance to the *original NRML trace* retained at
+  parse time, not ``Rjb``/``Rrup``/``Rx`` measured on the resampled surface
+  mesh: it keeps r/x/L independent of ``rupture_mesh_spacing`` (mesh top
+  edges corner-cut wiggly traces by up to hundreds of meters).
+* Distances use a local equirectangular km frame
+  (:func:`to_local_equirectangular_km`), not
+  ``geo.utils.OrthographicProjection``; the frame is part of the frozen
+  numerical baseline.
+* The signed distance follows the ``Rx`` sign convention but is the clipped
+  distance to the trace polyline, not the GC2 ``T`` of
+  ``BaseSurface.get_rx_distance`` (T is measured against the extended,
+  mesh-derived top edge).
+* :func:`resample_polyline` always keeps the trace endpoints, unlike
+  ``geo.line.Line.resample`` which walks fixed geodesic steps.
+* ``R_KM`` = 6371.0088 (IUGG mean radius), not ``geo.geodetic.EARTH_RADIUS``
+  = 6371.0; aligning it would shift every frozen fixture.
+"""
 import numpy as np
-from typing import List, Tuple, Optional, Any, TYPE_CHECKING
-try:
-    from openquake.hazardlib.site import Site, SiteCollection  # type: ignore
-    from openquake.hazardlib.geo import Point  # type: ignore
-except Exception:  # pragma: no cover - optional dependency for distance-only utilities
-    Site = None  # type: ignore[assignment]
-    SiteCollection = None  # type: ignore[assignment]
-    Point = None  # type: ignore[assignment]
+from typing import Tuple, Optional, Any
+from openquake.hazardlib.site import SiteCollection
+from openquake.hazardlib.geo.geodetic import EARTH_RADIUS
+
+# Earth radius (km) of the local equirectangular frame; also used by
+# segments.py. Deliberately NOT hazardlib's EARTH_RADIUS = 6371.0 (see
+# module docstring).
+R_KM = 6371.0088
 
 
 # Valid reference-line treatments for multi-section ruptures. Which one a
@@ -148,7 +173,11 @@ def _extract_fault_trace_from_mesh(surface: Any) -> np.ndarray:
     # remove consecutive exact duplicates (bitwise-identical mesh nodes only;
     # do NOT use np.allclose here - its default rtol=1e-5 collapses fine-mesh
     # traces where adjacent nodes differ by < rtol*|lon|, e.g. 0.02 km spacing
-    # at lon ~120° produces node differences of ~2e-4° < 1e-5*120 = 1.2e-3°)
+    # at lon ~120° produces node differences of ~2e-4° < 1e-5*120 = 1.2e-3°.
+    # hazardlib geo.utils.clean_points is NOT usable for the same job: its
+    # ndarray branch raises "truth value ... is ambiguous" on the very
+    # duplicates it should drop, and its Point branch compares with a
+    # tolerance (Point(1e-6, 1e-6) == Point(0, 0)), i.e. the allclose trap)
     if len(coords) >= 2:
         keep = [0]
         for k in range(1, len(coords)):
@@ -218,7 +247,7 @@ def resample_polyline(coords: np.ndarray, step_km: float) -> np.ndarray:
     coords = np.asarray(coords, dtype=float)
     if len(coords) < 2 or step_km <= 0:
         return coords
-    R = 6371.0
+    R = EARTH_RADIUS  # hazardlib's 6371.0, matching engine resampling
     lo, la = np.radians(coords[:, 0]), np.radians(coords[:, 1])
     h = (np.sin(np.diff(la) / 2) ** 2
          + np.cos(la[:-1]) * np.cos(la[1:]) * np.sin(np.diff(lo) / 2) ** 2)
@@ -234,23 +263,76 @@ def resample_polyline(coords: np.ndarray, step_km: float) -> np.ndarray:
 
 
 # ----------------------------- Polyline distance helpers (xy plane) -------------------------
+def _project_sites_onto_polyline_xy(pxy: np.ndarray, poly_xy: np.ndarray,
+                                    skip_zero_length: bool = False):
+    """Vectorized projection of N sites onto a polyline in the local xy frame.
+
+    (n_sites, n_segments) formulation matching hazardlib's own closest-segment
+    convention: the winning segment is ``numpy.argmin`` over the squared
+    perpendicular distance, exactly as
+    :meth:`openquake.hazardlib.geo.surface.base.BaseSurface.get_min_distance`
+    (``numpy.argmin(d_sq, axis=1)``) and, since squaring is monotonic, the
+    same segment ``get_rx_distance`` selects with ``numpy.abs(dists).argmin``.
+
+    On the ``r`` and x/L outputs this is bit-identical to the per-site Python
+    loops it replaced. It also matches those loops on the *magnitude* of the
+    signed distance. It can differ from them by a HANGING-WALL/FOOTWALL SIGN
+    FLIP for a site that lands exactly on an internal polyline vertex, where
+    the two adjacent segments tie: the old loops compared ``sqrt(d2)`` (which
+    collapses the ulp-level tie and so kept the lower-indexed segment) while
+    argmin here compares ``d2`` and may keep the other. This follows
+    hazardlib rather than the old loops, and the site's sign is geometrically
+    undefined at a vertex anyway (the distance magnitude is unchanged).
+
+    :param pxy: (N, 2) site coordinates (km)
+    :param poly_xy: (M, 2) polyline vertices (km), M >= 2
+    :param skip_zero_length: when True, zero-length segments are not distance
+        candidates (signed-distance behavior); when False they compete with
+        the distance to their first vertex.
+    :returns: ``(dist, iseg, tpar, cross)``, each of length N: minimum
+        distance (inf when every segment is skipped), first-minimum segment
+        index, clamped projection parameter on that segment, and the z cross
+        product of (segment vector, site offset) used for hanging-wall /
+        footwall signing.
+    """
+    a = poly_xy[:-1]
+    seg = poly_xy[1:] - a
+    den = seg[:, 0] * seg[:, 0] + seg[:, 1] * seg[:, 1]  # (S,)
+    n = len(pxy)
+    dist = np.empty(n)
+    iseg = np.empty(n, dtype=np.intp)
+    tpar = np.empty(n)
+    cross = np.empty(n)
+    # site blocks bound the (block, S) temporaries to ~16 MB each
+    block = max(1, 2 ** 21 // max(len(seg), 1))
+    for i0 in range(0, n, block):
+        p = pxy[i0:i0 + block]
+        apx = p[:, 0:1] - a[:, 0]
+        apy = p[:, 1:2] - a[:, 1]
+        with np.errstate(invalid="ignore", divide="ignore"):
+            t = (apx * seg[:, 0] + apy * seg[:, 1]) / den
+        t = np.where(den > 0.0, np.clip(t, 0.0, 1.0), 0.0)
+        # same association as the original loops: off = p - (a + t*seg)
+        offx = p[:, 0:1] - (a[:, 0] + t * seg[:, 0])
+        offy = p[:, 1:2] - (a[:, 1] + t * seg[:, 1])
+        d2 = offx * offx + offy * offy
+        if skip_zero_length:
+            d2[:, den == 0.0] = np.inf
+        ii = np.argmin(d2, axis=1)
+        rows = np.arange(len(p))
+        dist[i0:i0 + block] = np.sqrt(d2[rows, ii])
+        iseg[i0:i0 + block] = ii
+        tpar[i0:i0 + block] = t[rows, ii]
+        cross[i0:i0 + block] = (seg[ii, 0] * offy[rows, ii]
+                                - seg[ii, 1] * offx[rows, ii])
+    return dist, iseg, tpar, cross
+
+
 def _min_distance_point_to_polyline_xy(pxy: np.ndarray, poly_xy: np.ndarray) -> float:
     """Shortest distance from point *pxy* to polyline *poly_xy* in the xy plane (km)."""
-    d_min = float("inf")
-    for i in range(len(poly_xy) - 1):
-        p1 = poly_xy[i]
-        p2 = poly_xy[i + 1]
-        seg = p2 - p1
-        seg_len2 = float(np.dot(seg, seg))
-        if seg_len2 == 0.0:
-            d = float(np.linalg.norm(pxy - p1))
-        else:
-            t = float(np.clip(np.dot(pxy - p1, seg) / seg_len2, 0.0, 1.0))
-            closest = p1 + t * seg
-            d = float(np.linalg.norm(pxy - closest))
-        if d < d_min:
-            d_min = d
-    return d_min
+    dist, _iseg, _tpar, _cross = _project_sites_onto_polyline_xy(
+        np.asarray(pxy, dtype=float).reshape(1, 2), poly_xy)
+    return float(dist[0])
 
 
 def _horizontal_distance_to_trace_km(site_lonlat: np.ndarray, trace_lonlat: np.ndarray) -> float:
@@ -433,14 +515,12 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
         tx, ty = to_local_equirectangular_km(tr_lons, tr_lats, lon0=lon0, lat0=lat0)
         txy = np.column_stack([tx, ty])
 
-        dists = np.empty(len(self.sites))
-        for idx, site in enumerate(self.sites):
-            sx, sy = to_local_equirectangular_km(
-                site.longitude, site.latitude, lon0=lon0, lat0=lat0
-            )
-            dists[idx] = _min_distance_point_to_polyline_xy(
-                np.array([float(sx), float(sy)]), txy
-            )
+        sx, sy = to_local_equirectangular_km(
+            np.array([s.longitude for s in self.sites], dtype=float),
+            np.array([s.latitude for s in self.sites], dtype=float),
+            lon0=lon0, lat0=lat0)
+        dists, _iseg, _tpar, _cross = _project_sites_onto_polyline_xy(
+            np.column_stack([sx, sy]), txy)
         return dists
 
     def calculate_signed_site_to_trace_distances(self) -> np.ndarray:
@@ -468,30 +548,16 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
         tx, ty = to_local_equirectangular_km(tr_lons, tr_lats, lon0=lon0, lat0=lat0)
         txy = np.column_stack([tx, ty])
 
-        out = np.empty(n)
-        for idx, site in enumerate(self.sites):
-            sx, sy = to_local_equirectangular_km(
-                site.longitude, site.latitude, lon0=lon0, lat0=lat0
-            )
-            pxy = np.array([float(sx), float(sy)])
-            d_min, cross = float("inf"), 0.0
-            for i in range(len(txy) - 1):
-                seg = txy[i + 1] - txy[i]
-                seg_len2 = float(np.dot(seg, seg))
-                if seg_len2 == 0.0:
-                    continue
-                t = float(np.clip(np.dot(pxy - txy[i], seg) / seg_len2, 0.0, 1.0))
-                off = pxy - (txy[i] + t * seg)
-                d = float(np.linalg.norm(off))
-                if d < d_min:
-                    d_min = d
-                    cross = float(seg[0] * off[1] - seg[1] * off[0])
-            if not np.isfinite(d_min):
-                out[idx] = 0.0
-            else:
-                # right of walking direction (cross < 0) -> hanging wall -> +
-                out[idx] = d_min if cross <= 0.0 else -d_min
-        return out
+        sx, sy = to_local_equirectangular_km(
+            np.array([s.longitude for s in self.sites], dtype=float),
+            np.array([s.latitude for s in self.sites], dtype=float),
+            lon0=lon0, lat0=lat0)
+        dist, _iseg, _tpar, cross = _project_sites_onto_polyline_xy(
+            np.column_stack([sx, sy]), txy, skip_zero_length=True)
+        # right of walking direction (cross < 0) -> hanging wall -> +
+        # dist is inf when every segment is zero-length: no orientation -> 0
+        return np.where(np.isfinite(dist),
+                        np.where(cross <= 0.0, dist, -dist), 0.0)
 
     def calculate_x_l_ratios(self) -> Tuple[np.ndarray, float]:
         """
@@ -546,44 +612,21 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
         seg_lens = np.linalg.norm(segs, axis=1)
         L_km = float(np.sum(seg_lens))
 
-        def _project_point_xy(pxy: np.ndarray, poly_xy: np.ndarray, total_length: float) -> float:
-            x_best = 0.0
-            d_min = float("inf")
-            cumul = 0.0
-            for i in range(len(poly_xy) - 1):
-                p1 = poly_xy[i]
-                p2 = poly_xy[i + 1]
-                seg = p2 - p1
-                seg_len2 = float(np.dot(seg, seg))
-                seg_len = float(np.sqrt(seg_len2))
-
-                if seg_len2 == 0.0:
-                    d = float(np.linalg.norm(pxy - p1))
-                    if d < d_min:
-                        d_min = d
-                        x_best = cumul
-                    continue
-
-                t = float(np.clip(np.dot(pxy - p1, seg) / seg_len2, 0.0, 1.0))
-                closest = p1 + t * seg
-                d = float(np.linalg.norm(pxy - closest))
-                if d < d_min:
-                    d_min = d
-                    x_best = cumul + t * seg_len
-                    # Ensure x_best doesn't exceed total length due to floating point precision
-                    x_best = min(x_best, total_length)
-                cumul += seg_len
-            return x_best
-
-        ratios = []
-        for site in self.sites:
-            sx, sy = to_local_equirectangular_km(site.longitude, site.latitude, lon0=lon0, lat0=lat0)
-            x_proj_km = _project_point_xy(np.array([float(sx), float(sy)]), txy, L_km)
-            # x_proj_km is now guaranteed to be <= L_km
-            ratio = x_proj_km / L_km if L_km > 0 else 0.0
-            ratios.append(ratio)
-
-        ratios_arr = np.array(ratios, dtype=float)
+        sx, sy = to_local_equirectangular_km(
+            np.array([s.longitude for s in self.sites], dtype=float),
+            np.array([s.latitude for s in self.sites], dtype=float),
+            lon0=lon0, lat0=lat0)
+        _dist, iseg, tpar, _cross = _project_sites_onto_polyline_xy(
+            np.column_stack([sx, sy]), txy)
+        cumul = np.concatenate([[0.0], np.cumsum(seg_lens)])
+        x_proj_km = cumul[iseg] + tpar * seg_lens[iseg]
+        # clamp so x_best doesn't exceed total length due to floating point
+        # precision; zero-length winning segments stay at their raw cumul,
+        # exactly like the former per-site loop
+        x_proj_km = np.where(seg_lens[iseg] > 0.0,
+                             np.minimum(x_proj_km, L_km), cumul[iseg])
+        # x_proj_km is now guaranteed to be <= L_km on nonzero segments
+        ratios_arr = x_proj_km / L_km if L_km > 0 else np.zeros(len(x_proj_km))
 
         # DIAGNOSTIC: Check for values outside [0, 1] before any clipping
         out_of_range = (ratios_arr < 0.0) | (ratios_arr > 1.0)
@@ -668,7 +711,6 @@ def to_local_equirectangular_km(lon, lat, lon0: float, lat0: float):
     (x_km, y_km) : tuple[np.ndarray, np.ndarray] or (float, float)
         Coordinates in kilometers in the local frame.
     """
-    R_KM = 6371.0088
     lon = np.asarray(lon, dtype=float)
     lat = np.asarray(lat, dtype=float)
     lon0 = float(lon0)
@@ -716,29 +758,11 @@ def project_point_onto_trace_km(site_lonlat: np.ndarray, trace_lonlat: np.ndarra
 
     # Site to local km
     sx, sy = to_local_equirectangular_km(site_lonlat[0], site_lonlat[1], lon0=lon0, lat0=lat0)
-    pxy = np.array([float(sx), float(sy)])
+    pxy = np.array([[float(sx), float(sy)]])
 
-    # Project
-    x_best = 0.0
-    d_min = float("inf")
-    cumul = 0.0
-    for i in range(len(txy) - 1):
-        p1 = txy[i]
-        p2 = txy[i + 1]
-        seg = p2 - p1
-        seg_len2 = float(np.dot(seg, seg))
-        if seg_len2 == 0.0:
-            d = float(np.linalg.norm(pxy - p1))
-            if d < d_min:
-                d_min = d
-                x_best = cumul
-            continue
-        t = float(np.clip(np.dot(pxy - p1, seg) / seg_len2, 0.0, 1.0))
-        closest = p1 + t * seg
-        d = float(np.linalg.norm(pxy - closest))
-        if d < d_min:
-            d_min = d
-            x_best = cumul + t * float(np.sqrt(seg_len2))
-        cumul += float(np.sqrt(seg_len2))
+    # Project (no clamp to L_km here: the callers clip x/L themselves)
+    _dist, iseg, tpar, _cross = _project_sites_onto_polyline_xy(pxy, txy)
+    cumul = np.concatenate([[0.0], np.cumsum(seg_lens)])
+    x_best = float(cumul[iseg[0]] + tpar[0] * seg_lens[iseg[0]])
 
     return x_best, L_km

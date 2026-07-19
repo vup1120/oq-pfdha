@@ -233,14 +233,14 @@ def plot_hazard_map(
 
 def _save_single_curve(
     imls: np.ndarray,
-    poe: np.ndarray,
+    rates: np.ndarray,
     plot_file: Optional[str],
     title_suffix: str = "",
 ) -> None:
     """Render a single hazard curve and save (or show) it."""
     fig, ax = plt.subplots(figsize=(10, 7))
     ax.loglog(
-        imls, poe,
+        imls, rates,
         color='C0', linestyle='-', linewidth=2, marker='o', markersize=4,
         label="Hazard Curve", alpha=0.8,
     )
@@ -276,46 +276,46 @@ def plot_fault_displacement_hazard(
     ``hazard_curve_site1.png``).  Each figure carries a label with the site's
     longitude and latitude when available.
 
-    :param results: Dictionary containing 'imls' and 'poes' arrays
+    :param results: Dictionary containing 'imls' and 'rates' arrays
     :param plot_file: optional path to save the plot (if None, show interactively)
     """
     imls = np.array(results["imls"])
-    poes = np.array(results["poes"])
+    rates = np.array(results["rates"])
 
-    # Handle both 1D and 2D poes arrays
-    if poes.ndim == 1:
-        poes = poes.reshape(1, -1)
+    # Handle both 1D and 2D rate arrays
+    if rates.ndim == 1:
+        rates = rates.reshape(1, -1)
 
     site_lons = results.get("site_lons")
     site_lats = results.get("site_lats")
     site_lons = [] if site_lons is None else list(site_lons)
     site_lats = [] if site_lats is None else list(site_lats)
 
-    n_sites = len(poes)
+    n_sites = len(rates)
 
     if n_sites == 1:
         # Single-site path - unchanged behaviour
-        _save_single_curve(imls, poes[0], plot_file, title_suffix="")
+        _save_single_curve(imls, rates[0], plot_file, title_suffix="")
         return
 
     # Multi-site path - one figure per site
     if plot_file:
         base, ext = os.path.splitext(plot_file)
-        for idx, poe in enumerate(poes):
+        for idx, rate_curve in enumerate(rates):
             per_site_path = f"{base}_site{idx}{ext}"
             if idx < len(site_lons) and idx < len(site_lats):
                 suffix = f"site {idx} (lon={site_lons[idx]:.4f}, lat={site_lats[idx]:.4f})"
             else:
                 suffix = f"site {idx}"
-            _save_single_curve(imls, poe, per_site_path, title_suffix=suffix)
+            _save_single_curve(imls, rate_curve, per_site_path, title_suffix=suffix)
     else:
         # Interactive display: still show each site in its own figure
-        for idx, poe in enumerate(poes):
+        for idx, rate_curve in enumerate(rates):
             if idx < len(site_lons) and idx < len(site_lats):
                 suffix = f"site {idx} (lon={site_lons[idx]:.4f}, lat={site_lats[idx]:.4f})"
             else:
                 suffix = f"site {idx}"
-            _save_single_curve(imls, poe, None, title_suffix=suffix)
+            _save_single_curve(imls, rate_curve, None, title_suffix=suffix)
 
 def save_results_to_json(
     results: Dict[str, Any],
@@ -325,9 +325,9 @@ def save_results_to_json(
     Serialise hazard-curve results to JSON.
 
     For multi-site results, adds a ``sites`` list indexing each curve by its
-    site id (``sid``) with ``(lon, lat)`` metadata. Row ``i`` of ``poes`` /
+    site id (``sid``) with ``(lon, lat)`` metadata. Row ``i`` of ``rates`` /
     ``rate_principal`` / ``rate_distributed`` corresponds to ``sites[i]``.
-    Existing keys (``poes``, ``site_lons``, ``site_lats``, ...) are left
+    Existing keys (``rates``, ``site_lons``, ``site_lats``, ...) are left
     unchanged, so single-site consumers are unaffected.
     """
     # Additive per-site index: does not mutate the caller's dict.
@@ -337,14 +337,14 @@ def save_results_to_json(
         k: v.tolist() if isinstance(v, np.ndarray) else v
         for k, v in results.items()
     }
-    if 'site_lons' in payload and 'site_lats' in payload and 'poes' in payload:
-        poes_arr = np.asarray(payload['poes'])
+    if 'site_lons' in payload and 'site_lats' in payload and 'rates' in payload:
+        rates_arr = np.asarray(payload['rates'])
         site_lons = payload['site_lons']
         site_lats = payload['site_lats']
-        if poes_arr.ndim == 2 and len(site_lons) == poes_arr.shape[0]:
+        if rates_arr.ndim == 2 and len(site_lons) == rates_arr.shape[0]:
             payload['sites'] = [
                 {'sid': i, 'lon': site_lons[i], 'lat': site_lats[i]}
-                for i in range(poes_arr.shape[0])
+                for i in range(rates_arr.shape[0])
             ]
 
     with open(output_file, "w") as f:

@@ -4,6 +4,25 @@ Probability utility functions for Monte Carlo reduction and array normalization.
 
 These functions handle reduction of Monte Carlo samples and standardization
 of probability arrays to consistent shapes for hazard calculations.
+
+Relation to openquake.hazardlib.stats
+-------------------------------------
+This module deliberately does NOT import ``openquake.hazardlib.stats``:
+
+* Different quantile convention: ``stats.quantile_curve`` interpolates the
+  weighted CDF (for equal weights, ``np.interp(q, [1/N, ..., 1], sorted)``,
+  so the 0.5 quantile of ``[1, 2, 3]`` is 1.5), whereas the equal-weight
+  Monte Carlo samples reduced here use ``np.percentile`` order statistics
+  (median of ``[1, 2, 3]`` is 2.0).
+* Different axis convention: hazardlib reduces realization curves over axis
+  0; here the MC dimension is the last axis.
+* Different scope: hazardlib.stats aggregates weighted logic-tree branches
+  and remains the right tool for ACROSS-branch statistics; this module only
+  collapses the WITHIN-model MC sample dimension (project policy: "mean" is
+  the silent default reduction).
+
+``_to_sites_x_displ`` is FDHA-specific shape plumbing with no hazardlib
+equivalent.
 """
 import numpy as np
 from typing import Union, Dict, Any, Optional, Tuple
@@ -40,6 +59,12 @@ def _reduce_mc(
     -------
     float or ndarray
         Reduced probability value(s)
+
+    Notes
+    -----
+    Percentiles follow the ``np.percentile`` order-statistics convention,
+    not hazardlib's ``stats.quantile_curve`` weighted-CDF interpolation
+    (see the module docstring).
     """
     if prob is None:
         return 1.0

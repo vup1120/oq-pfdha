@@ -298,12 +298,12 @@ class TestHazardEndToEnd:
         (src,) = calc.fault_sources.values()
         results = calc.run()
 
-        poes = np.asarray(results['poes'])
-        assert poes.shape == (1, 4)
-        assert np.isfinite(poes).all()
-        assert (poes >= 0.0).all()
+        rates = np.asarray(results['rates'])
+        assert rates.shape == (1, 4)
+        assert np.isfinite(rates).all()
+        assert (rates >= 0.0).all()
         # the on-trace site must accumulate a nonzero principal hazard rate
         assert np.asarray(results['rate_principal']).max() > 0.0
         # rates are bounded by the total annual occurrence rate of the model
         total_rate = sum(-np.log(p[0]) for p in src.probs_occur)
-        assert poes.max() <= total_rate * 1.0001
+        assert rates.max() <= total_rate * 1.0001

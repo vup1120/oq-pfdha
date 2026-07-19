@@ -14,6 +14,7 @@ from typing import Dict, Any, Optional, Tuple, TYPE_CHECKING
 from openquake.fdha.calc.contexts import FDHAContext, FDHAContextMaker
 from openquake.hazardlib.site import SiteCollection
 from openquake.fdha.calc.calculators import BaseFaultRuptureCalculator
+from openquake.fdha.calc.config_loader import get_max_distance_km
 
 logger = logging.getLogger(__name__)
 
@@ -118,8 +119,10 @@ def calculate_fdha_hazard(
     Returns:
         Dictionary of numpy arrays:
         - 'imls': displacement levels (m), shape (n_displ,)
-        - 'poes': ANNUAL EXCEEDANCE RATES (historical key name, not
-          probabilities), shape (n_sites, n_displ)
+        - 'rates': total ANNUAL EXCEEDANCE RATES (principal + distributed),
+          shape (n_sites, n_displ). Rates, not probabilities - matching the
+          engine, which computes rates internally and converts to PoE only
+          at export (poe = 1 - exp(-rate*time), hazardlib.calc.mean_rates)
         - 'rate_principal': principal contribution, shape (n_sites, n_displ)
         - 'rate_distributed': distributed contribution, shape (n_sites, n_displ)
         - 'site_lons', 'site_lats': site coordinates, shape (n_sites,)
@@ -137,13 +140,9 @@ def calculate_fdha_hazard(
     logger.info("Starting FDHA hazard calculation: %d sites, %d displacement "
                 "levels", n_sites, n_displ)
 
-    # Get max_distance from config (check multiple sections)
-    max_dist = 50.0  # default
-    for section in ['calculation', 'parameters', 'erf']:
-        section_cfg = calculator.config.get(section, {})
-        if 'max_distance_km' in section_cfg:
-            max_dist = float(section_cfg['max_distance_km'])
-            break
+    # Rupture integration distance (km): single canonical read, like the
+    # engine's `maximum_distance` parameter (see get_max_distance_km).
+    max_dist = get_max_distance_km(calculator.config, default=50.0)
 
     # Create context maker with caching
     cmaker = FDHAContextMaker(
@@ -266,8 +265,9 @@ def calculate_fdha_hazard(
 
     return {
         'imls': np.asarray(target_displacements, dtype=np.float64),
-        # 'poes' holds ANNUAL EXCEEDANCE RATES; the key name is historical.
-        'poes': rate_principal + rate_distributed,
+        # ANNUAL EXCEEDANCE RATES, engine-style: hazardlib computes rates
+        # internally and converts to PoE only at export (mean_rates.to_probs)
+        'rates': rate_principal + rate_distributed,
         'rate_principal': rate_principal,
         'rate_distributed': rate_distributed,
         'site_lons': np.asarray(cmaker._lons, dtype=np.float64),

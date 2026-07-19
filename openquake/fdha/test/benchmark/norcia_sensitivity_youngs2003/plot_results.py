@@ -20,12 +20,12 @@ def plot_comparison():
     
     # Extract data
     imls = np.array(results['imls'])
-    poes = np.array(results['poes'])
+    rates = np.array(results['rates'])
     
     # Handle both 1D and 2D arrays
-    if poes.ndim == 2:
-        poes = poes[0] if poes.shape[0] == 1 else poes.flatten()
-    poes = poes.flatten()
+    if rates.ndim == 2:
+        rates = rates[0] if rates.shape[0] == 1 else rates.flatten()
+    rates = rates.flatten()
     
     # Reference values from paper (Youngs2003 AD 85)
     ref_Youngs_N = np.array([
@@ -50,16 +50,16 @@ def plot_comparison():
     ])
     
     # Ensure same length
-    min_len = min(len(imls), len(poes), len(ref_Youngs_N))
+    min_len = min(len(imls), len(rates), len(ref_Youngs_N))
     imls_common = imls[:min_len]
-    poes_common = poes[:min_len]
+    rates_common = rates[:min_len]
     ref_common = ref_Youngs_N[:min_len]
     
     # Create figure with two subplots
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7))
     
     # Plot 1: Hazard Curve Comparison
-    ax1.loglog(imls_common, poes_common, 'r--s', linewidth=2, markersize=6, 
+    ax1.loglog(imls_common, rates_common, 'r--s', linewidth=2, markersize=6, 
                label='Current Implementation', alpha=0.8)
     ax1.loglog(imls_common, ref_common, 'g-^', linewidth=2, markersize=6, 
                label='Reference (Paper - Youngs2003 AD 85)', alpha=0.8)
@@ -73,7 +73,7 @@ def plot_comparison():
     ax1.grid(True, which='minor', linestyle='--', alpha=0.2, linewidth=0.5)
     
     # Plot 2: Ratio
-    ratio = poes_common / (ref_common + 1e-20)
+    ratio = rates_common / (ref_common + 1e-20)
     
     ax2.semilogx(imls_common, ratio, 'b-o', linewidth=2, markersize=6, 
                  alpha=0.8, label='Current / Reference')
@@ -87,8 +87,8 @@ def plot_comparison():
     ax2.grid(True, which='minor', linestyle='--', alpha=0.2, linewidth=0.5)
     
     # Calculate statistics
-    abs_diff = np.abs(poes_common - ref_common)
-    rel_diff = np.abs((poes_common - ref_common) / (ref_common + 1e-20)) * 100
+    abs_diff = np.abs(rates_common - ref_common)
+    rel_diff = np.abs((rates_common - ref_common) / (ref_common + 1e-20)) * 100
     
     stats_text = (
         f"Statistics (Current vs Reference):\n"

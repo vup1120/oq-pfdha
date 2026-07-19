@@ -85,15 +85,26 @@ def test_weighted_mean_hand_computed_cube():
         ]
     )  # = [[3.8, 4.8], [5.8, 6.8]]
     assert mean.shape == (2, 2)
-    np.testing.assert_allclose(mean, expected, rtol=0, atol=0)
+    # rtol=1e-12 (not exact): weighted_mean delegates to hazardlib
+    # stats.mean_curve (numpy.average), whose multiply+sum reduction differs
+    # from a hand-computed sum only at ULP level. The weighted mean is a
+    # physical quantity, not a specific summation order.
+    np.testing.assert_allclose(mean, expected, rtol=1e-12)
 
 
-def test_weighted_mean_does_not_normalize_weights():
-    # Contract check: weighted_mean is a plain tensordot; normalisation is
-    # the caller's job (the driver divides by w.sum() before calling).
+def test_weighted_mean_matches_engine_mean_curve():
+    # Coherence contract: weighted_mean IS the engine's weighted mean, so the
+    # aggregate `mean` curve equals what OpenQuake writes for its own `mean`
+    # output. In production the driver normalizes weights to sum to 1 before
+    # calling; mean_curve renormalizes too, so on normalized weights the
+    # result is the plain weighted average.
+    from openquake.hazardlib.stats import mean_curve
+
     rates = np.array([[[2.0]], [[4.0]]])
-    half = weighted_mean(rates, np.array([0.25, 0.25]))
-    np.testing.assert_allclose(half, [[1.5]])  # NOT the normalised 3.0
+    w = np.array([0.5, 0.5])  # already normalized, as the driver supplies
+    got = weighted_mean(rates, w)
+    np.testing.assert_allclose(got, [[3.0]])
+    np.testing.assert_allclose(got, mean_curve(rates, w), rtol=0, atol=0)
 
 
 def test_weighted_mean_branch_axis_mismatch_raises():
