@@ -214,7 +214,7 @@ class FDHAContextMaker:
     - Pre-extraction of site arrays for efficiency
 
     Example:
-        cmaker = FDHAContextMaker(sitecol, fdha_params, max_distance=50.0)
+        cmaker = FDHAContextMaker(sitecol, fdha_params, max_distance=10.0)
 
         for rup in source.iter_ruptures():
             ctx = cmaker.get_ctx(rup)
@@ -239,7 +239,7 @@ class FDHAContextMaker:
         self,
         sitecol,
         fdha_params: Dict[str, Any],
-        maximum_distance: float = 50.0
+        maximum_distance: float = 10.0
     ):
         """
         Initialize context maker.

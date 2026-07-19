@@ -233,9 +233,8 @@ def get_max_distance_km(config: Dict[str, Any], default: float) -> float:
     place to adapt when that lands.
 
     :param config: normalized configuration dict (post ``load_config``)
-    :param default: value (km) when the key is absent; call sites keep
-        their historical defaults (50.0 for curve integration, 10.0 for
-        map-grid site activation)
+    :param default: value (km) when the key is absent; both call sites
+        default to 10.0 (curve integration and map-grid site activation)
     :returns: positive distance in km
     :raises ValueError: if the configured value is not positive
     """

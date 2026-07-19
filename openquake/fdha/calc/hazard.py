@@ -142,7 +142,7 @@ def calculate_fdha_hazard(
 
     # Rupture integration distance (km): single canonical read, like the
     # engine's `maximum_distance` parameter (see get_max_distance_km).
-    max_dist = get_max_distance_km(calculator.config, default=50.0)
+    max_dist = get_max_distance_km(calculator.config, default=10.0)
 
     # Create context maker with caching
     cmaker = FDHAContextMaker(
