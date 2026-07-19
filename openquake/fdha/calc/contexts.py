@@ -225,8 +225,15 @@ class FDHAContextMaker:
             P_sr = adapter.compute_primary_sr(ctx, red_cfg)
     """
 
-    # Default tolerance for surface rupture detection
-    SURFACE_DEPTH_TOLERANCE_KM = 0.5
+    # Default depth tolerance (km) for the surface-rupturing test: a rupture
+    # contributes fault-displacement hazard only if its top edge reaches
+    # within this distance of the surface. This is the SINGLE SOURCE OF TRUTH
+    # for the default - the map path keeps a literal copy in
+    # rupture_distance.py (to avoid a circular import) that a unit test pins
+    # equal to this, and the calculators.py job-parameter fallback reads this
+    # constant directly. Overridable per job via
+    # [calculation].surface_rupture_depth_tolerance_km.
+    SURFACE_DEPTH_TOLERANCE_KM = 0.01
 
     def __init__(
         self,

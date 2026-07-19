@@ -300,9 +300,14 @@ class BaseFaultRuptureCalculator:
                 f"r_sigma_km must be >= 0 (got {self.r_sigma_km})")
 
         # Depth tolerance (km) for the surface-rupturing test: ruptures whose
-        # minimum depth exceeds it contribute no displacement hazard.
+        # minimum depth exceeds it contribute no displacement hazard. The
+        # default is the single source of truth on FDHAContextMaker, so the
+        # curve path, the map path (rupture_distance.py) and this job-parameter
+        # fallback cannot drift apart.
+        from openquake.fdha.calc.contexts import FDHAContextMaker
         self.surface_rupture_depth_tolerance_km = float(self._calc_param(
-            'surface_rupture_depth_tolerance_km', 0.5))
+            'surface_rupture_depth_tolerance_km',
+            FDHAContextMaker.SURFACE_DEPTH_TOLERANCE_KM))
 
         # Reference vs30 (m/s) for sites without their own value. Optional:
         # when absent, vs30-less sites carry NaN and only models that

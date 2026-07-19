@@ -43,7 +43,7 @@ REFERENCE_LINE_METHODS = ("ecs", "lcp", "segments")
 # are excluded from the 'segments' surface-rupture distance (same value as
 # FDHAContextMaker.SURFACE_DEPTH_TOLERANCE_KM; kept literal here to avoid a
 # circular import with contexts.py).
-SURFACE_DEPTH_TOLERANCE_KM = 0.5
+SURFACE_DEPTH_TOLERANCE_KM = 0.01
 
 
 # -------- Multi-section detection --------

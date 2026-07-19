@@ -251,20 +251,28 @@ class TestSiteMetrics:
 
 
 class TestBuriedRuptureGate:
-    """Ruptures whose top edge lies deeper than 0.5 km must be skipped:
-    they cannot produce surface fault displacement. The gate is
-    ``FDHAContextMaker.is_surface_rupturing`` applied per rupture in
-    ``calculate_fdha_hazard`` (curve and map paths alike)."""
+    """Ruptures whose top edge lies deeper than the surface-depth tolerance
+    must be skipped: they cannot produce surface fault displacement. The
+    gate is ``FDHAContextMaker.is_surface_rupturing`` applied per rupture in
+    ``calculate_fdha_hazard`` (curve and map paths alike). The boundary is
+    ``FDHAContextMaker.SURFACE_DEPTH_TOLERANCE_KM`` (a rupture top exactly at
+    the tolerance still counts as surface-rupturing); the tests read the
+    constant rather than a literal so they track any change to it."""
 
-    def test_tolerance_is_half_km(self):
-        assert FDHAContextMaker.SURFACE_DEPTH_TOLERANCE_KM == 0.5
+    def test_tolerance_matches_class_constant(self):
+        # The literal copy in rupture_distance.py (used by the map path) must
+        # stay in sync with this class default (used by the curve path).
+        from openquake.fdha.calc.utils.rupture_distance import (
+            SURFACE_DEPTH_TOLERANCE_KM as MAP_TOL)
+        assert FDHAContextMaker.SURFACE_DEPTH_TOLERANCE_KM == MAP_TOL
 
     def test_buried_complex_ruptures_flagged(self, complex_source):
+        tol = FDHAContextMaker.SURFACE_DEPTH_TOLERANCE_KM
         (src,) = complex_source.values()
         rups = list(src.iter_ruptures())
         tops = [float(np.nanmin(r.surface.mesh.depths)) for r in rups]
-        buried = [r for r, t in zip(rups, tops) if t > 0.5]
-        surface = [r for r, t in zip(rups, tops) if t <= 0.5]
+        buried = [r for r, t in zip(rups, tops) if t > tol]
+        surface = [r for r, t in zip(rups, tops) if t <= tol]
         # the floating-rupture scenario must exercise both sides of the gate
         assert buried, "fixture has no buried ruptures - gate not exercised"
         assert surface, "fixture has no surface ruptures"
@@ -273,13 +281,14 @@ class TestBuriedRuptureGate:
         assert all(cm.is_surface_rupturing(r) for r in surface)
 
     def test_buried_only_source_contributes_zero(self, tmp_path):
-        """With iter_ruptures restricted to top edge > 0.5 km, the hazard
+        """With iter_ruptures restricted to top edge > tolerance, the hazard
         must be exactly zero everywhere: every rupture is skipped before
         any probability model is evaluated."""
+        tol = FDHAContextMaker.SURFACE_DEPTH_TOLERANCE_KM
         calc, src = _make_calc(tmp_path, COMPLEX_SOURCE_XML, "buried")
         all_rups = list(src.iter_ruptures())
         buried = [r for r in all_rups
-                  if float(np.nanmin(r.surface.mesh.depths)) > 0.5]
+                  if float(np.nanmin(r.surface.mesh.depths)) > tol]
         assert buried
         src.iter_ruptures = lambda **kw: iter(buried)
         results = calc.run()
@@ -290,12 +299,13 @@ class TestBuriedRuptureGate:
     def test_surface_only_source_reproduces_full_hazard(self, tmp_path):
         """Dropping the buried ruptures from the source changes nothing:
         the full-source hazard already excludes them."""
+        tol = FDHAContextMaker.SURFACE_DEPTH_TOLERANCE_KM
         calc_full, _ = _make_calc(tmp_path, COMPLEX_SOURCE_XML, "full")
         rates_full = np.asarray(calc_full.run()['rates'])
 
         calc_surf, src = _make_calc(tmp_path, COMPLEX_SOURCE_XML, "surfonly")
         surface = [r for r in src.iter_ruptures()
-                   if float(np.nanmin(r.surface.mesh.depths)) <= 0.5]
+                   if float(np.nanmin(r.surface.mesh.depths)) <= tol]
         src.iter_ruptures = lambda **kw: iter(surface)
         rates_surf = np.asarray(calc_surf.run()['rates'])
 
@@ -381,12 +391,15 @@ class TestHazardEndToEnd:
         assert rates.max() <= total_rate * 1.0001
         # regression anchor: the sigma = 0 path uses the historical
         # COMPLEMENTARY boxcar split (this job sets no r_sigma_km), so the
-        # on-trace site carries the principal component only - the original
-        # pre-additive anchor values (plateau = 11% of the 2.1623e-3/yr GR
-        # total rate, and within 5% of the simpleFaultSource twin - see the
-        # equivalence test below).
+        # on-trace site carries the principal component only. Plateau = 5.5%
+        # of the 2.1623e-3/yr GR total rate: with the 0.01 km surface-depth
+        # tolerance only the floating ruptures whose top edge reaches 0.0 km
+        # contribute, whereas the 0.5 km tolerance also admitted the equally
+        # populous top = 0.5 km ruptures - so this anchor is half its pre-
+        # tolerance-tightening value. Still within 5% of the simpleFault-
+        # Source twin (see the equivalence test below).
         expected = np.array(
-            [2.38460639e-04, 2.38002779e-04, 2.22840039e-04, 8.79603903e-05])
+            [1.19230320e-04, 1.19001389e-04, 1.11420019e-04, 4.39801952e-05])
         np.testing.assert_allclose(rates[0], expected, rtol=1e-6)
 
     def test_complex_matches_simple_twin(self, tmp_path):
