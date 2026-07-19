@@ -145,13 +145,18 @@ class TestCalculatorTraceDistance:
         sc = _make_multi_site_collection(sites)
         calc = VectorizedRuptureDistanceCalculator(sc, surf)
         dists = calc.calculate_site_to_trace_distances()
-        R = 6371.0088
+        # Geodesic truth (hazardlib EARTH_RADIUS). The local frame is
+        # hazardlib's OrthographicProjection, whose planar distance is
+        # R*sin(delta) vs the geodesic R*delta - a relative shortfall of
+        # ~delta^2/6 (2e-4 at the 2 deg / 222 km site here; irrelevant at
+        # FDHA's real near-fault ranges), hence rtol=5e-4.
+        R = 6371.0
         expected = np.array([
             R * np.deg2rad(0.5),
             R * np.deg2rad(1.0),
             R * np.deg2rad(2.0),
         ])
-        assert_allclose(dists, expected, rtol=1e-4)
+        assert_allclose(dists, expected, rtol=5e-4)
 
     def test_scalar_vs_vectorized_distance_consistency(self):
         """Scalar and vectorized distance calculations must agree."""

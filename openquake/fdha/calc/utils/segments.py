@@ -37,7 +37,7 @@ from openquake.hazardlib.geo.multiline import MultiLine
 # local-frame Earth radius shared with rupture_distance (safe to import at
 # module level: rupture_distance only imports this module lazily, inside
 # _build_reference_line)
-from openquake.fdha.calc.utils.rupture_distance import R_KM
+from openquake.fdha.calc.utils.rupture_distance import to_local_projected_km
 
 
 class SegmentsResult:
@@ -94,7 +94,7 @@ class SegmentsResult:
     def r_km(self, lon, lat) -> np.ndarray:
         """Minimum horizontal distance (km) from each site to the nearest
         section top trace. Computed per section (gaps are NOT bridged) in a
-        local equirectangular frame centred on that section."""
+        local projected km frame centred on that section."""
         q_lon = np.array(np.atleast_1d(lon), dtype=float)
         q_lat = np.array(np.atleast_1d(lat), dtype=float)
         best = np.full(len(q_lon), np.inf)
@@ -106,15 +106,15 @@ class SegmentsResult:
 
 def _dist_to_polyline_km(q_lon, q_lat, t_lon, t_lat) -> np.ndarray:
     """Vectorized min distance (km) from sites to one lon/lat polyline,
-    in a local equirectangular frame centred on the polyline."""
+    in the shared local km frame (hazardlib OrthographicProjection, see
+    rupture_distance.to_local_projected_km) centred on the polyline."""
     lon0 = float(t_lon[0])
     lat0 = float(np.mean(t_lat))
-    coslat = np.cos(np.radians(lat0))
 
     def to_xy(lon, lat):
-        dlon = np.radians(np.asarray(lon) - lon0)
-        dlon = np.arctan2(np.sin(dlon), np.cos(dlon))     # IDL-safe
-        return R_KM * dlon * coslat, R_KM * np.radians(np.asarray(lat) - lat0)
+        return to_local_projected_km(
+            np.asarray(lon, dtype=float), np.asarray(lat, dtype=float),
+            lon0=lon0, lat0=lat0)
 
     tx, ty = to_xy(t_lon, t_lat)
     qx, qy = to_xy(q_lon, q_lat)

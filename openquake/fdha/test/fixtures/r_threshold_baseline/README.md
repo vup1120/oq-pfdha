@@ -113,6 +113,31 @@ surgical before re-freezing:
   `manifest.json` is unchanged. `curve_explicit/` is unaffected: its single
   evaluation site is off the principal band.
 
+**`curve_explicit/` and `map_default/` regenerated in full on 2026-07-19**
+after the local distance frame moved to hazardlib's own
+``geo.utils.OrthographicProjection`` (spherical earth ``EARTH_RADIUS`` =
+6371.0), replacing the hand-rolled equirectangular frame with
+``R_KM = 6371.0088`` in ``rupture_distance``/``segments`` (hazardlib
+coherence directive). Every FDHA distance (r, signed r, x/L) shifts by up
+to ~0.1% at 10-20 km ranges (metres-level), so all rates move at the
+1e-6..1e-3 relative level. All 61 benchmark comparisons against published
+model/paper values pass unchanged; only self-referential pins (these
+fixtures, the regression goldens, the IAEA sensitivity snapshots) were
+re-frozen. Determinism re-verified (each job run twice, text outputs
+byte-compared) before freezing.
+
+**`map_default/` regenerated in full on 2026-07-19 (second freeze that day)**
+after principal-zone trace resampling switched to hazardlib's own
+``geo.line.Line.resample(step, orig_extremes=True)`` (replacing the
+equal-division resampler). Endpoints are still retained; sections are now
+exactly the grid step except a leftover stub at the trace end. Sensitivity
+measured before adoption (Norcia map): the distributed *grid* map is
+bit-identical, principal-band displacement statistics shift <= 0.1%. For
+the minimal map example the trace-site count changed by one (site axis
+1631 -> 1630), so the six displacement-map CSVs and ``rates_baseline.npz``
+were re-frozen. ``curve_explicit/`` (single off-trace site) is unaffected.
+Determinism re-verified (job run twice, text outputs byte-compared).
+
 ## Comparison contract
 
 - CSV outputs are deterministic text -> compared **byte-exact**.

@@ -61,10 +61,13 @@ def test_project_point_horizontal_line_endpoints():
     r1 = _ratio(1.0, 0.0, trace)
     assert math.isfinite(r1)
     assert abs(r1 - 1.0) <= 1e-10
-    # Middle
+    # Middle. The orthographic x is R*cos(lat)*sin(dlon), so the lon
+    # midpoint of a 1-deg-long trace maps to x/L = sin(d/2)/sin(d) =
+    # 0.5/cos(d/2), ~1.9e-5 above 0.5 - projection nonlinearity, not an
+    # algorithm error (endpoints above stay exact).
     rm = _ratio(0.5, 0.0, trace)
     assert math.isfinite(rm)
-    assert abs(rm - 0.5) <= 1e-10
+    assert abs(rm - 0.5) <= 5e-5
 
 
 def test_project_point_near_end_robust_to_eps():
