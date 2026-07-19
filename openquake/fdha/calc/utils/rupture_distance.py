@@ -4,36 +4,33 @@
 Relation to openquake.hazardlib
 -------------------------------
 Shared with hazardlib: multi-section GC2 (``geo.multiline.MultiLine``, via
-:mod:`openquake.fdha.calc.utils.segments`) and the ``EARTH_RADIUS`` used by
-:func:`resample_polyline`. The remaining overlaps with the hazardlib
-surface-distance stack are deliberate divergences, load-bearing for FDHA:
+:mod:`openquake.fdha.calc.utils.segments`), trace resampling
+(:func:`resample_polyline` = ``geo.line.Line.resample`` with
+``orig_extremes=True``, plus ``geo.geodetic.geodetic_distance`` for the
+degenerate-trace guard), the ``SiteCollection.lons``/``lats`` arrays for
+site coordinates, and the local km frame itself:
+:func:`to_local_projected_km` delegates to
+``geo.utils.OrthographicProjection`` (hence hazardlib's ``EARTH_RADIUS`` =
+6371.0), centred at this module's historical frame origin (first trace
+vertex longitude, mean latitude of the trace vertices). The remaining overlaps with the
+hazardlib surface-distance stack are deliberate divergences, load-bearing
+for FDHA:
 
 * ``r`` is the horizontal distance to the *original NRML trace* retained at
   parse time, not ``Rjb``/``Rrup``/``Rx`` measured on the resampled surface
   mesh: it keeps r/x/L independent of ``rupture_mesh_spacing`` (mesh top
   edges corner-cut wiggly traces by up to hundreds of meters).
-* Distances use a local equirectangular km frame
-  (:func:`to_local_equirectangular_km`), not
-  ``geo.utils.OrthographicProjection``; the frame is part of the frozen
-  numerical baseline.
 * The signed distance follows the ``Rx`` sign convention but is the clipped
   distance to the trace polyline, not the GC2 ``T`` of
   ``BaseSurface.get_rx_distance`` (T is measured against the extended,
   mesh-derived top edge).
-* :func:`resample_polyline` always keeps the trace endpoints, unlike
-  ``geo.line.Line.resample`` which walks fixed geodesic steps.
-* ``R_KM`` = 6371.0088 (IUGG mean radius), not ``geo.geodetic.EARTH_RADIUS``
-  = 6371.0; aligning it would shift every frozen fixture.
 """
 import numpy as np
 from typing import Tuple, Optional, Any
 from openquake.hazardlib.site import SiteCollection
-from openquake.hazardlib.geo.geodetic import EARTH_RADIUS
-
-# Earth radius (km) of the local equirectangular frame; also used by
-# segments.py. Deliberately NOT hazardlib's EARTH_RADIUS = 6371.0 (see
-# module docstring).
-R_KM = 6371.0088
+from openquake.hazardlib.geo.geodetic import geodetic_distance
+from openquake.hazardlib.geo.line import Line
+from openquake.hazardlib.geo.utils import OrthographicProjection
 
 
 # Valid reference-line treatments for multi-section ruptures. Which one a
@@ -46,7 +43,7 @@ REFERENCE_LINE_METHODS = ("ecs", "lcp", "segments")
 # are excluded from the 'segments' surface-rupture distance (same value as
 # FDHAContextMaker.SURFACE_DEPTH_TOLERANCE_KM; kept literal here to avoid a
 # circular import with contexts.py).
-SURFACE_DEPTH_TOLERANCE_KM = 0.5
+SURFACE_DEPTH_TOLERANCE_KM = 0.01
 
 
 # -------- Multi-section detection --------
@@ -169,15 +166,7 @@ def _extract_fault_trace_from_mesh(surface: Any) -> np.ndarray:
         ys = lats[i, :]
 
     coords = np.column_stack([xs, ys])
-
-    # remove consecutive exact duplicates (bitwise-identical mesh nodes only;
-    # do NOT use np.allclose here - its default rtol=1e-5 collapses fine-mesh
-    # traces where adjacent nodes differ by < rtol*|lon|, e.g. 0.02 km spacing
-    # at lon ~120° produces node differences of ~2e-4° < 1e-5*120 = 1.2e-3°.
-    # hazardlib geo.utils.clean_points is NOT usable for the same job: its
-    # ndarray branch raises "truth value ... is ambiguous" on the very
-    # duplicates it should drop, and its Point branch compares with a
-    # tolerance (Point(1e-6, 1e-6) == Point(0, 0)), i.e. the allclose trap)
+    
     if len(coords) >= 2:
         keep = [0]
         for k in range(1, len(coords)):
@@ -229,7 +218,14 @@ def trace_polyline_for_source(src: Any, surface: Any) -> Optional[np.ndarray]:
 
 
 def resample_polyline(coords: np.ndarray, step_km: float) -> np.ndarray:
-    """Resample a polyline to ~uniform ``step_km`` spacing along its length.
+    """Resample a polyline to ~``step_km`` spacing along its length, via
+    hazardlib's own :meth:`openquake.hazardlib.geo.line.Line.resample` with
+    ``orig_extremes=True``: both endpoints are retained (they are the
+    rupture extent), sections are ``step_km`` long except the last, which
+    is the leftover down to the retained end vertex. That leftover stub can
+    place one near-duplicate site at the trace tip; measured on the Norcia
+    map it changes no grid value (bit-identical) and shifts the
+    principal-band displacement statistics by <= 0.1%.
 
     Matches ``step_km`` in both directions: a natively dense trace is
     decimated, a sparse one is refined.
@@ -241,25 +237,18 @@ def resample_polyline(coords: np.ndarray, step_km: float) -> np.ndarray:
     site grid - a ~36x cost with no added information). Sampling at the grid
     step keeps the principal band consistent with the distributed grid.
 
-    Endpoints are always retained, so the rupture extent is preserved.
     ``coords`` is an (N, 2) [lon, lat] array.
     """
     coords = np.asarray(coords, dtype=float)
     if len(coords) < 2 or step_km <= 0:
         return coords
-    R = EARTH_RADIUS  # hazardlib's 6371.0, matching engine resampling
-    lo, la = np.radians(coords[:, 0]), np.radians(coords[:, 1])
-    h = (np.sin(np.diff(la) / 2) ** 2
-         + np.cos(la[:-1]) * np.cos(la[1:]) * np.sin(np.diff(lo) / 2) ** 2)
-    seg = 2 * R * np.arcsin(np.sqrt(h))
-    s = np.concatenate([[0.0], np.cumsum(seg)])
-    total = float(s[-1])
-    if total <= 0:  # degenerate (all vertices coincident)
+    seg = geodetic_distance(coords[1:, 0], coords[1:, 1],
+                            coords[:-1, 0], coords[:-1, 1])
+    if float(np.sum(seg)) <= 0:  # degenerate (all vertices coincident)
         return coords[:1]
-    n = max(int(np.ceil(total / step_km)), 1)
-    targets = np.linspace(0.0, total, n + 1)
-    return np.column_stack([np.interp(targets, s, coords[:, 0]),
-                            np.interp(targets, s, coords[:, 1])])
+    res = Line.from_vectors(coords[:, 0], coords[:, 1]).resample(
+        float(step_km), orig_extremes=True)
+    return np.asarray(res.coo, dtype=float)[:, :2]
 
 
 # ----------------------------- Polyline distance helpers (xy plane) -------------------------
@@ -338,47 +327,44 @@ def _min_distance_point_to_polyline_xy(pxy: np.ndarray, poly_xy: np.ndarray) -> 
 def _horizontal_distance_to_trace_km(site_lonlat: np.ndarray, trace_lonlat: np.ndarray) -> float:
     """Horizontal distance (km) from a single site to a trace polyline.
 
-    Uses the same local equirectangular projection as
+    Uses the same local projected km frame (hazardlib OrthographicProjection) as
     ``project_point_onto_trace_km``.
     """
     tr = np.asarray(trace_lonlat, dtype=float)
     if tr.shape[0] < 2:
         return 0.0
-    tr_lons = unwrap_longitudes(tr[:, 0])
+    tr_lons = tr[:, 0]
     tr_lats = tr[:, 1]
     lon0 = float(tr_lons[0])
     lat0 = float(np.mean(tr_lats))
-    tx, ty = to_local_equirectangular_km(tr_lons, tr_lats, lon0=lon0, lat0=lat0)
+    tx, ty = to_local_projected_km(tr_lons, tr_lats, lon0=lon0, lat0=lat0)
     txy = np.column_stack([tx, ty])
-    sx, sy = to_local_equirectangular_km(site_lonlat[0], site_lonlat[1], lon0=lon0, lat0=lat0)
+    sx, sy = to_local_projected_km(site_lonlat[0], site_lonlat[1], lon0=lon0, lat0=lat0)
     return _min_distance_point_to_polyline_xy(np.array([float(sx), float(sy)]), txy)
 
 
-# ----------------------------- Base calculators (point sites) -----------------------------
+# ----------------------------- The calculator -----------------------------
 class RuptureDistanceCalculator:
     """
-    Distance utilities for a single-site SiteCollection (first site used).
+    FDHA site-to-trace distance calculator: arrays in, arrays out.
 
-    Multi-site safety
-    -----------------
-    The scalar methods ``calculate_site_to_trace_distance`` and
-    ``calculate_x_l_ratio`` operate on the first site only (via
-    ``_first_site_lonlat``). They are SAFE for multi-site jobs because the
-    main calculation path never calls them: ``FDHAContextMaker`` always routes
-    through ``VectorizedRuptureDistanceCalculator`` (see
-    ``FDHAContextMaker._get_distance_calculator``), which provides the
-    ``*_distances`` / ``*_ratios`` plural methods that return per-site arrays.
-    This base class is retained only as the shared projection/trace-extraction
-    foundation for the vectorized subclass.
+    ONE class for any number of sites, mirroring hazardlib's own surface
+    distance API (``BaseSurface.get_min_distance`` / ``get_rx_distance``
+    take a mesh of N sites and return length-N arrays; a single site is
+    simply N = 1). The former scalar first-site-only base class was folded
+    in; the module-level helpers ``project_point_onto_trace_km`` and
+    ``_horizontal_distance_to_trace_km`` remain as N = 1 conveniences over
+    the same vectorized core.
 
     Notes
     -----
-    - All along-trace distances and total lengths are computed in kilometers
-      using a local equirectangular projection centered at the mean trace
-      latitude. This avoids degree/km mixing and ensures consistent units.
-    - Crossing the International Date Line (±180°) is handled via longitude
-      unwrapping/wrapping in the projection step.
-    - Returns a tuple (x_over_L, L_km) where x_over_L ∈ [0,1] and L_km ≥ 0.
+    - All distances and lengths are in kilometers, computed in the shared
+      local projected frame (hazardlib ``OrthographicProjection``, see
+      :func:`to_local_projected_km`); IDL crossing is handled by the
+      projection's sin/cos formulation.
+    - Multi-section ruptures route through the reference line built for
+      ``reference_line_method`` ('ecs' | 'lcp' | 'segments'); single-strand
+      surfaces use the trace directly and ignore the method.
     """
     def __init__(self, sitecol, rup_surface, reference_line_method: str = "ecs"):
         if reference_line_method not in REFERENCE_LINE_METHODS:
@@ -429,67 +415,58 @@ class RuptureDistanceCalculator:
                     self.trace_is_original = True
             if not self.trace_is_original:
                 self.trace_points = _extract_fault_trace_from_mesh(self.rup_surface)
+        # Site coordinates as arrays, engine-style: a real SiteCollection
+        # exposes them directly (bit-identical to iterating Site.location,
+        # without building one Point per site per rupture); duck-typed site
+        # lists (unit tests) fall back to iteration.
+        lons = getattr(sitecol, 'lons', None)
+        lats = getattr(sitecol, 'lats', None)
+        if lons is None or lats is None:
+            locs = [site.location for site in sitecol]
+            lons = [p.longitude for p in locs]
+            lats = [p.latitude for p in locs]
+        self.site_lons = np.asarray(lons, dtype=float)
+        self.site_lats = np.asarray(lats, dtype=float)
+        # Shared-work memo. The three public methods all need the same
+        # projected frame, and r / x_L consume the very same polyline
+        # projection; computing them once per calculator is the FDHA
+        # analogue of the engine computing all REQUIRES_DISTANCES in a
+        # single sweep per rupture (hazardlib ContextMaker). Instances are
+        # already cached per surface by FDHAContextMaker._dist_cache, so
+        # the memo lives exactly as long as the geometry it belongs to.
+        self._frame = None    # (txy, sxy) in the local km frame
+        self._proj = {}       # skip_zero_length -> (dist, iseg, tpar, cross)
+        self._memo = {}       # reference-line results
 
-    def calculate_site_to_trace_distance(self) -> float:
-        """Return r (km) = horizontal distance from site to surface trace polyline.
+    def _projected(self):
+        """Trace and sites projected ONCE into the shared local frame."""
+        if self._frame is None:
+            tr = np.asarray(self.trace_points, dtype=float)
+            lon0 = float(tr[0, 0])
+            lat0 = float(np.mean(tr[:, 1]))
+            tx, ty = to_local_projected_km(tr[:, 0], tr[:, 1],
+                                           lon0=lon0, lat0=lat0)
+            sx, sy = to_local_projected_km(self.site_lons, self.site_lats,
+                                           lon0=lon0, lat0=lat0)
+            self._frame = (np.column_stack([tx, ty]),
+                           np.column_stack([sx, sy]))
+        return self._frame
 
-        .. deprecated::
-            This scalar (first-site-only) method is NOT used by the production
-            hazard pipeline - ``FDHAContextMaker`` always uses
-            ``VectorizedRuptureDistanceCalculator.calculate_site_to_trace_distances``
-            (plural, per-site array).  This method is retained for unit tests
-            only; new code must use the vectorized calculator.
-
-        Unlike OQ ``get_min_distance`` (Rrup to the 3-D mesh), this computes
-        the shortest distance in a local equirectangular km frame from the
-        site to the 2-D fault trace extracted from the mesh top edge.  This
-        decouples the result from ``rupture_mesh_spacing`` and avoids the
-        massive ``cdist`` allocation that ``get_min_distance`` requires for
-        fine meshes on long faults.
-        """
-        site_lonlat = np.array(_first_site_lonlat(self.sitecol), dtype=float)
-        return _horizontal_distance_to_trace_km(site_lonlat, self.trace_points)
-
-    def calculate_x_l_ratio(self) -> Tuple[float, float]:
-        """
-        Project the site onto the trace and return (x_over_L, L_km).
-
-        .. deprecated::
-            This scalar (first-site-only) method is NOT used by the production
-            hazard pipeline - ``FDHAContextMaker`` always uses
-            ``VectorizedRuptureDistanceCalculator.calculate_x_l_ratios``
-            (plural, per-site array).  This method is retained for unit tests
-            only; new code must use the vectorized calculator.
-
-        Distances are computed in kilometers using a local equirectangular
-        projection centered at the mean trace latitude. Robust to IDL crossing.
-        """
-        # Robustly extract first site's lon/lat from SiteCollection
-        site_lonlat = np.array(_first_site_lonlat(self.sitecol), dtype=float)
-        x_km, L_km = project_point_onto_trace_km(site_lonlat, self.trace_points)
-        x_over_L = 0.0 if L_km <= 0.0 else float(np.clip(x_km / L_km, 0.0, 1.0))
-        return x_over_L, L_km
-
-
-class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
-    """
-    Vectorized variant for multiple sites in a SiteCollection.
-    """
-    def __init__(
-        self,
-        sitecol: SiteCollection,
-        rup_surface: Any,
-        reference_line_method: str = "ecs"
-    ) -> None:
-        super().__init__(sitecol, rup_surface,
-                         reference_line_method=reference_line_method)
-        self.sites = [site.location for site in sitecol]
+    def _core(self, skip_zero_length: bool = False):
+        """The O(n_sites x n_segments) polyline projection, once per
+        zero-length-segment policy (False: r and x/L; True: signed r)."""
+        key = bool(skip_zero_length)
+        if key not in self._proj:
+            txy, sxy = self._projected()
+            self._proj[key] = _project_sites_onto_polyline_xy(
+                sxy, txy, skip_zero_length=key)
+        return self._proj[key]
 
     def calculate_site_to_trace_distances(self) -> np.ndarray:
         """Return r (km) = horizontal distance to surface trace for all sites.
 
-        Uses a local equirectangular projection (same frame as
-        ``calculate_x_l_ratios``) instead of OQ ``get_min_distance`` (Rrup),
+        Computed in the shared local km frame (hazardlib
+        OrthographicProjection) instead of OQ ``get_min_distance`` (Rrup),
         avoiding the O(n_mesh_nodes × n_sites) ``cdist`` allocation.
 
         'segments' reference line: r is the distance to the nearest actual
@@ -499,29 +476,19 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
         ecs/lcp lines keep the single-polyline projection below.
         """
         if self._refline is not None and hasattr(self._refline, "r_km"):
-            lons = np.array([s.longitude for s in self.sites], dtype=float)
-            lats = np.array([s.latitude for s in self.sites], dtype=float)
-            return np.asarray(self._refline.r_km(lons, lats), dtype=float)
+            if 'refline_r' not in self._memo:
+                self._memo['refline_r'] = np.asarray(
+                    self._refline.r_km(self.site_lons, self.site_lats),
+                    dtype=float)
+            return self._memo['refline_r'].copy()
 
         tr = np.asarray(self.trace_points, dtype=float)
         if tr.shape[0] < 2:
-            return np.zeros(len(self.sites))
+            return np.zeros(self.site_lons.size)
 
-        # Set up projection frame (same as calculate_x_l_ratios)
-        tr_lons = unwrap_longitudes(tr[:, 0])
-        tr_lats = tr[:, 1]
-        lon0 = float(tr_lons[0])
-        lat0 = float(np.mean(tr_lats))
-        tx, ty = to_local_equirectangular_km(tr_lons, tr_lats, lon0=lon0, lat0=lat0)
-        txy = np.column_stack([tx, ty])
-
-        sx, sy = to_local_equirectangular_km(
-            np.array([s.longitude for s in self.sites], dtype=float),
-            np.array([s.latitude for s in self.sites], dtype=float),
-            lon0=lon0, lat0=lat0)
-        dists, _iseg, _tpar, _cross = _project_sites_onto_polyline_xy(
-            np.column_stack([sx, sy]), txy)
-        return dists
+        dists, _iseg, _tpar, _cross = self._core()
+        # copy: the cached array must survive callers mutating the result
+        return dists.copy()
 
     def calculate_signed_site_to_trace_distances(self) -> np.ndarray:
         """Return the signed trace distance (km) for all sites: |value| is the
@@ -537,23 +504,11 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
         on ``rupture_mesh_spacing``.
         """
         tr = np.asarray(self.trace_points, dtype=float)
-        n = len(self.sites)
+        n = self.site_lons.size
         if tr.shape[0] < 2:
             return np.zeros(n)
 
-        tr_lons = unwrap_longitudes(tr[:, 0])
-        tr_lats = tr[:, 1]
-        lon0 = float(tr_lons[0])
-        lat0 = float(np.mean(tr_lats))
-        tx, ty = to_local_equirectangular_km(tr_lons, tr_lats, lon0=lon0, lat0=lat0)
-        txy = np.column_stack([tx, ty])
-
-        sx, sy = to_local_equirectangular_km(
-            np.array([s.longitude for s in self.sites], dtype=float),
-            np.array([s.latitude for s in self.sites], dtype=float),
-            lon0=lon0, lat0=lat0)
-        dist, _iseg, _tpar, cross = _project_sites_onto_polyline_xy(
-            np.column_stack([sx, sy]), txy, skip_zero_length=True)
+        dist, _iseg, _tpar, cross = self._core(skip_zero_length=True)
         # right of walking direction (cross < 0) -> hanging wall -> +
         # dist is inf when every segment is zero-length: no orientation -> 0
         return np.where(np.isfinite(dist),
@@ -564,8 +519,12 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
         Return (x_over_L for each site, L_km) using orthogonal projection
         onto the polyline with distances in kilometers.
 
-        Uses a local equirectangular projection centered at the mean trace
-        latitude; robust to IDL crossing.
+        The FULL vertex-by-vertex trace polyline is used - nothing about
+        the trace is averaged or simplified. The local km frame (hazardlib
+        OrthographicProjection) is merely ANCHORED at (first trace vertex
+        longitude, mean latitude of the trace vertices); the anchor only
+        fixes where the projection's tiny distortion is zero, it does not
+        alter the geometry.
 
         Multi-section ruptures route through the reference line built for
         this calculator's method (ECS/LCP GC2 along the representative
@@ -573,9 +532,10 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
         single-strand uses the orthogonal-projection path below.
         """
         if self._refline is not None:
-            lons = np.array([s.longitude for s in self.sites], dtype=float)
-            lats = np.array([s.latitude for s in self.sites], dtype=float)
-            xl, L_m = self._refline.x_l(lons, lats)
+            if 'refline_xl' not in self._memo:
+                self._memo['refline_xl'] = self._refline.x_l(
+                    self.site_lons, self.site_lats)
+            xl, L_m = self._memo['refline_xl']
             xl_arr = np.asarray(xl, dtype=float)
             # Defense-in-depth: EcsResult/LcpResult/SegmentsResult.x_l() each
             # already clip internally, but ``self._refline`` is a duck-typed
@@ -599,25 +559,14 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
 
         tr = np.asarray(self.trace_points, dtype=float)
         if tr.shape[0] < 2:
-            return np.zeros(len(self.sites)), 0.0
+            return np.zeros(self.site_lons.size), 0.0
 
-        # Projection frame based on trace
-        tr_lons = unwrap_longitudes(tr[:, 0])
-        tr_lats = tr[:, 1]
-        lon0 = float(tr_lons[0])
-        lat0 = float(np.mean(tr_lats))
-        tx, ty = to_local_equirectangular_km(tr_lons, tr_lats, lon0=lon0, lat0=lat0)
-        txy = np.column_stack([tx, ty])
+        txy, _sxy = self._projected()
         segs = txy[1:] - txy[:-1]
         seg_lens = np.linalg.norm(segs, axis=1)
         L_km = float(np.sum(seg_lens))
 
-        sx, sy = to_local_equirectangular_km(
-            np.array([s.longitude for s in self.sites], dtype=float),
-            np.array([s.latitude for s in self.sites], dtype=float),
-            lon0=lon0, lat0=lat0)
-        _dist, iseg, tpar, _cross = _project_sites_onto_polyline_xy(
-            np.column_stack([sx, sy]), txy)
+        _dist, iseg, tpar, _cross = self._core()
         cumul = np.concatenate([[0.0], np.cumsum(seg_lens)])
         x_proj_km = cumul[iseg] + tpar * seg_lens[iseg]
         # clamp so x_best doesn't exceed total length due to floating point
@@ -648,84 +597,45 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
 
 
 
-# ----------------------------- New unified km-based helpers -----------------------------
-def _first_site_lonlat(sitecol) -> Tuple[float, float]:
-    """Extract (lon, lat) for the first site from a SiteCollection or compatible iterable.
+# Back-compat alias: the vectorized calculator IS the calculator now (one
+# class, arrays in/out, like hazardlib surface distances). Existing call
+# sites and tests may keep using the long name.
+VectorizedRuptureDistanceCalculator = RuptureDistanceCalculator
 
-    .. deprecated::
-        First-site-only helper used solely by the deprecated scalar methods of
-        ``RuptureDistanceCalculator``.  The production hazard pipeline never
-        calls this - it uses the per-site arrays from
-        ``VectorizedRuptureDistanceCalculator``.
+
+def to_local_projected_km(lon, lat, lon0: float, lat0: float):
     """
-    try:
-        site0 = sitecol[0]
-        # hazardlib Site has .location with .longitude/.latitude
-        if hasattr(site0, "location"):
-            return float(site0.location.longitude), float(site0.location.latitude)
-        # Fallback: tuple-like or record
-        if hasattr(site0, "longitude") and hasattr(site0, "latitude"):
-            return float(site0.longitude), float(site0.latitude)
-    except Exception:
-        pass
-    # As a last resort, try to coerce
-    site0 = list(sitecol)[0]
-    return float(site0.location.longitude), float(site0.location.latitude)
-def unwrap_longitudes(lons: np.ndarray) -> np.ndarray:
-    """
-    Unwrap longitudes to avoid jumps greater than 180°, robust to IDL crossings.
+    Project geographic coordinates to a local Cartesian frame in km via
+    hazardlib's own :class:`~openquake.hazardlib.geo.utils
+    .OrthographicProjection` (the projection the engine uses for its
+    surface-distance geometry, spherical earth of ``EARTH_RADIUS``).
 
-    Parameters
-    ----------
-    lons : np.ndarray
-        Array of longitudes in degrees.
-
-    Returns
-    -------
-    np.ndarray
-        Unwrapped longitudes in degrees with minimized jumps between
-        consecutive points.
-    """
-    lons = np.asarray(lons, dtype=float)
-    if lons.size == 0:
-        return lons
-    r = np.deg2rad(lons)
-    r_unw = np.unwrap(r, discont=np.deg2rad(180.0))
-    return np.rad2deg(r_unw)
-
-
-def to_local_equirectangular_km(lon, lat, lon0: float, lat0: float):
-    """
-    Project geographic coordinates to a local equirectangular frame in km.
+    The projection is centred exactly at ``(lon0, lat0)`` - typically the
+    first trace vertex longitude, mean latitude of the trace vertices - preserving
+    this module's historical frame-centre convention while delegating the
+    spherical math to the engine. IDL crossing is handled by the
+    projection's own sin/cos formulation.
 
     Parameters
     ----------
     lon, lat : array-like or float
         Longitudes and latitudes in degrees.
     lon0, lat0 : float
-        Projection center in degrees. Typically lon0 is the first trace vertex
-        and lat0 is the mean trace latitude.
+        Projection center in degrees.
 
     Returns
     -------
     (x_km, y_km) : tuple[np.ndarray, np.ndarray] or (float, float)
         Coordinates in kilometers in the local frame.
     """
-    lon = np.asarray(lon, dtype=float)
-    lat = np.asarray(lat, dtype=float)
-    lon0 = float(lon0)
-    lat0 = float(lat0)
-
-    lon_rad = np.deg2rad(lon)
-    lat_rad = np.deg2rad(lat)
-    lon0_rad = np.deg2rad(lon0)
-    lat0_rad = np.deg2rad(lat0)
-
-    # Wrap delta-lon to [-pi, pi] to handle IDL crossing consistently
-    dlon = lon_rad - lon0_rad
-    dlon = np.arctan2(np.sin(dlon), np.cos(dlon))
-    x_km = R_KM * dlon * np.cos(lat0_rad)
-    y_km = R_KM * (lat_rad - lat0_rad)
+    proj = OrthographicProjection(
+        float(lon0), float(lon0), float(lat0), float(lat0))
+    lon = np.asarray(lon, dtype=np.float64)
+    lat = np.asarray(lat, dtype=np.float64)
+    if lon.ndim == 0:
+        x_km, y_km = proj(float(lon), float(lat))
+    else:
+        x_km, y_km = proj(lon, lat)
     return x_km, y_km
 
 
@@ -733,8 +643,12 @@ def project_point_onto_trace_km(site_lonlat: np.ndarray, trace_lonlat: np.ndarra
     """
     Project a point onto a polyline; return (x_km, L_km), both in kilometers.
 
-    Uses a local equirectangular projection centered at the mean trace
-    latitude and first-trace-vertex longitude. Robust to IDL crossing.
+    The FULL vertex-by-vertex trace polyline is used - nothing about the
+    trace is averaged or simplified. The local km frame (hazardlib
+    OrthographicProjection) is merely ANCHORED at (first trace vertex
+    longitude, mean latitude of the trace vertices); the anchor only fixes
+    where the projection's tiny distortion is zero, it does not alter the
+    geometry.
 
     Returns (0.0, 0.0) if the trace has fewer than 2 points.
     """
@@ -742,13 +656,13 @@ def project_point_onto_trace_km(site_lonlat: np.ndarray, trace_lonlat: np.ndarra
     if tr.shape[0] < 2:
         return 0.0, 0.0
 
-    tr_lons = unwrap_longitudes(tr[:, 0])
+    tr_lons = tr[:, 0]
     tr_lats = tr[:, 1]
     lon0 = float(tr_lons[0])
     lat0 = float(np.mean(tr_lats))
 
     # Trace to local km
-    tx, ty = to_local_equirectangular_km(tr_lons, tr_lats, lon0=lon0, lat0=lat0)
+    tx, ty = to_local_projected_km(tr_lons, tr_lats, lon0=lon0, lat0=lat0)
     txy = np.column_stack([tx, ty])
     segs = txy[1:] - txy[:-1]
     seg_lens = np.linalg.norm(segs, axis=1)
@@ -757,7 +671,7 @@ def project_point_onto_trace_km(site_lonlat: np.ndarray, trace_lonlat: np.ndarra
         return 0.0, 0.0
 
     # Site to local km
-    sx, sy = to_local_equirectangular_km(site_lonlat[0], site_lonlat[1], lon0=lon0, lat0=lat0)
+    sx, sy = to_local_projected_km(site_lonlat[0], site_lonlat[1], lon0=lon0, lat0=lat0)
     pxy = np.array([[float(sx), float(sy)]])
 
     # Project (no clamp to L_km here: the callers clip x/L themselves)

@@ -5,6 +5,19 @@ Regression Test Suite for PFDHA Calculators - JSON Output Comparison (v5)
 This module compares COMPLETE JSON output files, not just single arrays.
 This provides more comprehensive validation and human-readable golden files.
 
+What the golden files ARE (and are not):
+- They are SELF-REFERENTIAL snapshots of THIS code's own output, frozen by
+  running with GENERATE_GOLDEN=1. Their job is to catch ACCIDENTAL drift:
+  "does the code still produce the same numbers it did last time?"
+- They are NOT reference values from the model authors. Author/paper
+  benchmarks live in the benchmark/ suites and are compared within
+  published-tolerance bands - do not confuse the two.
+- When you INTENTIONALLY change the numerics (e.g. a more accurate distance
+  frame), the code's output legitimately shifts, so you re-freeze these
+  goldens with GENERATE_GOLDEN=1 and review the diff. Re-freezing after a
+  deliberate change is the designed workflow, not a violation - the guard
+  here is against UNINTENDED changes.
+
 Advantages of JSON comparison:
 - Complete output validation (all keys, not just poes)
 - Human-readable golden files (can be inspected in any editor)

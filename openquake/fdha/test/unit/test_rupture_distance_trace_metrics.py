@@ -4,11 +4,11 @@ Unit tests: Horizontal trace distance (r) and consistency with x/L.
 
 Verifies that ``calculate_site_to_trace_distance(s)`` returns the
 horizontal distance from the site to the surface trace polyline (km),
-computed via the local equirectangular projection - NOT the OQ
+computed in the local projected km frame (hazardlib OrthographicProjection) - NOT the OQ
 ``get_min_distance`` (Rrup) which depends on the 3-D mesh density.
 
 All expected values are hand-calculable from simple plane geometry
-(equirectangular projection at small scales) or from known great-circle
+(planar geometry at small scales) or from known great-circle
 distances.
 """
 
@@ -104,7 +104,7 @@ class TestHorizontalDistanceToTraceKm:
         trace = np.array([[0.0, 0.0], [2.0, 0.0]])
         site = np.array([1.0, 1.0])  # 1 deg N of midpoint
         d = _horizontal_distance_to_trace_km(site, trace)
-        # equirectangular: dy = R * dlat_rad
+        # small-angle: dy ~ R * dlat_rad
         expected_km = 6371.0088 * np.deg2rad(1.0)
         assert_allclose(d, expected_km, rtol=1e-4)
 
@@ -122,7 +122,7 @@ class TestHorizontalDistanceToTraceKm:
 
 
 # ---------------------------------------------------------------------------
-# High-level: Calculator classes (scalar & vectorized)
+# High-level: the calculator class (one class, arrays in/out; N = 1 is a case)
 # ---------------------------------------------------------------------------
 class TestCalculatorTraceDistance:
     """Ensure calculator classes return horizontal trace distance, not Rrup."""
@@ -133,8 +133,8 @@ class TestCalculatorTraceDistance:
         surf = _make_dummy_surface_from_trace(trace)
         sc = _make_site_collection(1.0, 1.0)
         calc = RuptureDistanceCalculator(sc, surf)
-        d = calc.calculate_site_to_trace_distance()
-        expected_km = 6371.0088 * np.deg2rad(1.0)
+        d = calc.calculate_site_to_trace_distances()[0]
+        expected_km = 6371.0 * np.deg2rad(1.0)
         assert_allclose(d, expected_km, rtol=1e-4)
 
     def test_vectorized_perpendicular_distances(self):
@@ -145,13 +145,18 @@ class TestCalculatorTraceDistance:
         sc = _make_multi_site_collection(sites)
         calc = VectorizedRuptureDistanceCalculator(sc, surf)
         dists = calc.calculate_site_to_trace_distances()
-        R = 6371.0088
+        # Geodesic truth (hazardlib EARTH_RADIUS). The local frame is
+        # hazardlib's OrthographicProjection, whose planar distance is
+        # R*sin(delta) vs the geodesic R*delta - a relative shortfall of
+        # ~delta^2/6 (2e-4 at the 2 deg / 222 km site here; irrelevant at
+        # FDHA's real near-fault ranges), hence rtol=5e-4.
+        R = 6371.0
         expected = np.array([
             R * np.deg2rad(0.5),
             R * np.deg2rad(1.0),
             R * np.deg2rad(2.0),
         ])
-        assert_allclose(dists, expected, rtol=1e-4)
+        assert_allclose(dists, expected, rtol=5e-4)
 
     def test_scalar_vs_vectorized_distance_consistency(self):
         """Scalar and vectorized distance calculations must agree."""
@@ -165,7 +170,7 @@ class TestCalculatorTraceDistance:
         for i, (lon, lat) in enumerate(sites_ll):
             sc = _make_site_collection(lon, lat)
             scalc = RuptureDistanceCalculator(sc, surf)
-            assert_allclose(scalc.calculate_site_to_trace_distance(), vec_dists[i], rtol=1e-9)
+            assert_allclose(scalc.calculate_site_to_trace_distances()[0], vec_dists[i], rtol=1e-9)
 
 
 # ---------------------------------------------------------------------------
@@ -180,8 +185,9 @@ class TestDistanceXLConsistency:
         surf = _make_dummy_surface_from_trace(trace)
         sc = _make_site_collection(1.0, 0.0)
         calc = RuptureDistanceCalculator(sc, surf)
-        d = calc.calculate_site_to_trace_distance()
-        xL, L = calc.calculate_x_l_ratio()
+        d = calc.calculate_site_to_trace_distances()[0]
+        xLs, L = calc.calculate_x_l_ratios()
+        xL = xLs[0]
         assert_allclose(d, 0.0, atol=1e-6)
         assert_allclose(xL, 0.5, rtol=1e-3)
 
@@ -217,8 +223,8 @@ class TestDistanceXLConsistency:
 
         sc = _make_site_collection(1.0, 1.0)
         calc = RuptureDistanceCalculator(sc, PoisonSurf())
-        d = calc.calculate_site_to_trace_distance()
-        expected = 6371.0088 * np.deg2rad(1.0)
+        d = calc.calculate_site_to_trace_distances()[0]
+        expected = 6371.0 * np.deg2rad(1.0)
         assert_allclose(d, expected, rtol=1e-4)
 
 
@@ -243,12 +249,12 @@ class TestWithSimpleFaultSurface:
         )
 
         site_lonlat = np.array([0.5, 0.5])  # 0.5 deg N of trace midpoint
-        expected_km = 6371.0088 * np.deg2rad(0.5)
+        expected_km = 6371.0 * np.deg2rad(0.5)
 
-        # Single-site
+        # Single-site (N = 1 through the same array API)
         sc1 = _make_site_collection(0.5, 0.5)
         calc1 = RuptureDistanceCalculator(sc1, surface)
-        d1 = calc1.calculate_site_to_trace_distance()
+        d1 = calc1.calculate_site_to_trace_distances()[0]
         assert_allclose(d1, expected_km, rtol=5e-3)
 
         # Vectorized (same site + one on trace)

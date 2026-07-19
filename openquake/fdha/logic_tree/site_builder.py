@@ -19,10 +19,11 @@ import numpy as np
 
 from openquake.fdha.calc.utils.parsing import parse_source_model_faults
 from openquake.fdha.calc.utils.rupture_distance import (
-    VectorizedRuptureDistanceCalculator,
+    RuptureDistanceCalculator,
     resample_polyline,
     trace_polyline_for_source,
 )
+from openquake.hazardlib import valid
 from openquake.hazardlib.geo import Point
 from openquake.hazardlib.geo.surface.simple_fault import SimpleFaultSurface
 from openquake.hazardlib.site import Site, SiteCollection
@@ -83,9 +84,9 @@ def build_hazard_map_sites(
     width_of_mfd_bin: float = 0.1,
     fault_sources: Optional[dict] = None,
 ) -> HazardMapSites:
-    corner_coords = np.array([
-        list(map(float, p.strip().split())) for p in region.split(",")
-    ])
+    # Same engine-validator parse as calc.hazard_map.compute_hazard_map:
+    # the two map front-ends must read `region` identically.
+    corner_coords = np.array(valid.coordinates(region))[:, :2]
     lon_vals, lat_vals = corner_coords[:, 0], corner_coords[:, 1]
     lons = np.arange(lon_vals.min(), lon_vals.max() + spacing, spacing)
     lats = np.arange(lat_vals.min(), lat_vals.max() + spacing, spacing)
@@ -120,7 +121,7 @@ def build_hazard_map_sites(
     sitecol_grid = SiteCollection(grid_sites)
     for src_id, surface in surface_cache.items():
         try:
-            dcalc = VectorizedRuptureDistanceCalculator(sitecol_grid, surface)
+            dcalc = RuptureDistanceCalculator(sitecol_grid, surface)
             dist_arrays.append(dcalc.calculate_site_to_trace_distances())
         except Exception as exc:  # pragma: no cover - defensive
             logger.warning("distance fail for %s: %s", src_id, exc)

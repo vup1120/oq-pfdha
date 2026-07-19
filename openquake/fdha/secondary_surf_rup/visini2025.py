@@ -42,6 +42,7 @@ per-site evaluation is vectorized.
 """
 
 import zlib
+from bisect import bisect_right
 
 import numpy as np
 from functools import lru_cache
@@ -202,6 +203,7 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
 
         # Precompute PDF tables for each (mechanism, hw_fw) pair
         self._pdf_tables = {}
+        self._draw_tables = {}
         self._precompute_pdf_tables()
 
     def _precompute_pdf_tables(self):
@@ -217,6 +219,16 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
                 pdf = pdf / np.sum(pdf)
 
                 self._pdf_tables[(mechanism, hw_fw)] = (x, pdf, t1i, t2i)
+                # Fast-draw table: numpy Generator.choice(x, p=pdf) draws ONE
+                # uniform and inverts the CDF built as cumsum(p)/cumsum(p)[-1]
+                # with searchsorted(side='right'). Precomputing that exact CDF
+                # once (choice rebuilds it - and re-validates dtypes - on
+                # EVERY draw) and inverting with bisect keeps the random
+                # stream bit-identical while removing ~90% of the MC cost.
+                cdf = pdf.cumsum()
+                cdf = cdf / cdf[-1]
+                self._draw_tables[(mechanism, hw_fw)] = (
+                    x.tolist(), cdf.tolist(), len(x) - 1)
 
     def get_prob(self, mag, r, rx, style=None, pixel_size=None,
                  combination="A"):
@@ -439,9 +451,11 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
         # Get lognormal parameters for segment length sampling
         logn_mu, logn_sigma = self._logn_params[mechanism_lower][hanging_wall_or_footwall]
 
-        # For truncated sampling, get precomputed PDF table
+        # For truncated sampling, get the precomputed fast-draw table
+        # (exact CDF that Generator.choice would rebuild on every draw)
         if segment_sampling == "truncated":
-            x_vals, pdf_vals, t1i, t2i = self._pdf_tables[(mechanism_lower, hanging_wall_or_footwall)]
+            x_list, cdf_list, i_max = self._draw_tables[
+                (mechanism_lower, hanging_wall_or_footwall)]
 
         # Local RNG (no global np.random.seed() pollution), seeded
         # deterministically from the physical inputs: identical parameters
@@ -467,8 +481,12 @@ class Visini2025SecondarySR(BaseSecondarySurfRup):
             total = 0.0
             while total < total_DR_length and len(segments) < 1000:
                 if segment_sampling == "truncated":
-                    # MATLAB-style: truncated lognormal with 16th-84th percentile bounds
-                    seg_len = float(rng.choice(x_vals, p=pdf_vals))
+                    # MATLAB-style: truncated lognormal with 16th-84th
+                    # percentile bounds. Bit-identical fast path for
+                    # rng.choice(x, p=pdf): same single uniform, same
+                    # CDF-inversion index, precomputed table.
+                    seg_len = x_list[
+                        min(bisect_right(cdf_list, rng.random()), i_max)]
                 else:
                     # Legacy: raw lognormal clipped to [10, fault_length]
                     seg_len = float(rng.lognormal(logn_mu, logn_sigma))

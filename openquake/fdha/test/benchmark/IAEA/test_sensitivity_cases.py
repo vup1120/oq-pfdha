@@ -7,7 +7,11 @@ these jobs are validated by
 1. structural checks - positive curve head, non-increasing hazard curve;
 2. regression snapshots (``reference_snapshots/``, rtol 1e-4) - update
    with ``python run_sensitivity.py --update-snapshots`` after an
-   intentional model change and review the diff;
+   intentional model change and review the diff. Despite the directory
+   name, these are SELF-REFERENTIAL snapshots of this code's OWN output
+   (a guard against accidental drift), NOT reference values from the
+   model authors - re-freezing them after a deliberate numerical change
+   is the intended workflow;
 3. physical-consistency relations across jobs:
    - Norcia sens2 (r = 2.4 km) carries more hazard than the base-case
      distributed site (r = 7.6 km) for the same source and chain;

@@ -17,7 +17,7 @@ from typing import List, Optional
 import numpy as np
 from openquake.hazardlib.site import SiteCollection
 from openquake.fdha.calc.utils.rupture_distance import (
-    VectorizedRuptureDistanceCalculator,
+    RuptureDistanceCalculator,
 )
 
 
@@ -72,7 +72,7 @@ class SiteFaultClassifier:
 
         # If ANY rank 1.5 surface is within the threshold of ANY site point => case2
         for surf in self.rank1p5_surfaces:
-            calc = VectorizedRuptureDistanceCalculator(self.sitecol, surf)
+            calc = RuptureDistanceCalculator(self.sitecol, surf)
             d_km = calc.calculate_site_to_trace_distances()  # np.ndarray[km]
             if np.any(np.asarray(d_km) <= near_thresh_km):
                 return "case2"

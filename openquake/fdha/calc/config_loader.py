@@ -218,8 +218,19 @@ def get_max_distance_km(config: Dict[str, Any], default: float) -> float:
     section read - mirroring the engine's single validated
     ``maximum_distance`` parameter (``hazardlib.calc.filters
     .IntegrationDistance``, read once in ``contexts.py``) instead of
-    scanning several sections. Phase-2 engine integration replaces this
-    with ``IntegrationDistance`` proper (per-TRT magnitude-distance pairs).
+    scanning several sections.
+
+    We do not use ``IntegrationDistance`` itself here, on purpose: it is a
+    per-TRT dict of (mag, dist) pairs whose consumer is the engine's
+    ``SourceFilter``, filtering on rrup/rjb over source geometries. The
+    FDHA cutoff is one scalar applied to the trace distance ``r`` computed
+    by :class:`~openquake.fdha.calc.contexts.FDHAContextMaker`, a metric
+    hazardlib does not provide, and no displacement-model benchmark covers
+    magnitude-dependent truncation - adopting the class would accept its
+    ``[(mag, dist), ...]`` grammar without being able to validate it.
+    Phase-2 engine integration gets ``maximum_distance`` from ``OqParam``
+    as an ``IntegrationDistance`` already; this function is the single
+    place to adapt when that lands.
 
     :param config: normalized configuration dict (post ``load_config``)
     :param default: value (km) when the key is absent; call sites keep
