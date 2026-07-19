@@ -7,6 +7,7 @@ import logging
 from typing import Optional, Literal
 
 _HazardMapRateComponent = Literal["total", "principal", "distributed"]
+from openquake.hazardlib import valid
 from openquake.hazardlib.geo import Point
 from openquake.hazardlib.site import Site, SiteCollection
 from openquake.hazardlib.geo.surface.simple_fault import SimpleFaultSurface
@@ -40,11 +41,11 @@ def compute_hazard_map(
     if return_period is None:
         return_period = float(calc.get('return_period', para.get('return_period', 100000)))
 
-    # Create grid of points
-    corner_coords = np.array([
-        list(map(float, p.strip().split()))
-        for p in geom['region'].split(',')
-    ])
+    # Create grid of points. The corner list uses the engine's job.ini
+    # grammar for `region`, so parse it with the engine's validator too:
+    # lon/lat range checks, duplicate-corner rejection and the engine's
+    # 5-digit (~1 m) coordinate rounding, instead of a bare float() split.
+    corner_coords = np.array(valid.coordinates(geom['region']))[:, :2]
     lon_vals, lat_vals = corner_coords[:, 0], corner_coords[:, 1]
     lons = np.arange(lon_vals.min(), lon_vals.max() + spacing, spacing)
     lats = np.arange(lat_vals.min(), lat_vals.max() + spacing, spacing)

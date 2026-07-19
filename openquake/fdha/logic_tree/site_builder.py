@@ -23,6 +23,7 @@ from openquake.fdha.calc.utils.rupture_distance import (
     resample_polyline,
     trace_polyline_for_source,
 )
+from openquake.hazardlib import valid
 from openquake.hazardlib.geo import Point
 from openquake.hazardlib.geo.surface.simple_fault import SimpleFaultSurface
 from openquake.hazardlib.site import Site, SiteCollection
@@ -83,9 +84,9 @@ def build_hazard_map_sites(
     width_of_mfd_bin: float = 0.1,
     fault_sources: Optional[dict] = None,
 ) -> HazardMapSites:
-    corner_coords = np.array([
-        list(map(float, p.strip().split())) for p in region.split(",")
-    ])
+    # Same engine-validator parse as calc.hazard_map.compute_hazard_map:
+    # the two map front-ends must read `region` identically.
+    corner_coords = np.array(valid.coordinates(region))[:, :2]
     lon_vals, lat_vals = corner_coords[:, 0], corner_coords[:, 1]
     lons = np.arange(lon_vals.min(), lon_vals.max() + spacing, spacing)
     lats = np.arange(lat_vals.min(), lat_vals.max() + spacing, spacing)
