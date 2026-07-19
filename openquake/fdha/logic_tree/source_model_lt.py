@@ -376,39 +376,3 @@ def expand_branch_paths(branch: SourceModelBranch) -> list[str]:
     if "," in branch.source_model_file:
         return [p for p in branch.source_model_file.split(",") if p]
     return [branch.source_model_file]
-
-
-# ----------------------------------------------------- OpenQuake-style API
-
-
-def prepare_source_model_realizations(
-    config: dict[str, Any],
-    config_dir: Union[str, Path],
-) -> list[SourceModelBranch]:
-    """OpenQuake-style entry point: return one source-model realisation per
-    enumerated path, regardless of whether a logic tree is configured.
-
-    Mirrors :func:`openquake.hazardlib.get_smlt`/
-    :meth:`SourceModelLogicTree.trivial`: when only ``source_model_file`` is
-    set we return a single trivial realisation (ordinal 0, weight 1.0); when
-    ``source_model_logic_tree_file`` is set we delegate parsing to OpenQuake
-    and return one ``SourceModelBranch`` per realisation, each with its
-    branch path, ordinal, and weight.
-
-    The returned objects are accepted by :func:`apply_realization_to_sources`
-    and by both the hazard-curve and hazard-map driver paths, so callers can
-    write a single ``for sm_real in prepare_source_model_realizations(...)``
-    loop and have map mode honour SMLT exactly the way curve mode does.
-    """
-    branches = load_source_model_branches(config, config_dir)
-    return [
-        SourceModelBranch(
-            branch_id=b.branch_id,
-            source_model_file=b.source_model_file,
-            weight=b.weight,
-            metadata=b.metadata,
-            uncertainties=b.uncertainties,
-            ordinal=i,
-        )
-        for i, b in enumerate(branches)
-    ]

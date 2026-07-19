@@ -12,14 +12,13 @@ import pytest
 pytestmark = pytest.mark.unit
 from openquake.fdha.calc.config_loader import (
     load_config,
-    load_fdha_config,
     ConfigurationError,
     ConfigValidationError
 )
 
 
 class TestLegacyTomlConfiguration:
-    """TOML and the legacy helper are explicit hard stops."""
+    """TOML is an explicit hard stop."""
 
     def test_load_config_rejects_toml(self, tmp_path):
         toml_file = tmp_path / "config.toml"
@@ -27,13 +26,6 @@ class TestLegacyTomlConfiguration:
 
         with pytest.raises(ConfigurationError, match="TOML configuration files are no longer supported"):
             load_config(toml_file)
-
-    def test_load_fdha_config_rejects_legacy_entrypoint(self, tmp_path):
-        toml_file = tmp_path / "config.toml"
-        toml_file.write_text("[calculation]\n")
-
-        with pytest.raises(ConfigurationError, match="TOML configuration files are no longer supported"):
-            load_fdha_config(toml_file)
 
 
 def _write_ini(tmp_path, geometry_body):

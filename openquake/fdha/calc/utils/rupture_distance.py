@@ -199,38 +199,11 @@ def trace_polyline_for_source(src: Any, surface: Any) -> Optional[np.ndarray]:
     return None
 
 
-def densify_polyline(coords: np.ndarray, max_step_km: float) -> np.ndarray:
-    """Insert intermediate vertices so no segment exceeds ``max_step_km``.
-
-    ``coords`` is an (N, 2) [lon, lat] array. Every original vertex is kept
-    (so the fault geometry is preserved) and evenly spaced points are added
-    along any segment longer than ``max_step_km``; the result is therefore
-    never coarser than the input. Linear interpolation in lon/lat is accurate
-    at the sub-kilometre steps used for trace sampling.
-    """
-    coords = np.asarray(coords, dtype=float)
-    if len(coords) < 2 or max_step_km <= 0:
-        return coords
-    R = 6371.0
-    out = [coords[0]]
-    for a, b in zip(coords[:-1], coords[1:]):
-        lo1, la1, lo2, la2 = np.radians([a[0], a[1], b[0], b[1]])
-        h = (np.sin((la2 - la1) / 2) ** 2
-             + np.cos(la1) * np.cos(la2) * np.sin((lo2 - lo1) / 2) ** 2)
-        seg_km = 2 * R * np.arcsin(np.sqrt(h))
-        n = int(np.ceil(seg_km / max_step_km)) if seg_km > 0 else 1
-        for k in range(1, n):
-            out.append(a + (k / n) * (b - a))
-        out.append(b)
-    return np.asarray(out, dtype=float)
-
-
 def resample_polyline(coords: np.ndarray, step_km: float) -> np.ndarray:
     """Resample a polyline to ~uniform ``step_km`` spacing along its length.
 
-    Unlike :func:`densify_polyline`, which only *inserts* vertices and so can
-    never coarsen its input, this matches ``step_km`` in both directions:
-    a natively dense trace is decimated, a sparse one is refined.
+    Matches ``step_km`` in both directions: a natively dense trace is
+    decimated, a sparse one is refined.
 
     Principal-zone map sites need this. A NRML trace is often digitised at
     sub-kilometre vertex spacing; placing one principal site per native vertex
@@ -632,36 +605,6 @@ class VectorizedRuptureDistanceCalculator(RuptureDistanceCalculator):
 
 
 
-def project_point_onto_trace_deg(site: np.ndarray, trace: np.ndarray) -> tuple:
-    """
-    DEGREE-SPACE: for internal debug only; do not use in production calculators.
-
-    Project a point onto a polyline; return (x, L) measured in degrees.
-    The ratio x/L is dimensionless. This ignores Earth curvature and should
-    not be used for production hazard calculations.
-    """
-    x_best = 0.0
-    d_min = float("inf")
-    L = 0.0
-    cumul = 0.0
-    for i in range(len(trace) - 1):
-        p1 = trace[i]
-        p2 = trace[i + 1]
-        seg = p2 - p1
-        seg_len = np.linalg.norm(seg)
-        L += seg_len
-        if seg_len == 0:
-            continue
-        t = np.clip(np.dot(site - p1, seg) / (seg_len ** 2), 0.0, 1.0)
-        closest = p1 + t * seg
-        d = np.linalg.norm(site - closest)
-        if d < d_min:
-            d_min = d
-            x_best = cumul + t * seg_len
-        cumul += seg_len
-    return x_best, L
-
-
 # ----------------------------- New unified km-based helpers -----------------------------
 def _first_site_lonlat(sitecol) -> Tuple[float, float]:
     """Extract (lon, lat) for the first site from a SiteCollection or compatible iterable.
@@ -799,49 +742,3 @@ def project_point_onto_trace_km(site_lonlat: np.ndarray, trace_lonlat: np.ndarra
         cumul += float(np.sqrt(seg_len2))
 
     return x_best, L_km
-
-
-#def trace_total_length(trace: np.ndarray) -> float:
-#    return float(sum(np.linalg.norm(trace[i + 1] - trace[i]) for i in range(len(trace) - 1)))
-
-def trace_total_length(trace: np.ndarray) -> float:
-    """
-    Compute the total length of a fault surface trace in kilometers.
-
-    Parameters
-    ----------
-    trace : np.ndarray, shape (N, 2) or (N, >=2)
-        Each row is [lon, lat] in degrees. Any extra columns (e.g., depth) are ignored.
-
-    Returns
-    -------
-    float
-        Total length in kilometers.
-    """
-    pts = np.asarray(trace, dtype=float)
-    if pts.ndim != 2 or pts.shape[0] < 2:
-        return 0.0
-
-    # Use only lon/lat columns
-    lon = np.deg2rad(pts[:, 0])
-    lat = np.deg2rad(pts[:, 1])
-
-    dlon = np.diff(lon)
-    dlat = np.diff(lat)
-
-    # Haversine great-circle distance for each segment (in radians)
-    a = np.sin(dlat / 2.0) ** 2 + np.cos(lat[:-1]) * np.cos(lat[1:]) * np.sin(dlon / 2.0) ** 2
-    a = np.clip(a, 0.0, 1.0)  # guard against floating-point drift
-    c = 2.0 * np.arctan2(np.sqrt(a), np.sqrt(1.0 - a))
-
-    R_KM = 6371.0088  # mean Earth radius in km
-    segment_km = R_KM * c
-
-    return float(np.sum(segment_km))
-
-
-def cumulative_length_upto_segment_deg(trace: np.ndarray, seg_index: int) -> float:
-    """Cumulative length from the start up to (but not including) segment 'seg_index'."""
-    if seg_index <= 0:
-        return 0.0
-    return float(sum(np.linalg.norm(trace[i + 1] - trace[i]) for i in range(seg_index)))

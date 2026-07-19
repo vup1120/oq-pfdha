@@ -605,11 +605,3 @@ def resolve_output_mean(config: Dict[str, Any]) -> bool:
     """Return whether the weighted-mean curve should be emitted (default True)."""
     out = config.get('output') or {}
     return bool(out.get('mean', True))
-
-
-def load_fdha_config(config_file: Union[str, Path]) -> None:
-    """Legacy TOML configuration entry point kept only as an explicit hard stop."""
-    raise ConfigurationError(
-        "TOML configuration files are no longer supported. "
-        "Use `load_config()` with a v5 canonical INI job instead."
-    )

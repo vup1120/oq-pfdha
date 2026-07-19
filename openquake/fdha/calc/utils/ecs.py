@@ -198,14 +198,6 @@ def gc2ext_ut(query_lon, query_lat, ecs_lon, ecs_lat, utm: "_Utm",
 # =============================================================================
 # Data assembly + weighting -- ports CalcEventCoordinateSystem.R L120-198
 # =============================================================================
-@dataclass
-class EcsData:
-    """Weighted ECS input points (after replication). Columns: Longitude, Latitude, wt."""
-    df: pd.DataFrame
-    n_disp_pt: int
-    n_rup_pt: int
-
-
 def _normalise_lonlat(df: pd.DataFrame) -> pd.DataFrame:
     return df.rename(columns={k: v for k, v in _LONLAT.items() if k in df.columns})
 
