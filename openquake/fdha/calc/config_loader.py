@@ -208,6 +208,32 @@ def validate_public_logic_tree_ini_file(config_path: Path, config: Dict[str, Any
         )
 
 
+def get_max_distance_km(config: Dict[str, Any], default: float) -> float:
+    """
+    Single reader for the site/rupture cutoff distance (km).
+
+    The canonical location is ``[geometry].max_distance_km``; the
+    normalization step 3b of :func:`_normalize_ini_config` copies the
+    OpenQuake-style ``[calculation]`` spelling there, so this is the only
+    section read - mirroring the engine's single validated
+    ``maximum_distance`` parameter (``hazardlib.calc.filters
+    .IntegrationDistance``, read once in ``contexts.py``) instead of
+    scanning several sections. Phase-2 engine integration replaces this
+    with ``IntegrationDistance`` proper (per-TRT magnitude-distance pairs).
+
+    :param config: normalized configuration dict (post ``load_config``)
+    :param default: value (km) when the key is absent; call sites keep
+        their historical defaults (50.0 for curve integration, 10.0 for
+        map-grid site activation)
+    :returns: positive distance in km
+    :raises ValueError: if the configured value is not positive
+    """
+    value = float(config.get('geometry', {}).get('max_distance_km', default))
+    if value <= 0.0:
+        raise ValueError(f"max_distance_km must be positive, got {value}")
+    return value
+
+
 def _normalize_ini_config(config: Dict[str, Any], config_path: Path) -> None:
     """
     Normalize INI configuration to match TOML expected format.

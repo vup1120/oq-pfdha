@@ -283,7 +283,7 @@ class TestBuriedRuptureGate:
         assert buried
         src.iter_ruptures = lambda **kw: iter(buried)
         results = calc.run()
-        assert np.asarray(results['poes']).max() == 0.0
+        assert np.asarray(results['rates']).max() == 0.0
         assert np.asarray(results['rate_principal']).max() == 0.0
         assert np.asarray(results['rate_distributed']).max() == 0.0
 
@@ -291,15 +291,15 @@ class TestBuriedRuptureGate:
         """Dropping the buried ruptures from the source changes nothing:
         the full-source hazard already excludes them."""
         calc_full, _ = _make_calc(tmp_path, COMPLEX_SOURCE_XML, "full")
-        poes_full = np.asarray(calc_full.run()['poes'])
+        rates_full = np.asarray(calc_full.run()['rates'])
 
         calc_surf, src = _make_calc(tmp_path, COMPLEX_SOURCE_XML, "surfonly")
         surface = [r for r in src.iter_ruptures()
                    if float(np.nanmin(r.surface.mesh.depths)) <= 0.5]
         src.iter_ruptures = lambda **kw: iter(surface)
-        poes_surf = np.asarray(calc_surf.run()['poes'])
+        rates_surf = np.asarray(calc_surf.run()['rates'])
 
-        np.testing.assert_array_equal(poes_full, poes_surf)
+        np.testing.assert_array_equal(rates_full, rates_surf)
 
 
 INI_TEMPLATE = (
@@ -373,12 +373,12 @@ class TestHazardEndToEnd:
             tmp_path, COMPLEX_SOURCE_XML, "complex",
             rupture_mesh_spacing=1.0, complex_fault_mesh_spacing=1.0,
             width_of_mfd_bin=0.1)
-        poes = np.asarray(results['poes'])
-        assert poes.shape == (1, 4)
-        assert np.isfinite(poes).all() and (poes >= 0.0).all()
+        rates = np.asarray(results['rates'])
+        assert rates.shape == (1, 4)
+        assert np.isfinite(rates).all() and (rates >= 0.0).all()
         assert np.asarray(results['rate_principal']).max() > 0.0
         total_rate = 10 ** (4.0 - 1.0 * 6.5) - 10 ** (4.0 - 1.0 * 7.0)
-        assert poes.max() <= total_rate * 1.0001
+        assert rates.max() <= total_rate * 1.0001
         # regression anchor: the sigma = 0 path uses the historical
         # COMPLEMENTARY boxcar split (this job sets no r_sigma_km), so the
         # on-trace site carries the principal component only - the original
@@ -387,7 +387,7 @@ class TestHazardEndToEnd:
         # equivalence test below).
         expected = np.array(
             [2.38460639e-04, 2.38002779e-04, 2.22840039e-04, 8.79603903e-05])
-        np.testing.assert_allclose(poes[0], expected, rtol=1e-6)
+        np.testing.assert_allclose(rates[0], expected, rtol=1e-6)
 
     def test_complex_matches_simple_twin(self, tmp_path):
         """The complexFaultSource written as top/bottom edges of the exact
@@ -400,10 +400,10 @@ class TestHazardEndToEnd:
         res_s = _run_calc(
             tmp_path, SIMPLE_TWIN_XML, "simple",
             rupture_mesh_spacing=1.0, width_of_mfd_bin=0.1)
-        poes_c = np.asarray(res_c['poes'])[0]
-        poes_s = np.asarray(res_s['poes'])[0]
-        assert (poes_s > 0.0).all()
-        np.testing.assert_allclose(poes_c, poes_s, rtol=0.05)
+        rates_c = np.asarray(res_c['rates'])[0]
+        rates_s = np.asarray(res_s['rates'])[0]
+        assert (rates_s > 0.0).all()
+        np.testing.assert_allclose(rates_c, rates_s, rtol=0.05)
 
     def test_hazard_curve_characteristic_complex(self, tmp_path):
         """Single characteristic rupture at 1e-3/yr: the on-trace plateau is
@@ -414,11 +414,11 @@ class TestHazardEndToEnd:
             tmp_path, CHAR_COMPLEX_XML, "charcomplex",
             rupture_mesh_spacing=1.0, complex_fault_mesh_spacing=1.0,
             width_of_mfd_bin=0.1)
-        poes = np.asarray(results['poes'])
-        assert poes.shape == (1, 4)
+        rates = np.asarray(results['rates'])
+        assert rates.shape == (1, 4)
         assert np.asarray(results['rate_principal']).max() > 0.0
         # Youngs2003 normal-style P(SR|M7) gate
         from openquake.fdha.primary_surf_rup import Youngs2003PrimarySR
         p_sr = float(Youngs2003PrimarySR().get_prob(7.0, style="normal"))
-        assert poes.max() <= 0.001 * p_sr * 1.0001
-        assert poes.max() > 0.5 * 0.001 * p_sr
+        assert rates.max() <= 0.001 * p_sr * 1.0001
+        assert rates.max() > 0.5 * 0.001 * p_sr

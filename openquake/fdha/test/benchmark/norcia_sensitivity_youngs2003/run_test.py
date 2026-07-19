@@ -42,7 +42,7 @@ def main():
     with open(results_path, 'w') as f:
         json.dump({
             'imls': np.asarray(results['imls']).tolist(),
-            'poes': np.asarray(results['poes']).tolist()
+            'rates': np.asarray(results['rates']).tolist()
         }, f, indent=2)
     
     print(f"\nResults saved to: {results_path}")

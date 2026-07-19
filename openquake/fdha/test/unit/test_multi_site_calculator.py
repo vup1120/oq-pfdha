@@ -172,36 +172,36 @@ class TestMultiSiteHazardCurve:
         each site.
 
         Site 0 and site 1 are each calculated alone end-to-end, then together
-        in one multi-site job. Row ``i`` of the multi-site ``poes`` must match
+        in one multi-site job. Row ``i`` of the multi-site ``rates`` must match
         the standalone run of site ``i`` to floating-point tolerance - adding
         more sites to a job must not perturb any site's numerics.
         """
         # Standalone single-site runs
         _, result_0 = _run_curve(tmp_path / "s0", _SITE_0)
         _, result_1 = _run_curve(tmp_path / "s1", _SITE_1)
-        poes_0 = np.asarray(result_0["poes"])
-        poes_1 = np.asarray(result_1["poes"])
+        rates_0 = np.asarray(result_0["rates"])
+        rates_1 = np.asarray(result_1["rates"])
 
         # Combined multi-site run
         calc_multi, result_multi = _run_curve(
             tmp_path / "multi", f"{_SITE_0}, {_SITE_1}"
         )
-        poes_multi = np.asarray(result_multi["poes"])
+        rates_multi = np.asarray(result_multi["rates"])
 
-        assert poes_0.shape == (1, 6)
-        assert poes_1.shape == (1, 6)
-        assert poes_multi.shape == (2, 6)
+        assert rates_0.shape == (1, 6)
+        assert rates_1.shape == (1, 6)
+        assert rates_multi.shape == (2, 6)
         assert len(calc_multi.sitecol) == 2
 
         # Per-site numerics must be identical whether run alone or together
-        assert_allclose(poes_multi[0], poes_0[0], rtol=1e-10, atol=1e-14)
-        assert_allclose(poes_multi[1], poes_1[0], rtol=1e-10, atol=1e-14)
+        assert_allclose(rates_multi[0], rates_0[0], rtol=1e-10, atol=1e-14)
+        assert_allclose(rates_multi[1], rates_1[0], rtol=1e-10, atol=1e-14)
 
         # Sanity: the near-fault site produced a non-trivial curve
-        assert np.any(poes_multi[0] > 0.0), "near-fault site curve is all zero"
+        assert np.any(rates_multi[0] > 0.0), "near-fault site curve is all zero"
 
     def test_multi_site_result_metadata(self, tmp_path):
-        """Multi-site result carries per-site coordinates aligned with poes rows."""
+        """Multi-site result carries per-site coordinates aligned with rates rows."""
         _, result = _run_curve(tmp_path, f"{_SITE_0}, {_SITE_1}")
 
         assert result["n_sites"] == 2
