@@ -34,8 +34,10 @@ import numpy as np
 from openquake.hazardlib.geo.line import Line
 from openquake.hazardlib.geo.multiline import MultiLine
 
-# same local-frame Earth radius as rupture_distance.to_local_equirectangular_km
-R_KM = 6371.0088
+# local-frame Earth radius shared with rupture_distance (safe to import at
+# module level: rupture_distance only imports this module lazily, inside
+# _build_reference_line)
+from openquake.fdha.calc.utils.rupture_distance import R_KM
 
 
 class SegmentsResult:
