@@ -22,7 +22,6 @@ model of Takao et al. (2013) in :class:`Takao2013PrimaryFD`.
 """
 
 import numpy as np
-from scipy.integrate import quad
 from scipy.stats import gamma, norm, beta
 from openquake.fdha.params import check_choice, check_style
 from openquake.fdha.primary_surf_displ.base import BasePrimarySurfDispl
