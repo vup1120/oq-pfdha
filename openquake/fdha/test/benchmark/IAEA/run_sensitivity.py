@@ -19,7 +19,6 @@ import os
 import sys
 from pathlib import Path
 
-os.environ.setdefault("NUMBA_DISABLE_JIT", "1")
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
 
 import numpy as np
@@ -93,4 +92,10 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    # NUMBA_DISABLE_JIT only in the __main__ block: this module is imported
+    # by test_sensitivity_cases.py, and flipping the flag at import time
+    # inside a pytest process with partially-compiled numba state breaks
+    # hazardlib's jitted GC2 ("'function' object has no attribute
+    # 'get_call_template'"). Same convention as moss_ross_2011.
+    os.environ.setdefault("NUMBA_DISABLE_JIT", "1")
     raise SystemExit(main())

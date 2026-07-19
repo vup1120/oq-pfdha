@@ -24,7 +24,6 @@ import os
 import sys
 from pathlib import Path
 
-os.environ.setdefault("NUMBA_DISABLE_JIT", "1")
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
 
 import numpy as np
@@ -152,4 +151,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    # NUMBA_DISABLE_JIT only in the __main__ block (see run_sensitivity.py):
+    # setting it at import time breaks any pytest process that imports this
+    # module alongside already-jitted hazardlib code.
+    os.environ.setdefault("NUMBA_DISABLE_JIT", "1")
     raise SystemExit(main())
