@@ -1,20 +1,20 @@
 {
   "case1": {
     "n_points": 10,
-    "ratio_min": 0.9701,
-    "ratio_median": 1.0253,
-    "ratio_max": 1.0704
+    "ratio_min": 0.9635,
+    "ratio_median": 1.0186,
+    "ratio_max": 1.0638
   },
   "case2": {
     "n_points": 10,
-    "ratio_min": 0.7874,
-    "ratio_median": 0.8457,
-    "ratio_max": 0.9444
+    "ratio_min": 0.7726,
+    "ratio_median": 0.8293,
+    "ratio_max": 0.9254
   },
   "case3": {
     "n_points": 10,
-    "ratio_min": 0.8924,
-    "ratio_median": 0.9124,
-    "ratio_max": 0.985
+    "ratio_min": 0.8792,
+    "ratio_median": 0.899,
+    "ratio_max": 0.9705
   }
 }

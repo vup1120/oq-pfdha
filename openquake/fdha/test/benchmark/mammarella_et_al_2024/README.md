@@ -2,4 +2,4 @@ This benchmark validates the Mammarella primary surface-rupture implementation a
 
 Run: `pytest openquake/fdha/test/benchmark/mammarella_et_al_2024/test_cpsr_golden.py -q`
 
-Status: PASS on commit `fd3cb88`.
+Status: PASS on 2026-07-19 (9 golden rows).

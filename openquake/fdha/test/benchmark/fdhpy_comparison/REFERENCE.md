@@ -24,4 +24,4 @@ pytest openquake/fdha/test/benchmark/fdhpy_comparison/FDHI_Tests/tests -q
 
 ## Status on HEAD
 
-PASS on 2026-05-12, commit `fd3cb88`, for the four pytest files present in `FDHI_Tests/tests` during the V0 file-by-file run.
+198/198 PASS on 2026-07-19 against the pinned reference checkout `0ca38e2` (with a local NumPy-2 compatibility shim on the reference side; see [RESULTS.md](RESULTS.md)).

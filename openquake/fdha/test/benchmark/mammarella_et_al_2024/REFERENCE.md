@@ -24,4 +24,4 @@ pytest openquake/fdha/test/benchmark/mammarella_et_al_2024/test_cpsr_golden.py -
 
 ## Status on HEAD
 
-PASS on 2026-05-12, commit `fd3cb88`.
+PASS on 2026-07-19 against the archived CPSR.m golden CSV (9 rows).
