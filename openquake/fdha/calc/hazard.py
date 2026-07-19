@@ -249,8 +249,18 @@ def calculate_fdha_hazard(
                     f"context sids outside the site collection: range "
                     f"[{sids.min()}, {sids.max()}] vs {n_sites} sites")
 
-            np.add.at(rate_principal, sids, principal_contrib)
-            np.add.at(rate_distributed, sids, distributed_contrib)
+            if np.any(np.diff(sids) <= 0):
+                # duplicated/unordered sids would silently drop additions
+                # with fancy-index +=; keep the safe unbuffered path
+                np.add.at(rate_principal, sids, principal_contrib)
+                np.add.at(rate_distributed, sids, distributed_contrib)
+            else:
+                # sids are strictly increasing by construction (sitecol
+                # arange filtered by a boolean mask), so every row is
+                # touched once: fancy += adds the same numbers ~5x faster
+                # than the unbuffered np.add.at
+                rate_principal[sids] += principal_contrib
+                rate_distributed[sids] += distributed_contrib
 
         logger.debug("  %s: %d ruptures, %d surface-rupturing",
                      src.name, n_ruptures, n_surface_rupturing)

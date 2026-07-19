@@ -19,7 +19,7 @@ import numpy as np
 
 from openquake.fdha.calc.utils.parsing import parse_source_model_faults
 from openquake.fdha.calc.utils.rupture_distance import (
-    VectorizedRuptureDistanceCalculator,
+    RuptureDistanceCalculator,
     resample_polyline,
     trace_polyline_for_source,
 )
@@ -121,7 +121,7 @@ def build_hazard_map_sites(
     sitecol_grid = SiteCollection(grid_sites)
     for src_id, surface in surface_cache.items():
         try:
-            dcalc = VectorizedRuptureDistanceCalculator(sitecol_grid, surface)
+            dcalc = RuptureDistanceCalculator(sitecol_grid, surface)
             dist_arrays.append(dcalc.calculate_site_to_trace_distances())
         except Exception as exc:  # pragma: no cover - defensive
             logger.warning("distance fail for %s: %s", src_id, exc)

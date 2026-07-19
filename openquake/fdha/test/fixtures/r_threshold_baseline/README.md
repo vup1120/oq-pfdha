@@ -137,6 +137,11 @@ the minimal map example the trace-site count changed by one (site axis
 1631 -> 1630), so the six displacement-map CSVs and ``rates_baseline.npz``
 were re-frozen. ``curve_explicit/`` (single off-trace site) is unaffected.
 Determinism re-verified (job run twice, text outputs byte-compared).
+Same day, the redundant ``unwrap_longitudes`` pre-pass was removed (the
+OrthographicProjection's sin/cos formulation is natively IDL-safe; the
+unwrap's deg->rad->deg round trip only injected ~1e-14 deg noise), moving
+rates by <= 1.3e-12 relative - below every numeric tolerance, visible only
+to these byte-exact CSV pins, which were re-frozen once more.
 
 ## Comparison contract
 

@@ -14,6 +14,24 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _surface_mesh(surface):
+    """Return ``surface.mesh``, assembled at most once per surface object.
+
+    hazardlib's ``MultiSurface.mesh`` is an UNCACHED property that
+    concatenates every section mesh on each access; a multi-fault rupture
+    hits it 2-3 times on this hot path (surface-rupturing test, ztor
+    fallback). Caching the assembled mesh on the (transient, per-rupture)
+    surface instance makes those accesses pay for one assembly. Plain
+    surfaces store ``mesh`` as an instance attribute, for which this is a
+    no-op re-reference.
+    """
+    m = surface.__dict__.get('_fdha_mesh')
+    if m is None:
+        m = surface.mesh
+        surface.__dict__['_fdha_mesh'] = m
+    return m
+
+
 def classify_style(rake: float) -> str:
     """
     Classify faulting style from rake angle (degrees).
@@ -422,10 +440,10 @@ class FDHAContextMaker:
                 single-strand surfaces, whose trace is used directly.
 
         Returns:
-            VectorizedRuptureDistanceCalculator instance
+            RuptureDistanceCalculator instance
         """
         from openquake.fdha.calc.utils.rupture_distance import (
-            VectorizedRuptureDistanceCalculator
+            RuptureDistanceCalculator
         )
 
         # Use vectorized calculator (with caching)
@@ -436,7 +454,7 @@ class FDHAContextMaker:
             return self._dist_cache[key]
 
         self._cache_misses += 1
-        calc = VectorizedRuptureDistanceCalculator(
+        calc = RuptureDistanceCalculator(
             self.sitecol, surface,
             reference_line_method=reference_line_method)
         self._dist_cache[key] = calc
@@ -456,7 +474,7 @@ class FDHAContextMaker:
         if tolerance_km is None:
             tolerance_km = self.surface_depth_tolerance_km
 
-        depths = rupture.surface.mesh.depths
+        depths = _surface_mesh(rupture.surface).depths
         if depths is None or depths.size == 0:
             # No depth information - conservatively include
             return True
@@ -558,7 +576,7 @@ class FDHAContextMaker:
         # Depth to top of rupture
         ztor = getattr(rupture.surface, 'ztor', None)
         if ztor is None:
-            depths = rupture.surface.mesh.depths
+            depths = _surface_mesh(rupture.surface).depths
             ztor = float(np.nanmin(depths)) if depths is not None and depths.size > 0 else 0.0
 
         # Occurrence rate: parametric ruptures carry it directly;

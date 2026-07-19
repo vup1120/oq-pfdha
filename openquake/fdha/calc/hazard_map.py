@@ -129,7 +129,7 @@ def compute_hazard_map(
             )
 
     from openquake.fdha.calc.utils.rupture_distance import (
-        VectorizedRuptureDistanceCalculator,
+        RuptureDistanceCalculator,
         _sections_info, SURFACE_DEPTH_TOLERANCE_KM,
         trace_polyline_for_source, resample_polyline,
     )
@@ -148,7 +148,7 @@ def compute_hazard_map(
             # rupture-proximity measure for the active-site pre-filter, and
             # independent of any reference-line smoothing (an ECS/LCP line can
             # bulge away from the sections and skew the cutoff).
-            calc = VectorizedRuptureDistanceCalculator(
+            calc = RuptureDistanceCalculator(
                 sitecol, surface, reference_line_method='segments')
             distances = calc.calculate_site_to_trace_distances()
             dist_arrays.append(distances)

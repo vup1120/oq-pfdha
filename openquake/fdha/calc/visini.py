@@ -65,18 +65,17 @@ class VisiniSecondaryCalculator:
         self._trace_segments = self._precompute_trace_segments()
 
     def _precompute_trace_segments(self):
-        """Precompute trace segment arrays for vectorized distance calculation."""
-        segments = []
+        """Per-trace (lon, lat) polylines for the vectorized distance
+        calculation (one array per configured rank-1.5 trace)."""
+        polylines = []
         for trace_name in self.rupture_traces:
             for trace_config in self.rank1p5_traces:
                 if trace_config.get("name") != trace_name:
                     continue
                 coords = trace_config.get("geometry", {}).get("coords", [])
-                if not coords or len(coords) < 2:
-                    continue
-                for i in range(len(coords) - 1):
-                    segments.append((np.array(coords[i]), np.array(coords[i + 1])))
-        return segments
+                if coords and len(coords) >= 2:
+                    polylines.append(np.asarray(coords, dtype=float))
+        return polylines
 
     @staticmethod
     def _resolve_combos(case_label):
@@ -104,7 +103,6 @@ class VisiniSecondaryCalculator:
         """
         r_km_arr = np.atleast_1d(r_km_arr)
 
-
         if not self._trace_segments or site_coords is None:
             return r_km_arr
 
@@ -115,31 +113,14 @@ class VisiniSecondaryCalculator:
         n_sites = site_coords.shape[0]
         min_dists = np.full(n_sites, np.inf)
 
-        # Vectorized distance computation for all segments
-        for a, b in self._trace_segments:
-            # Local coordinate scaling at mean latitude
-            lat0 = np.deg2rad((a[1] + b[1] + np.mean(site_coords[:, 1])) / 3.0)
-            k_lat = 111.0
-            k_lon = 111.0 * np.cos(lat0)
-
-            # Convert all points to km
-            p_xy = np.column_stack([site_coords[:, 0] * k_lon, site_coords[:, 1] * k_lat])
-            a_xy = np.array([a[0] * k_lon, a[1] * k_lat])
-            b_xy = np.array([b[0] * k_lon, b[1] * k_lat])
-
-            # Vectorized point-to-segment distance
-            ab = b_xy - a_xy
-            ap = p_xy - a_xy
-            denom = np.dot(ab, ab)
-
-            if denom == 0.0:
-                d_km = np.linalg.norm(ap, axis=1)
-            else:
-                t = np.clip(np.dot(ap, ab) / denom, 0.0, 1.0)
-                proj = a_xy + np.outer(t, ab)
-                d_km = np.linalg.norm(p_xy - proj, axis=1)
-
-            min_dists = np.minimum(min_dists, d_km)
+        # Same polyline-distance machinery (and hazardlib
+        # OrthographicProjection frame) as the 'segments' reference line -
+        # one vectorized call per rank-1.5 trace, replacing a per-segment
+        # Python loop in a hand-rolled 111.0 km/deg flat frame.
+        from openquake.fdha.calc.utils.segments import _dist_to_polyline_km
+        for poly in self._trace_segments:
+            min_dists = np.minimum(min_dists, _dist_to_polyline_km(
+                site_coords[:, 0], site_coords[:, 1], poly[:, 0], poly[:, 1]))
 
         # Fallback to main r_km where no trace found
         result = np.where(np.isfinite(min_dists), min_dists, r_km_arr[:n_sites])
@@ -200,17 +181,14 @@ class VisiniSecondaryCalculator:
             style = rup_kwargs.get("style", "normal")
         pixel_size = rup_kwargs.get("pixel_size", self.pixel_size)
 
+        # Site classifications are combination-invariant: compute once.
+        # HW/FW from the rx sign, near/far from r against the threshold.
+        hw_fw_arr = np.where(rx_arr < 0, 'FW', 'HW')
+        near_far_arr = np.where(r_arr <= self.near_far_threshold_km, 'near', 'far')
+
         combo_probs = []
 
         for comb in self.combos:
-            # === OPTIMIZED: Classify all sites at once ===
-
-            # HW/FW classification (vectorized)
-            hw_fw_arr = np.where(rx_arr < 0, 'FW', 'HW')
-
-            # Near/far classification based on r_km (vectorized)
-            near_far_arr = np.where(r_arr <= self.near_far_threshold_km, 'near', 'far')
-
             # Initialize r_sec_km to r_arr as fallback
             r_sec_km = r_arr.copy()
 
