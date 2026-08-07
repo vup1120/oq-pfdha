@@ -110,7 +110,7 @@ These models answer the question: *Given an earthquake of a certain magnitude an
 
 | Model Class Name | Reference | Faulting style | Mw range¹ | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `Youngs2003PrimarySR` | Youngs et al. (2003) | Normal | 4.5–7.6 | A logistic regression model on magnitude. Its `style` parameter selects a dataset, not a generic faulting style: `all` uses the Wells & Coppersmith (1993) worldwide regression, `normal` the 32 Great Basin earthquakes (Pezzopane & Dawson 1996 data) from the Youngs et al. (2003) Appendix. |
+| `Youngs2003PrimarySR` | Youngs et al. (2003) | Normal | 4.5–7.6 | A logistic regression on magnitude (Equation 4). Its `version` parameter selects which published data set the coefficients were fitted to, from the Youngs et al. (2003) Appendix: `WC93` (276 worldwide, all slip types, Wells & Coppersmith 1993), `GreatBasin` (32), `NorthernBasinAndRange` (47) or `ExtensionalCordillera` (105), the last three being the Pezzopane & Dawson (1996) normal-faulting sets. `version=WC93` duplicates `WC1993PrimarySR` exactly. The former `style` parameter is a deprecated alias (`all`→`WC93`, `normal`→`GreatBasin`). |
 | `MammarellaEtAl2024PrimarySR` | Mammarella et al. (2024) | All (numerical) | 5.0–8.0 | A numerical integration model considering rupture width, dip, and other physical parameters. |
 | `Mammarella2024PrimarySR` | Mammarella et al. (2024) | All (numerical) | 5.0–8.0 | Alias/implementation class for the Mammarella et al. (2024) primary surface rupture model. |
 | `MossRoss2011PrimarySR` | Moss & Ross (2011) | Reverse | 5.5–8.0 | A logistic regression model specifically for reverse faults. |

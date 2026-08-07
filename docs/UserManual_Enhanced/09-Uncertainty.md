@@ -48,9 +48,30 @@ as alternative coefficient sets (style, regional dataset, site stiffness).
 - Logistic, magnitude only: `a = −12.51`, `b = 2.053`.
 - Single deterministic model; no branches.
 
-### `Youngs2003PrimarySR` - [youngs2003.py:44-46](../../openquake/fdha/primary_surf_rup/youngs2003.py#L44-L46)
-- Logistic, magnitude only.
-- **Epistemic branches:** `style="all"` (`a=−12.51`, `b=2.053`) vs `style="normal"` (`a=−16.02`, `b=2.685`).
+### `Youngs2003PrimarySR` - [youngs2003.py](../../openquake/fdha/primary_surf_rup/youngs2003.py)
+- Logistic, magnitude only (their Equation 4).
+- **Epistemic branches:** `version` selects which published data set the
+  coefficients were fitted to (Youngs et al. 2003, Appendix, "Coefficients
+  for Equation 4 shown on Figure 4"):
+
+  | `version` | `a` | `b` | data set |
+  |---|---|---|---|
+  | `WC93` | −12.51 | 2.053 | 276 worldwide, all slip types (Wells & Coppersmith 1993) |
+  | `GreatBasin` | −16.02 | 2.685 | 32 Great Basin (Pezzopane & Dawson 1996) |
+  | `NorthernBasinAndRange` | −18.71 | 3.041 | 47 northern Basin & Range |
+  | `ExtensionalCordillera` | −12.53 | 1.921 | 105 extensional cordillera |
+
+- **`version="WC93"` is identical to `WC1993PrimarySR`** - the same
+  regression, so a branch set holding both carries one model twice.
+- **Pin `version` explicitly.** A branch specifying neither `version` nor
+  `style` does not fall back to the class default: the calculator injects a
+  `style` derived from the rupture rake, so a bare branch resolves to
+  `GreatBasin` on a normal-rake source and errors on reverse/strike-slip.
+  The coefficients otherwise depend on the source model.
+- The parameter was formerly `style`, which never selected a faulting
+  style. `style="all"` and `style="normal"` are still accepted and map to
+  `WC93` and `GreatBasin`, so existing inputs are unchanged. Omitting both
+  keeps the legacy default `WC93`.
 
 ### `MossRoss2011PrimarySR` - [moss_ross2011.py:50](../../openquake/fdha/primary_surf_rup/moss_ross2011.py#L50)
 - Logistic, magnitude only: `a = 7.3`, `b = 1.03`. Reverse-faulting calibration.
