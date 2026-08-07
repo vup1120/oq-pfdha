@@ -111,8 +111,7 @@ These models answer the question: *Given an earthquake of a certain magnitude an
 | Model Class Name | Reference | Faulting style | Mw range¹ | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `Youngs2003PrimarySR` | Youngs et al. (2003) | Normal | 4.5–7.6 | A logistic regression on magnitude (Equation 4). Its `version` parameter selects which published data set the coefficients were fitted to, from the Youngs et al. (2003) Appendix: `WC93` (276 worldwide, all slip types, Wells & Coppersmith 1993), `GreatBasin` (32), `NorthernBasinAndRange` (47) or `ExtensionalCordillera` (105), the last three being the Pezzopane & Dawson (1996) normal-faulting sets. `version=WC93` duplicates `WC1993PrimarySR` exactly. The former `style` parameter is a deprecated alias (`all`→`WC93`, `normal`→`GreatBasin`). |
-| `MammarellaEtAl2024PrimarySR` | Mammarella et al. (2024) | All (numerical) | 5.0–8.0 | A numerical integration model considering rupture width, dip, and other physical parameters. |
-| `Mammarella2024PrimarySR` | Mammarella et al. (2024) | All (numerical) | 5.0–8.0 | Alias/implementation class for the Mammarella et al. (2024) primary surface rupture model. |
+| `Mammarella2024PrimarySR` | Mammarella et al. (2024) | All (numerical) | 5.0–8.0 | A numerical integration model considering rupture width, dip, and other physical parameters. |
 | `MossRoss2011PrimarySR` | Moss & Ross (2011) | Reverse | 5.5–8.0 | A logistic regression model specifically for reverse faults. |
 | `Moss2013PrimarySR` | Moss et al. (2013) | Reverse, strike-slip | 4.2–8.7 | A model for reverse and strike-slip faults that accounts for site stiffness (Vs30). |
 | `Pizza2023PrimarySR` | Pizza et al. (2023) | All (N / R / SS subsets) | 5.5–7.9 | A logistic regression model from an updated global database of surface ruptures. |
@@ -133,16 +132,16 @@ These models answer the question: *Given that a surface rupture has occurred, wh
 
 | Model Class Name | Reference | Faulting style | Slip component | Participation | Mw range¹ | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `Youngs2003PrimaryFD` | Youngs et al. (2003) | Normal | Vertical | Single principal | via AD/MD scaling | Models the displacement profile based on Average or Maximum Displacement normalization. |
+| `Youngs2003PrimaryFD` | Youngs et al. (2003) | Normal | Vertical | Single principal | 4.5–7.6 (via AD/MD scaling) | Models the displacement profile based on Average or Maximum Displacement normalization. |
 | `Chiou2025PrimaryFD` | Chiou et al. (2025) | Strike-slip | Net | Sum-of-principal | 6.0–8.3 | A model for sum-of-principal displacement on strike-slip faults (NGA-Displacement). |
 | `Kuehn2024PrimaryFD` | Kuehn et al. (2024) | All | Net | Aggregate | 5.0–8.0 (R); 6.0–8.0 (N, SS) | A comprehensive model with options to include epistemic uncertainty via posterior sampling. |
 | `Lavrentiadis2023PrimaryFD_aggregate`| Lavrentiadis & Abrahamson (2023) | All | Net | Aggregate | 5.0–8.5 | Aggregate variants (`output_type` `disp_agg_prime` default / `disp_agg_seg`); can account for zero-slip probability and rupture gaps. The class choice is the definition - for the sum-of-principal metric use the `_principal` class below. |
 | `Lavrentiadis2023PrimaryFD_principal`| Lavrentiadis & Abrahamson (2023) | All | Net | Sum-of-principal | 5.0–8.5 | The `disp_prnc_prime` variant, `output_type` pinned by the class (passing one is an error). Not aggregate: secondary models remain legitimate alongside it. |
-| `MossRoss2011PrimaryFD` | Moss & Ross (2011) | Reverse | Vertical | Single principal | via AD/MD scaling | Restored legacy normalized displacement model with AD/MD scaling. |
-| `Moss2022PrimaryFD` | Moss et al. (2022) | Reverse | Vertical | Single principal | 4.7–8.0 | GIRS-2022-05 report formulation with `gamma_mode`, incomplete MD subset, and `sigma_type` selector. |
+| `MossRoss2011PrimaryFD` | Moss & Ross (2011) | Reverse | Vertical | Single principal | 5.5–8.0 (via AD/MD scaling) | Restored legacy normalized displacement model with AD/MD scaling. |
+| `Moss2022PrimaryFD` | Moss et al. (2022) | Reverse | Vertical | Single principal | 4.2–8.7 | GIRS-2022-05 report formulation with `gamma_mode`, incomplete MD subset, and `sigma_type` selector. |
 | `Moss2024PrimaryFD` | Moss et al. (2024) | Reverse | Vertical | Single principal | 4.7–8.0 | Peer-reviewed *Earthquake Spectra* implementation; `source="EQS"` uses journal Table 2 alpha/beta files, while `source="GIRS"` uses GIRS gamma regressions. AD/MD scaling follows Table 3. |
 | `Petersen2011PrimaryFD` | Petersen et al. (2011) | Strike-slip | Lateral | Single principal | 6.0–8.0 | Petersen primary displacement model. Along-strike shape set with the `version` parameter: `quadratic` (default), `bilinear`, or `elliptical`. |
-| `Takao2013PrimaryFD` | Takao et al. (2013) | Reverse, strike-slip | Net | Single principal | via AD/MD scaling | A normalized displacement model with coefficients dependent on surface rupture length. |
+| `Takao2013PrimaryFD` | Takao et al. (2013) | Reverse, strike-slip | Net | Single principal | 5.5–7.4 (via AD/MD scaling) | A normalized displacement model with coefficients dependent on surface rupture length. |
 
 ¹ Applicable Mw range, from Valentini et al. (2025), *Reviews of Geophysics*,
 Table 4. "via AD/MD scaling" marks normalized models in which magnitude enters
@@ -167,7 +166,7 @@ These models answer the question: *Given an earthquake, what is the probability 
 | `Rodriguez2023SecondarySR` | Rodriguez Padilla & Oskin (2023) | Strike-slip | - | 0–3 km | Probability per unit area; recommended for near-field, immature strike-slip faults. |
 | `Takao2013SecondarySR` | Takao et al. (2013) | Reverse, strike-slip | 5.8–7.4 | 0–25 km | A model for distributed surface rupture probability. |
 | `Petersen2011SecondarySR_default` | Petersen et al. (2011) | Strike-slip | 6.5–7.5 | 0–2.5 km | Default Petersen secondary surface rupture variant exposed by the library. |
-| `Moss2022SecondarySR` | Moss et al. (2022) | Reverse | Report-specific | Report-specific | Distributed surface-rupture probability model from GIRS-2022-05 Section 5.2.1; simple mode uses Eq. 5.5 / Table 5.3 and biexponential mode uses Eqs. 5.6-5.7 / Tables 5.4-5.5. |
+| `Moss2022SecondarySR` | Moss et al. (2022) | Reverse | 4.2–8.7 | Report-specific | Distributed surface-rupture probability model from GIRS-2022-05 Section 5.2.1; simple mode uses Eq. 5.5 / Table 5.3 and biexponential mode uses Eqs. 5.6-5.7 / Tables 5.4-5.5. |
 | `FixedSecondarySR` | Fixed value | - | - | - | Constant secondary surface rupture probability model (not data-derived). |
 
 ¹ Applicable Mw and fault-normal-distance (r) ranges, from Valentini et al.
@@ -185,9 +184,9 @@ These models answer the question: *Given that secondary rupture has occurred, wh
 | Model Class Name | Reference | Faulting style | Slip component | Mw range¹ | r range¹ | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | `Youngs2003SecondaryFD` | Youngs et al. (2003) | Normal | Vertical | 5.5–7.4 | 0–15 km | Models distributed displacement as a fraction of the Maximum Displacement on the principal fault. |
-| `Takao2013SecondaryFD` | Takao et al. (2013) | Reverse, strike-slip | Net | 5.8–7.4 | 0–20 km | Models distributed displacement normalized by the principal-fault maximum or average displacement (Gamma distribution anchored at the 90% non-exceedance level of their Eqs. 15-16). |
+| `Takao2013SecondaryFD` | Takao et al. (2013) | Reverse, strike-slip | Net | 5.8–7.4 | 0–25 km | Models distributed displacement normalized by the principal-fault maximum or average displacement (Gamma distribution anchored at the 90% non-exceedance level of their Eqs. 15-16). |
 | `Petersen2011SecondaryFD` | Petersen et al. (2011) | Strike-slip | Lateral | 6.5–7.5 | 0–2.5 km | Provides exceedance probability for distributed displacement on strike-slip faults. |
-| `Moss2022SecondaryFD` | Moss et al. (2022) | Reverse | Vertical distributed displacement normalized by MD/AD | Report-specific | Report-specific | Distributed displacement model from GIRS-2022-05 Section 5.2.3; envelope mode uses Eq. 5.8 / Tables 5.7-5.8 and gamma mode combines the report's global gamma distribution with the distance envelope. |
+| `Moss2022SecondaryFD` | Moss et al. (2022) | Reverse | Vertical distributed displacement normalized by MD/AD | 4.2–8.7 | Report-specific | Distributed displacement model from GIRS-2022-05 Section 5.2.3; envelope mode uses Eq. 5.8 / Tables 5.7-5.8 and gamma mode combines the report's global gamma distribution with the distance envelope. |
 | `Visini2025SecondaryFD` | Visini et al. (2025) | Normal, reverse | Vertical | 5.5–7.9 (N); 4.9–7.9 (R) | 0–10 km (HW); 0–8 km (FW) | A regression model for normal/reverse faults predicting median displacement from magnitude, distance, and mean throw. |
 
 ¹ Applicable Mw and fault-normal-distance (r) ranges, from Valentini et al.
