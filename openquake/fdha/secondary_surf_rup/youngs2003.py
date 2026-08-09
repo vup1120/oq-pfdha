@@ -37,15 +37,6 @@ class Youngs2003SecondarySR(BaseSecondarySurfRup):
     models for distributed faulting). They note this likely overestimates
     the rate at a point for a footprint much smaller than 0.25 km^2.
 
-    The cell size is therefore baked into the fitted coefficients and is
-    NOT exposed as a parameter: this model always answers "is a 500 m cell
-    ruptured?". :class:`~openquake.fdha.secondary_surf_rup.ferrario2021.
-    FerrarioLivio2021SecondarySR` uses the same convention. Chains that mix
-    it with a cell-parameterised model (Visini et al. 2025, whose
-    ``pixel_size`` spans 10-500 m) are only comparable when that model is
-    also evaluated at 500 m; a smaller cell asks about a smaller site and
-    returns a systematically lower probability.
-
     References
     ----------
     Youngs, R.R., et al. (2003). A methodology for probabilistic fault
@@ -59,10 +50,7 @@ class Youngs2003SecondarySR(BaseSecondarySurfRup):
             canonicalised to strings); ``None`` defers to the ``get_prob``
             call (legacy default: '3').
         :param style: optional faulting style declared by the logic-tree
-            branch. Youngs et al. (2003) secondary regressions carry no
-            style selector, so the value does not change the numbers; it is
-            stored (validated against the global style vocabulary) as a
-            declaration of the branch context.
+            branch. Youngs et al.
         """
         super().__init__()
         self.version = check_choice(type(self).__name__, "version", version,
