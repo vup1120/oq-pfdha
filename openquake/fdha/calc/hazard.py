@@ -19,6 +19,33 @@ from openquake.fdha.calc.config_loader import get_max_distance_km
 logger = logging.getLogger(__name__)
 
 
+def _inside_declared_exclusion(model, ctx) -> "np.ndarray | None":
+    """Sites closer to the rupture than the model's own published
+    near-trace exclusion, in the model's own distance metric.
+
+    A distributed regression fitted only beyond some minimum distance has
+    no value to predict inside it: Visini et al. (2025) exclude data
+    within 5 m of the principal rupture because such scarps cannot be
+    told apart from principal faulting (pp. 11, 20), and their ln(s)
+    predictor is unbounded as s -> 0. On the sigma > 0 path the
+    distributed term is additive everywhere, so an on-trace site at
+    r = 0 would otherwise be served a clamped, wildly extrapolated
+    value - on the Norcia map that produced a 22.6 m "off-fault"
+    displacement sitting on the fault trace, ~570x the principal term at
+    the same point.
+
+    Returns ``None`` when the model declares no ``r_min_km`` (Youngs
+    2003 and Takao are bounded at r = 0 and need no gate; Petersen
+    instead clamps the distance via NEAR_FIELD_FLOOR).
+    """
+    rng = getattr(model, 'APPLICABILITY_RANGE', None)
+    if not rng or 'r_min_km' not in rng:
+        return None
+    method = getattr(model, 'MULTIFAULT_REFERENCE_LINE', 'lcp')
+    r_sel, _x_L, _L = ctx.metrics_for(method)
+    return np.abs(np.asarray(r_sel, dtype=np.float64)) < float(rng['r_min_km'])
+
+
 class ApplicabilityTracker:
     """Track sites evaluated outside a distributed FD model's declared
     applicability range and emit ONE ``logging.warning`` per model per run.
@@ -43,6 +70,7 @@ class ApplicabilityTracker:
         self._r_threshold_km = float(r_threshold_km)
         self._r_sigma_km = float(r_sigma_km)
         self._offending: Dict[str, set] = {}
+        self._excluded: Dict[str, set] = {}
         self._sources: Dict[str, str] = {}
 
     def observe(self, model: Any, ctx: 'FDHAContext') -> None:
@@ -57,8 +85,9 @@ class ApplicabilityTracker:
         r = np.abs(np.asarray(r_sel, dtype=np.float64))
 
         outside = np.zeros(r.shape, dtype=bool)
-        if 'r_min_km' in rng:
-            outside |= r < float(rng['r_min_km'])
+        # Sites inside r_min are gated out of the distributed term
+        # entirely (_inside_declared_exclusion), so they are an
+        # exclusion, not an extrapolation, and are not reported.
         if 'r_max_km' in rng:
             outside |= r > float(rng['r_max_km'])
         if 'r_max_hw_km' in rng or 'r_max_fw_km' in rng:
@@ -86,8 +115,29 @@ class ApplicabilityTracker:
             int(s) for s in sids)
         self._sources.setdefault(name, str(rng.get('source', '')))
 
+    def note_excluded(self, model: Any, ctx: 'FDHAContext',
+                      mask: 'np.ndarray') -> None:
+        """Record sites whose distributed term was gated off because they
+        fall inside the model's declared near-trace exclusion."""
+        if model is None or mask is None or not mask.any():
+            return
+        rng = getattr(model, 'APPLICABILITY_RANGE', None) or {}
+        name = model.__class__.__name__
+        self._excluded.setdefault(name, set()).update(
+            int(s) for s in np.asarray(ctx.sids)[mask])
+        self._sources.setdefault(name, str(rng.get('source', '')))
+
     def emit(self) -> None:
         """Emit the once-per-model warnings (call after the rupture loop)."""
+        for name in sorted(self._excluded):
+            sids = self._excluded[name]
+            logger.warning(
+                "%s: %d site(s) fall inside the model's declared near-trace "
+                "exclusion, so the distributed term was NOT evaluated there "
+                "and those sites carry the principal contribution only (%s).",
+                name, len(sids),
+                self._sources.get(name, '') or 'declared range',
+            )
         for name in sorted(self._offending):
             n = len(self._offending[name])
             src = self._sources.get(name, '')
@@ -232,6 +282,17 @@ def calculate_fdha_hazard(
                 calculator=calculator,
                 r_sigma_km=r_sigma_km,
             )
+
+            # Zero the distributed term inside the model's own declared
+            # near-trace exclusion (see _inside_declared_exclusion): the
+            # regression is not defined there, so such sites carry the
+            # principal contribution only.
+            _excl = _inside_declared_exclusion(secondary_fd_model, ctx)
+            if _excl is not None and _excl.any():
+                distributed_contrib = distributed_contrib.copy()
+                distributed_contrib[_excl] = 0.0
+                applicability_tracker.note_excluded(
+                    secondary_fd_model, ctx, _excl)
 
             # Accumulate by site ID using vectorized operations. The context
             # invariant guarantees one contribution row per ctx site and
@@ -495,6 +556,7 @@ def _compute_rupture_contribution(
                 r_threshold_km=r_threshold_km,
                 r_sigma_km=r_sigma_km,
             )
+
             principal_contrib = (
                 rate * P_sr[:, np.newaxis] * P_fd_primary * W_p[:, np.newaxis]
             )

@@ -89,27 +89,42 @@ def test_visini_hw_fw_outer_edges(caplog):
     assert "1 site(s)" in warnings[0].getMessage()
 
 
-def test_visini_5m_floor_masked_by_boxcar_at_sigma0(caplog):
-    """At sigma = 0 the distributed term is complementary-masked inside
-    |r| <= r_threshold_km, so a 1 m site is NOT an extrapolation (the model
-    is never evaluated with weight there); at sigma > 0 the additive path
-    does evaluate it and the sub-5 m floor must warn."""
+def test_visini_sub_5m_site_is_excluded_not_extrapolated(caplog):
+    """A site inside Visini's declared 5 m exclusion is never an
+    *extrapolation*: on either W_p path the distributed term is not
+    evaluated there. At sigma = 0 the complementary split masks it; at
+    sigma > 0 the additive path would evaluate it, so the kernel gates it
+    off (``_inside_declared_exclusion``) and the site carries the
+    principal contribution only. Neither case may report extrapolation."""
     model = Visini2025SecondaryFD()
 
-    tracker0 = ApplicabilityTracker(r_threshold_km=0.1, r_sigma_km=0.0)
-    tracker0.observe(model, _ctx([0.001]))  # 1 m, inside the boxcar
-    with caplog.at_level(logging.WARNING, logger="openquake.fdha.calc.hazard"):
-        tracker0.emit()
-    assert not caplog.records
+    for r_sigma in (0.0, 0.05):
+        tracker = ApplicabilityTracker(r_threshold_km=0.1,
+                                       r_sigma_km=r_sigma)
+        tracker.observe(model, _ctx([0.001]))  # 1 m, inside the 5 m floor
+        caplog.clear()
+        with caplog.at_level(logging.WARNING,
+                             logger="openquake.fdha.calc.hazard"):
+            tracker.emit()
+        assert not [r for r in caplog.records
+                    if "extrapolating" in r.getMessage()], (
+            f"sub-5 m site reported as extrapolation at sigma={r_sigma}")
 
-    tracker1 = ApplicabilityTracker(r_threshold_km=0.1, r_sigma_km=0.05)
-    tracker1.observe(model, _ctx([0.001]))
+
+def test_gated_sites_are_reported_as_an_exclusion(caplog):
+    """Gating must not be silent: the run says which sites lost their
+    distributed term and why."""
+    model = Visini2025SecondaryFD()
+    tracker = ApplicabilityTracker(r_threshold_km=0.1, r_sigma_km=0.05)
+    tracker.note_excluded(model, _ctx([0.001]), np.array([True]))
     with caplog.at_level(logging.WARNING, logger="openquake.fdha.calc.hazard"):
-        tracker1.emit()
-    warnings = [rec for rec in caplog.records
-                if "Visini2025SecondaryFD" in rec.getMessage()]
-    assert len(warnings) == 1
-    assert "1 site(s)" in warnings[0].getMessage()
+        tracker.emit()
+    msgs = [r.getMessage() for r in caplog.records
+            if "Visini2025SecondaryFD" in r.getMessage()]
+    assert len(msgs) == 1
+    assert "1 site(s)" in msgs[0]
+    assert "near-trace exclusion" in msgs[0]
+    assert "principal contribution only" in msgs[0]
 
 
 def test_offending_sites_accumulate_across_ruptures(caplog):
