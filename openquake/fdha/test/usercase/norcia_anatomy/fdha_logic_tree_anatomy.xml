@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Norcia epistemic-anatomy tree: every published model chain applicable to
+  normal faulting, evaluated under the rupture-location weight implied by
+  the IAEA "Accurately located" mapping class (Petersen et al. 2011
+  Table 2: sigma = 26.89 m) and on a consistent 500 m distributed cell.
+  Tectonic normal faulting only.
+
+  Node menu (style = normal only; models for other styles excluded):
+    P_sr  : Pizza et al. 2023 (normal, Italian data - the only
+            regionally appropriate regression here) w = 0.4, plus the
+            three Pezzopane & Dawson (1996) normal-faulting data sets
+            carried by Youngs2003PrimarySR, w = 0.2 each:
+              version = ExtensionalCordillera  (105 earthquakes)
+              version = NorthernBasinAndRange  ( 47 earthquakes)
+              version = GreatBasin             ( 32 earthquakes)
+            Wells & Coppersmith 1993 is EXCLUDED: 276 worldwide
+            earthquakes of ALL slip types, so it is a weaker analogue for
+            a normal-faulting case than any of the three above - the same
+            scope test that excludes Ferrario & Livio below. It remains
+            reachable as Youngs2003PrimarySR version = WC93.
+            CAVEAT on the three Youngs branches: they are progressively
+            wider geographic scopes of ONE western-US extensional
+            compilation (Great Basin c northern Basin & Range c
+            extensional cordillera), not independent studies, so equal
+            weights express "how wide an analogue do I accept", not three
+            independent lines of evidence.
+            NOTE: version is pinned rather than left to the calculator. A
+            bare [Youngs2003PrimarySR] branch does NOT use the class
+            default (WC93): model_adapter injects a style derived from the
+            rupture rake, so it would silently resolve to GreatBasin here
+            and error on a reverse source.
+            (each duplicated into a _YDEF/_LAV proxy pair so that the two
+            primary-FD displacement definitions live in separate,
+            definition-consistent branch sets, per FDLT-014 and the
+            committed norcia_case3_iaea proxy idiom)
+    P_fd  : Youngs2003 (AD) | Youngs2003 (MD) [principal definition]
+            chained to the _YDEF proxies; Lavrentiadis & Abrahamson 2023
+            (sum-of-principal definition) chained to the _LAV proxies.
+            Kuehn et al. 2024 is an AGGREGATE-definition model and cannot
+            share a chain with distributed models (FDLT-013, no
+            cross-definition conversion); excluded.
+    S_sr  : Youngs2003 v3 | Visini et al. 2025 (normal, 500 m cell).
+            Ferrario & Livio (2021) is EXCLUDED: it is calibrated on
+            volcano-tectonic normal faulting and is out of scope for the
+            purely tectonic Norcia sources.
+            CELL CONSISTENCY: Youngs (2003) is developed for a
+            500 x 500 m cell and exposes no cell parameter, so Visini -
+            the only cell-parameterised model here - is pinned to 500 m
+            to keep the two comparable. Running Visini at the IAEA
+            100 x 100 m site dimension instead would ask a different
+            (smaller-site) question of one branch only; that variant is
+            kept as an explicit sensitivity in
+            fdha_logic_tree_cellsize.xml.
+    S_fd  : Youngs2003 (85th | 95th percentile regression) chained to
+            Y03 - the two published fits to different percentiles of the
+            D/MD scatter, carried as separate branches;
+            Visini et al. 2025 (WC1994 | Thingbaijam2017 | Leonard2010
+            scaling) chained to V25 (paired as published)
+    sigma : fdhaCalcRSigma 0.02689 km - the Petersen et al. (2011)
+            Table 2 two-sided sigma for the "Accurately located"
+            mapping class that IAEA TECDOC-2092 Table 13 assigns to
+            these traces. Fixed on every branch (weight 1.0), so the
+            rupture-location weight W_p is the Petersen Gaussian
+            everywhere; [calculation].r_threshold_km in the INI is
+            inert on this path (design doc D2).
+
+  4 x 3 x (1 x 2 + 1 x 3) = 60 end branches.
+  Weights follow the hugo normal-faulting usercase precedent.
+-->
+<nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
+  <logicTree logicTreeID="lt_fdha_norcia_anatomy">
+
+    <logicTreeBranchingLevel branchingLevelID="bl_1_primary_surf_rup">
+      <logicTreeBranchSet branchSetID="bs_1_primary_surf_rup"
+                          uncertaintyType="fdhaPrimarySRModel">
+        <logicTreeBranch branchID="PSR_PIZZA23_YDEF">
+          <uncertaintyModel>
+            [Pizza2023PrimarySR]
+            style = normal
+          </uncertaintyModel>
+          <uncertaintyWeight>0.2</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="PSR_PIZZA23_LAV">
+          <uncertaintyModel>
+            [Pizza2023PrimarySR]
+            style = normal
+          </uncertaintyModel>
+          <uncertaintyWeight>0.2</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="PSR_Y03EC_YDEF">
+          <uncertaintyModel>
+            [Youngs2003PrimarySR]
+            version = ExtensionalCordillera
+          </uncertaintyModel>
+          <uncertaintyWeight>0.1</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="PSR_Y03EC_LAV">
+          <uncertaintyModel>
+            [Youngs2003PrimarySR]
+            version = ExtensionalCordillera
+          </uncertaintyModel>
+          <uncertaintyWeight>0.1</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="PSR_Y03NBR_YDEF">
+          <uncertaintyModel>
+            [Youngs2003PrimarySR]
+            version = NorthernBasinAndRange
+          </uncertaintyModel>
+          <uncertaintyWeight>0.1</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="PSR_Y03NBR_LAV">
+          <uncertaintyModel>
+            [Youngs2003PrimarySR]
+            version = NorthernBasinAndRange
+          </uncertaintyModel>
+          <uncertaintyWeight>0.1</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="PSR_Y03GB_YDEF">
+          <uncertaintyModel>
+            [Youngs2003PrimarySR]
+            version = GreatBasin
+          </uncertaintyModel>
+          <uncertaintyWeight>0.1</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="PSR_Y03GB_LAV">
+          <uncertaintyModel>
+            [Youngs2003PrimarySR]
+            version = GreatBasin
+          </uncertaintyModel>
+          <uncertaintyWeight>0.1</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+    <logicTreeBranchingLevel branchingLevelID="bl_2_primary_surf_displ">
+      <logicTreeBranchSet branchSetID="bs_2_primary_surf_displ_ydef"
+                          uncertaintyType="fdhaPrimaryFDModel"
+                          applyToBranches="PSR_PIZZA23_YDEF PSR_Y03EC_YDEF PSR_Y03NBR_YDEF PSR_Y03GB_YDEF">
+        <logicTreeBranch branchID="PFD_Y03_AD">
+          <uncertaintyModel>
+            [Youngs2003PrimaryFD]
+            norm_disp_type = AD
+          </uncertaintyModel>
+          <uncertaintyWeight>0.5</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="PFD_Y03_MD">
+          <uncertaintyModel>
+            [Youngs2003PrimaryFD]
+            norm_disp_type = MD
+          </uncertaintyModel>
+          <uncertaintyWeight>0.5</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+      <logicTreeBranchSet branchSetID="bs_2_primary_surf_displ_lav"
+                          uncertaintyType="fdhaPrimaryFDModel"
+                          applyToBranches="PSR_PIZZA23_LAV PSR_Y03EC_LAV PSR_Y03NBR_LAV PSR_Y03GB_LAV">
+        <logicTreeBranch branchID="PFD_LAV23">
+          <uncertaintyModel>
+            [Lavrentiadis2023PrimaryFD_principal]
+            style = normal
+          </uncertaintyModel>
+          <uncertaintyWeight>1.0</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+    <logicTreeBranchingLevel branchingLevelID="bl_3_secondary_surf_rup">
+      <logicTreeBranchSet branchSetID="bs_3_secondary_surf_rup"
+                          uncertaintyType="fdhaSecondarySRModel">
+        <logicTreeBranch branchID="SSR_Y03">
+          <uncertaintyModel>
+            [Youngs2003SecondarySR]
+            version = 3
+          </uncertaintyModel>
+          <uncertaintyWeight>0.5</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="SSR_V25">
+          <uncertaintyModel>
+            [Visini2025SecondarySR]
+            style = normal
+            pixel_size = 500
+          </uncertaintyModel>
+          <uncertaintyWeight>0.5</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+    <logicTreeBranchingLevel branchingLevelID="bl_4_secondary_surf_displ">
+      <logicTreeBranchSet branchSetID="bs_4_secondary_surf_displ_y03"
+                          uncertaintyType="fdhaSecondaryFDModel"
+                          applyToBranches="SSR_Y03">
+        <logicTreeBranch branchID="SFD_Y03_P85">
+          <uncertaintyModel>
+            [Youngs2003SecondaryFD]
+            percentile = 85
+          </uncertaintyModel>
+          <uncertaintyWeight>0.5</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="SFD_Y03_P95">
+          <uncertaintyModel>
+            [Youngs2003SecondaryFD]
+            percentile = 95
+          </uncertaintyModel>
+          <uncertaintyWeight>0.5</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+      <logicTreeBranchSet branchSetID="bs_4_secondary_surf_displ_v25"
+                          uncertaintyType="fdhaSecondaryFDModel"
+                          applyToBranches="SSR_V25">
+        <logicTreeBranch branchID="SFD_V25_WC94">
+          <uncertaintyModel>
+            [Visini2025SecondaryFD]
+            scaling_model = WC1994
+          </uncertaintyModel>
+          <uncertaintyWeight>0.33</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="SFD_V25_TB17">
+          <uncertaintyModel>
+            [Visini2025SecondaryFD]
+            scaling_model = THINGBAIJAM2017
+          </uncertaintyModel>
+          <uncertaintyWeight>0.33</uncertaintyWeight>
+        </logicTreeBranch>
+        <logicTreeBranch branchID="SFD_V25_LEO10">
+          <uncertaintyModel>
+            [Visini2025SecondaryFD]
+            scaling_model = LEONARD2010
+          </uncertaintyModel>
+          <uncertaintyWeight>0.34</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+    <logicTreeBranchingLevel branchingLevelID="bl_5_r_sigma">
+      <logicTreeBranchSet branchSetID="bs_5_r_sigma"
+                          uncertaintyType="fdhaCalcRSigma">
+        <logicTreeBranch branchID="RS_ACCURATE">
+          <uncertaintyModel>0.02689</uncertaintyModel>
+          <uncertaintyWeight>1.0</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+  </logicTree>
+</nrml>

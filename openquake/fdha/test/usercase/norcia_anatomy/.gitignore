@@ -1,0 +1,7 @@
+# run outputs: regenerable from the job INIs, and out_map alone is ~26 MB
+out_curve/
+out_map/
+out_transect/
+out_cellsize/
+out_cellsize_case3/
+__pycache__/

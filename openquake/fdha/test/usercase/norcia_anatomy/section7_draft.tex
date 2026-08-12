@@ -1,0 +1,363 @@
+% Reworked Section 7: verification compressed to one subsection; the new
+% content is the epistemic application (model library x mapping accuracy)
+% on the same IAEA Norcia case. Figures produced by
+% openquake/fdha/test/usercase/norcia_anatomy/make_figures.py.
+
+\section{Application: epistemic anatomy of the IAEA Norcia case}
+\label{sec:application}
+
+The end-to-end workflow is demonstrated on the Norcia normal-faulting
+case of the IAEA PFDHA exercise \citep[Section~7]{IAEA2025TECDOC2092}.
+Section~\ref{sec:application:anchor} reproduces the published benchmark
+and serves as the credibility anchor; it is deliberately brief, since
+reproducing a published exercise is a prerequisite, not a finding. The
+substance of this section is what the framework adds on top of the
+benchmark: the same two-fault source model is re-evaluated under the
+\emph{complete} published model library applicable to \emph{tectonic}
+normal faulting,
+under the rupture-location weight implied by the mapping accuracy that
+the IAEA exercise assigns to the fault traces
+(Sections~\ref{sec:application:tunnel}--\ref{sec:application:anatomy}).
+Every input file is listed in Appendix~\ref{app:inputs} and distributed
+with the code.
+
+\subsection{Case set-up and verification anchor}
+\label{sec:application:anchor}
+
+The Norcia case combines the Mount Vettore fault (MVF; 34~km,
+$47^\circ$~SW dip, characteristic Gaussian MFD centred on
+$M_{\mathrm{w}} = 6.7$, mean rate $4.03 \times 10^{-4}$~a$^{-1}$) and
+the Norcia fault (NF; 29~km, $50^\circ$~SW dip, truncated
+Gutenberg--Richter with $b = 1$ up to $M_{\mathrm{w}} = 6.8$, mean rate
+$5.41 \times 10^{-3}$~a$^{-1}$), both with normal kinematics
+\citep[Table~14]{IAEA2025TECDOC2092}. Three sites from the IAEA site
+set \citep[Table~13]{IAEA2025TECDOC2092} are evaluated, all three
+sited on the Mount Vettore fault system: the principal site PF on the
+southern MVF trace itself ($l/L = 0.05$); and two distributed sites on
+antithetic structures that were reactivated in 2016 -- MS on the Mount
+Serra fault, at the San Benedetto tunnel position ($r = 7.6$~km from
+the MVF hanging wall, $r = 3.0$~km from the NF footwall), and SL on the
+San Lorenzo fault at its closest approach to the MVF trace
+($r = 2.4$~km, $l/L = 0.4$). With the two-chain logic tree
+of the exercise (a Youngs et al. 2003 chain and a hybrid chain
+replacing the distributed models with Visini et al. 2025), the
+framework reproduces the IAEA reference curves at the three sites and
+the regional map at the $10^{5}$~a return period; the corresponding
+inputs and the run-by-run comparison are archived as a regression
+benchmark in the repository. All IAEA sites carry the mapping-accuracy class ``Accurately located''
+\citep[Table~13]{IAEA2025TECDOC2092}; following
+\citet[Table~2]{Petersen2011}, this class corresponds to a two-sided
+location uncertainty $\sigma = 26.89$~m, which is applied as the
+rupture-location weight $W_p = \exp(-r^{2}/2\sigma^{2})$ on every
+branch of every calculation below.
+
+% Figure: reuse the existing norcia_case3_curve_vs_iaea.pdf +
+% norcia_case3_map.pdf as a single two-panel anchor figure.
+
+\subsection{What would a PFDHA have told the tunnel designer?}
+\label{sec:application:tunnel}
+
+Site MS is not an arbitrary grid point: it is the position where the
+San Benedetto road tunnel was offset during the 2016
+$M_{\mathrm{w}}$~6.6 Norcia mainshock, by 0.20~m vertical and 0.13~m
+left-lateral slip (net ${\sim}0.24$~m) on the reactivated Mount Serra
+antithetic fault \citep{Galli2019WTC, Galli2020}. This turns the site
+into a concrete engineering question that a verification exercise
+cannot ask: \emph{ex ante, what annual rate would a PFDHA have assigned
+to the displacement that actually occurred?}
+
+Answering it requires two pieces of bookkeeping first. The published
+distributed-rupture library for normal faulting is not all in scope
+here: \citet{FerrarioLivio2021} is calibrated on volcano-tectonic
+normal faulting and is excluded, leaving the two models developed for
+tectonic normal faulting, \citet{youngs_methodology_2003} and
+\citet{Visini2025}. And distributed rupture probability is a
+probability \emph{per cell}, with the cell belonging to the model
+rather than to the site:
+\citet{youngs_methodology_2003} is developed on a $500 \times 500$~m
+cell and exposes no cell parameter -- the size is absorbed into the
+fitted coefficients -- whereas \citet{Visini2025} publish coefficients
+for cells of 10--500~m, selectable at run time. Visini is therefore
+pinned to 500~m so that the two are comparable. The consequence
+deserves stating plainly: the IAEA exercise specifies a
+$100 \times 100$~m site \citep[Table~13]{IAEA2025TECDOC2092}, and no
+published tectonic normal-faulting distributed model except
+\citet{Visini2025} can answer at that scale.
+
+Each model also carries its own published variants, which the tree
+keeps as separate branches rather than averaging.
+\citet{youngs_methodology_2003} provide two regressions of normalised
+distributed displacement, fitted to the 85th and the 95th percentile of
+the data scatter; \citet{Visini2025} depend on the
+magnitude--area scaling relation used to derive the principal throw,
+for which three published choices are carried. It is worth being
+explicit about what each model delivers to the hazard integral, since
+neither returns a point value. In \citet{youngs_methodology_2003} the
+normalised displacement $D/MD$ follows a gamma distribution of shape
+$a = 2.5$ whose scale is set so that its 85th (or 95th) percentile
+equals the distance-dependent regression value, and this is then
+integrated over a \citet{WellsCoppersmith1994} lognormal distribution
+of the principal maximum displacement; the ``85th'' and ``95th'' labels
+are thus alternative \emph{fits}, not alternative output percentiles.
+In \citet{Visini2025} the regression predicts the \emph{median} throw,
+with a lognormal residual ($\sigma_{\ln Y} = 1.03$) truncated at
+$\pm 3\sigma$. Both therefore supply a full exceedance distribution,
+but their central tendencies are anchored differently -- one at a high
+percentile of normalised displacement, the other at the median of
+absolute throw.
+
+Figure~\ref{fig:ms_tunnel} shows the resulting curves at both
+antithetic-fault sites. The dominant control turns out not to be the
+choice of model at all, but a geological judgement about the site: is
+there a pre-existing fault beneath it? In the \citet{Visini2025}
+decision tree that question is the first branch, and answering it
+changes the rate of exceeding the observed offset by a factor 137 at MS
+and 49 at SL. By comparison, the choice between
+\citeauthor{youngs_methodology_2003} and \citeauthor{Visini2025} spans
+a factor 1.5, \citeauthor{youngs_methodology_2003}'s own
+85th-versus-95th regression a factor 1.5, and \citeauthor{Visini2025}'s
+three magnitude--area scaling relations a factor 1.0.
+
+The 2016 observations discriminate between the two readings. Assuming
+no pre-existing structure, the calculation returns return periods of
+$2.8 \times 10^{6}$~a at MS and $7.0 \times 10^{6}$~a at SL for
+displacements that were measured on the ground after the earthquake.
+Admitting one, the same tree returns $2.0 \times 10^{4}$~a and
+$1.3 \times 10^{5}$~a -- the right order for structures of this
+activity. The evidence at these sites is unambiguous: MS and SL are
+pre-existing antithetic faults of the Mount Vettore system and both
+ruptured at the surface in 2016, displacing the San Benedetto tunnel at
+MS and offsetting a road by of order 1~m at SL. What the comparison
+demonstrates is that a site-characterisation decision, made before any
+model is chosen, can outweigh the entire published model library by two
+orders of magnitude.
+
+This also sharpens a result that we had initially read more broadly.
+Re-evaluating the identical \citet{Visini2025} chain at the 100~m IAEA
+site dimension, changing nothing else, moves the rate of exceeding the
+observed offset by a factor 8.2 when no pre-existing structure is
+assumed, but by only 1.04 when one is. The cell convention is
+consequential, but specifically for the ``simple'' distributed-rupture
+pathway: only that pathway carries the along-strike Monte Carlo term,
+whose value differs by a factor 6.6 between the two site dimensions.
+Where reactivation of a mapped structure dominates, the along-strike
+probability is unity by construction and the cell washes out. The
+practical warning survives in narrowed form -- because
+\citet{youngs_methodology_2003} exposes no cell parameter, a
+cell-inconsistent chain is invisible in the input files -- and the
+framework now records each model's calibration cell with its
+implementation.
+
+A single observation cannot validate any of these curves; what the
+comparison shows is where two observations fall within the epistemic
+range the library spans, once that range is measured on a consistent
+basis and restricted to models in scope. One caveat remains: the
+displacement definitions differ in component (vertical versus net), a
+mismatch of order the 0.20/0.24 ratio here.
+
+\subsection{The near-trace profile}
+\label{sec:application:profile}
+
+Because the mapping accuracy enters as a Gaussian weight truncated at
+$2\sigma = 54$~m, the principal and distributed contributions hand over
+to one another within a few tens of metres of the trace -- a transition
+that no site-specific curve can show. We evaluate it directly on a
+2-km profile perpendicular to the MVF trace through PF, sampled every
+20~m, with the Youngs et al.\ (2003) chain fixed. The principal contribution exists only inside the $\pm 54$~m
+band and peaks at 3.65~m at $10^{5}$~a; the corridor carrying
+$D \geq 1$~m is ${\sim}110$~m wide, essentially the full
+$\pm 2\sigma$ width (this profile's 20~m sampling only brackets it; the
+a 10~m sampling of the same profile would resolve it). Outside the band the total hazard
+\emph{is} the distributed contribution, which falls off
+asymmetrically: 0.49~m at $-100$~m on the hanging wall against 0.09~m
+at $+100$~m on the footwall, and 0.41 against 0.06~m at $\pm 300$~m.
+At the three IAEA sites this structure is invisible -- PF sits on the
+trace, where $W_p = 1$ by construction, and MS and SL are kilometres
+away -- which is the practical point: trace-location uncertainty is a
+siting-scale parameter, first-order only within a few tens of metres of
+the mapped trace, exactly the scale at which a fault-crossing lifeline
+is designed.
+
+\subsection{Epistemic anatomy}
+\label{sec:application:anatomy}
+
+Figure~\ref{fig:logic_tree} shows the tree in full: four
+surface-rupture-probability models, three principal-displacement
+branches, and the five in-scope distributed chains, giving 60 end
+branches that are enumerated and aggregated in one run per job. Only
+one level-to-level transition is a genuine pairing rather than a free
+combination -- each distributed-rupture model brings its own published
+displacement variants -- which is why the branch count is
+$4 \times 3 \times (2+3) \times 1$ rather than a plain product over
+five levels.
+
+Per-branch curves at the three sites give the following. At PF the $10^{5}$~a design displacement spans 2.04--3.58~m (weighted
+5--95\%, mean 2.53~m). At the two antithetic sites the weighted means
+are 0.398~m at MS and 0.571~m at SL, with 95th percentiles of 0.66~m
+and 0.92~m; the 5th percentile is zero at both, because a
+majority-weight subset of branches places the $10^{5}$~a level below
+the curve entirely.
+
+The SL value is worth dwelling on. At 0.571~m it lies within a factor
+1.8 of the ${\sim}1$~m offset observed there in 2016 -- a second check
+on the site characterisation of
+Section~\ref{sec:application:tunnel}, at a different site and a
+different displacement level from the San Benedetto tunnel. Two
+independent observations, at two sites, are consistent with the same
+classification.
+
+These distributed values are also a reminder that model applicability
+screening is a first-order decision at such sites rather than
+bookkeeping. An earlier version of this tree included
+\citet{FerrarioLivio2021} and returned 1.8~cm at MS, supplied almost
+entirely by that single volcano-tectonic branch. That figure was wrong
+twice over: the model does not apply to these purely tectonic sources,
+and the value was an order of magnitude below what the in-scope
+library gives once the site is correctly characterised. A framework
+that makes the model set an explicit, versioned input is what allows
+either error to be seen and audited.
+
+Two framework-level observations complete the picture. Kuehn et
+al.\ (2024) could not legally enter this tree: it predicts
+\emph{aggregate} displacement, and the validator rejects any chain that
+combines an aggregate primary model with distributed models, because no
+conversion between displacement definitions exists (Sarmiento et
+al.\ 2025). Likewise, holding the Youngs (principal) and Lavrentiadis
+\& Abrahamson (sum-of-principal) definitions in one tree required
+splitting the primary level into definition-consistent branch sets --
+visible in the input file itself. The epistemic menu is thus
+constrained by displacement-definition bookkeeping, and the framework
+machine-checks constraints that in current practice are enforced, if at
+all, by footnote.
+
+\subsection{Regional view}
+\label{sec:application:map}
+
+Figure~\ref{fig:anatomy_maps} maps the same tree at the $10^{5}$~a
+return period: panel (a) the mean hazard over all 60 branches, panel
+(b) the 84th epistemic fractile. A resolution caveat governs how such a
+map may be read: the grid spacing, $0.01^{\circ}$ or 1112~m, is twenty
+times wider
+than the ${\sim}110$~m principal corridor, so whether a pixel falls
+inside the $\pm 2\sigma$ band is an accident of the grid. Refining the
+regional grid is not a practical remedy -- cost is linear in the number
+of sites, so $0.001^{\circ}$ would take some seven hours and still
+place barely one cell across the corridor.
+
+We therefore restrict the map to the principal component, evaluated on
+the exact on-trace sites that the engine inserts alongside the filtered
+grid. This is not a presentational convenience but a consequence of
+Section~\ref{sec:application:library}: the distributed term depends on
+whether a pre-existing structure lies beneath the site, which is a
+per-site geological judgement -- case~1 at MS and SL, which sit on such
+structures -- and applying it uniformly across a grid would
+over-predict everywhere away from the antithetic faults. The principal
+term carries no such dependence and is well posed at every point. It is
+also intrinsically confined: of 992 grid sites only 8 fall within the
+$\pm 2\sigma$ band, against all 80 on-trace sites. Near-trace structure
+is characterised instead by the cross-trace profile of
+Section~\ref{sec:application:profile}.
+
+Panel~(c) of Figure~\ref{fig:anatomy_maps} shows where the mapped
+values come from. At PF the mean hazard gives 2.53~m at $10^{5}$~a
+against a 16th--84th epistemic band of 2.19--3.30~m, and the branches
+separate mainly above 0.1~m: the low-displacement plateau is set by the
+probability of surface rupture, on which the models largely agree at
+$M_w$ 6.4--7.0, while the spread at design level is carried by the
+principal displacement models. Reducing epistemic uncertainty at this
+site would therefore mean constraining the displacement model, not the
+rupture-probability model. Along strike the mean is 2.91~m and the 84th
+fractile 3.76~m (medians over the on-trace sites), a 29\% difference
+that is visible directly as the colour offset between panels (a) and
+(b).
+
+% ---------------------------------------------------------------------
+% Figure environments (paths relative to the paper's Figures/ directory;
+% copy from openquake/fdha/test/usercase/norcia_anatomy/figures/)
+% ---------------------------------------------------------------------
+\subsection{From hazard curve to design displacement}
+\label{sec:application:design}
+
+The maps report the displacement at a fixed return period read from the
+mean hazard curve -- the equal-hazard convention. \citet{AbrahamsonLiou2025}
+show that this convention can misrepresent the epistemic centre when
+the displacement hazard curve is flat at the design return period, as
+it is for moderate-activity faults, and propose alternatives: an upper
+fractile of the hazard, a risk-targeted displacement, or the median
+displacement given surface rupture at the site. Whether those
+alternatives are needed is decided by the slope of the hazard curve,
+which we therefore compute rather than assume.
+
+For the on-fault principal hazard here the log--log slope at
+$10^{5}$~a is $-2.40$, steeper than the
+high-activity case of that paper ($-2.07$) and far from its
+moderate-activity case ($-0.10$). The equal-hazard value therefore
+stands: 2.91~m as the median over the on-trace sites. For completeness
+we also evaluate their equation~(9), the distribution of displacement
+conditional on rupture occurring, which returns a median of 0.20~m and
+an 85th percentile of 0.91~m at these sites; the surface-rupture
+recurrence is $3.4 \times 10^{3}$~a, so the $10^{5}$~a level sits far
+out on that conditional tail. These conditional values are reported as
+diagnostics only. \citeauthor{AbrahamsonLiou2025} are explicit that the
+approach is intended for flat hazard curves and is not to be used to
+reduce the displacement where the curve is steep, and substituting
+0.91~m for 2.91~m here would be exactly that misuse. Their closing
+recommendation -- that PFDHA reports should present the epistemic
+fractiles of the displacement hazard, as modern PSHA reports do -- is
+met by Figure~\ref{fig:anatomy_maps}.
+
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.98\linewidth]{fig_logic_tree.pdf}
+  \caption{The FDHA logic tree: five levels, $4 \times 3 \times (2+3)
+  \times 1 = 60$ end branches. Weights are normalised, and the product
+  along any path gives that branch's weight. Links are drawn only where
+  the levels do not combine freely -- each distributed-rupture model
+  carries its own published displacement variants, so the
+  distributed-rupture level is subsumed in the pairing term of that
+  count. The $0.25/0.25/0.5$ weighting of the principal-displacement
+  level is what expresses the two displacement definitions (Youngs et
+  al.\ principal, Lavrentiadis \& Abrahamson sum-of-principal) being
+  held in separate definition-consistent branch sets, a constraint the
+  framework enforces rather than leaves to a footnote.}
+  \label{fig:logic_tree}
+\end{figure}
+
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.95\linewidth]{fig_ms_tunnel.pdf}
+  \caption{(a)~The two Norcia sources and the three IAEA sites; MS
+  (filled triangle) is the position where the San Benedetto tunnel was
+  offset in 2016. (b)~Distributed-displacement hazard at MS: one curve
+  per in-scope distributed chain -- the two Youngs et al. (2003)
+  regressions (85th and 95th percentile fits) and the three
+  Visini et al. (2025) magnitude-scaling variants -- each the weighted
+  mean over the primary nodes that gate it. All solid curves are on the
+  common $500 \times 500$~m cell, the fixed calibration cell of Youngs
+  et al. (2003), matched by pinning the Visini et al. (2025)
+  \texttt{pixel\_size}. The dashed curve is the identical Visini chain
+  re-evaluated at the 100~m IAEA site dimension and differs from the
+  solid curves \emph{only} in that convention. Vertical dashed line:
+  the observed 2016 offset (0.20~m vertical).}
+  \label{fig:ms_tunnel}
+\end{figure}
+
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.95\linewidth]{fig_principal_fractiles.pdf}
+  \caption{Principal displacement at the $10^{5}$~a return period over
+  the 60-branch tree: (a)~mean hazard, (b)~84th epistemic fractile,
+  both on the on-fault sites only; (c)~every branch at PF (grey) with
+  the mean hazard (black) and the 16th--84th epistemic band (shaded).
+  Triangles: the three IAEA sites. Only the principal component is
+  mapped: the distributed term depends on the per-site
+  characterisation of Section~\ref{sec:application:library} and cannot
+  be applied uniformly over a grid, whereas the principal term carries
+  no such dependence. It is non-zero only within the $\pm 2\sigma$
+  rupture-location band, that is, on the fault. The fractiles are taken
+  across logic-tree branches and are therefore epistemic; aleatory
+  variability is already integrated within each individual branch
+  curve.}
+  \label{fig:anatomy_maps}
+\end{figure}
+

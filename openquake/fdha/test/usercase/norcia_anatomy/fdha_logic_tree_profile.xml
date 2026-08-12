@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Cross-trace profile tree: the IAEA-baseline Y03 chain with the
+  Petersen et al. (2011) Gaussian rupture-location weight for the
+  "Accurately located" mapping class (two-sided sigma = 26.89 m),
+  matching the anatomy tree.
+-->
+<nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
+  <logicTree logicTreeID="lt_fdha_norcia_profile">
+
+    <logicTreeBranchingLevel branchingLevelID="bl_1_primary_surf_rup">
+      <logicTreeBranchSet branchSetID="bs_1_primary_surf_rup"
+                          uncertaintyType="fdhaPrimarySRModel">
+        <logicTreeBranch branchID="PSR_Y03">
+          <uncertaintyModel>
+            [Youngs2003PrimarySR]
+            version = GreatBasin
+          </uncertaintyModel>
+          <uncertaintyWeight>1.0</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+    <logicTreeBranchingLevel branchingLevelID="bl_2_primary_surf_displ">
+      <logicTreeBranchSet branchSetID="bs_2_primary_surf_displ"
+                          uncertaintyType="fdhaPrimaryFDModel">
+        <logicTreeBranch branchID="PFD_Y03_AD">
+          <uncertaintyModel>
+            [Youngs2003PrimaryFD]
+            norm_disp_type = AD
+          </uncertaintyModel>
+          <uncertaintyWeight>1.0</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+    <logicTreeBranchingLevel branchingLevelID="bl_3_secondary_surf_rup">
+      <logicTreeBranchSet branchSetID="bs_3_secondary_surf_rup"
+                          uncertaintyType="fdhaSecondarySRModel">
+        <logicTreeBranch branchID="SSR_Y03">
+          <uncertaintyModel>
+            [Youngs2003SecondarySR]
+            version = 3
+          </uncertaintyModel>
+          <uncertaintyWeight>1.0</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+    <logicTreeBranchingLevel branchingLevelID="bl_4_secondary_surf_displ">
+      <logicTreeBranchSet branchSetID="bs_4_secondary_surf_displ"
+                          uncertaintyType="fdhaSecondaryFDModel">
+        <logicTreeBranch branchID="SFD_Y03_P85">
+          <uncertaintyModel>
+            [Youngs2003SecondaryFD]
+            percentile = 85
+          </uncertaintyModel>
+          <uncertaintyWeight>1.0</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+    <logicTreeBranchingLevel branchingLevelID="bl_5_r_sigma">
+      <logicTreeBranchSet branchSetID="bs_5_r_sigma"
+                          uncertaintyType="fdhaCalcRSigma">
+        <logicTreeBranch branchID="RS_ACCURATE">
+          <uncertaintyModel>0.02689</uncertaintyModel>
+          <uncertaintyWeight>1.0</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+
+  </logicTree>
+</nrml>
