@@ -28,6 +28,15 @@ from openquake.fdha.secondary_surf_rup.base import BaseSecondarySurfRup
 class Youngs2003SecondarySR(BaseSecondarySurfRup):
     """Distributed surface-rupture probability model of Youngs et al. (2003).
 
+    The regression is developed for a **500 x 500 m** cell: Youngs et al.
+    (2003) digitised the Pezzopane and Dawson (1996) rupture maps "by
+    constructing a raster scan of each map using a 0.5-km x 0.5-km pixel
+    size", and state that "the occurrence of distributed rupture anywhere
+    within a 0.5 km x 0.5 km square is considered to be the same as the
+    occurrence of rupture at the point of interest" (their section on
+    models for distributed faulting). They note this likely overestimates
+    the rate at a point for a footprint much smaller than 0.25 km^2.
+
     References
     ----------
     Youngs, R.R., et al. (2003). A methodology for probabilistic fault
@@ -41,10 +50,7 @@ class Youngs2003SecondarySR(BaseSecondarySurfRup):
             canonicalised to strings); ``None`` defers to the ``get_prob``
             call (legacy default: '3').
         :param style: optional faulting style declared by the logic-tree
-            branch. Youngs et al. (2003) secondary regressions carry no
-            style selector, so the value does not change the numbers; it is
-            stored (validated against the global style vocabulary) as a
-            declaration of the branch context.
+            branch. Youngs et al.
         """
         super().__init__()
         self.version = check_choice(type(self).__name__, "version", version,

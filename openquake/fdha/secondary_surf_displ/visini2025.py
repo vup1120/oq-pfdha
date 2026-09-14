@@ -75,12 +75,7 @@ class Visini2025SecondaryFD(BaseSecondarySurfDispl):
     near-trace scarps are not distinguishable from principal faulting), so
     r_min = 5 m; the outer edges are 10 km on the hanging wall and 8 km on
     the footwall, the dataset range summarised in Valentini et al. (2025,
-    Rev. Geophys., Table 4). The paper further differentiates its
-    recommended ranges per Combination A/B/C (Visini et al. 2025, p. 14 and
-    Conclusion; e.g. Combination B is only meaningful within ~1 km of a
-    declared Rank 1.5 trace, cf. the user-manual model page); the values
-    declared here are the outermost HW/FW envelope, which is what the
-    once-per-run extrapolation warning needs.
+    Rev. Geophys., Table 4).
     """
 
     DISPLACEMENT_DEFINITION = "distributed"
