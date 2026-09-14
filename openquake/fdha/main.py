@@ -158,7 +158,11 @@ def _save_or_show(fig, plot_file: Optional[str]) -> None:
 
     fig.tight_layout()
     if plot_file:
-        fig.savefig(plot_file, dpi=160, bbox_inches="tight")
+        # Create the destination directory if needed, so that
+        # ``--plot new/dir/curve.png`` works without a manual mkdir.
+        plot_path = Path(plot_file)
+        plot_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(plot_path, dpi=160, bbox_inches="tight")
         plt.close(fig)
         logger.info(f"Plot saved to: {plot_file}")
     else:
