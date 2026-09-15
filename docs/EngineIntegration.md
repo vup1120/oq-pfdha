@@ -13,20 +13,19 @@ only the standalone CLI, examples, docs and validation material.
 ```
 FINAL OWNERSHIP
   engine (gem/oq-engine)                    oq-pfdha (this repo, consumer)
-  ├─ openquake/fdha/            models      ├─ CLI (fdha) + examples
+  ├─ openquake/pfd/             models      ├─ CLI (fdha) + examples
   ├─ openquake/hazardlib/       distances   ├─ benchmark/validation suites
   │    scalerel/, calc/…                    ├─ docs + web GUI
-  └─ openquake/calculators/fdha.py          └─ imports openquake.fdha from engine
+  └─ openquake/calculators/fdha.py          └─ imports openquake.pfd from engine
 ```
 
 Consequences that must be decided/fixed first:
 
-1. **Namespace collision.** Both projects currently ship the import name
-   `openquake.fdha`. Once the engine owns it, oq-pfdha must stop providing it.
-   **Decided:** rename the standalone package to top-level `pfdha` and re-home
-   the `fdha` console script, so oq-pfdha can `from openquake.fdha import ...`
-   the engine library without shadowing it. This is **PR-0** and blocks
-   everything else.
+1. **Namespace collision — resolved.** The engine's library was renamed from
+   `openquake.fdha` to **`openquake.pfd`** (engine commit `e28c8ad91c`), so the
+   import name `openquake.fdha` is free. oq-pfdha keeps `openquake.fdha` as its
+   CLI/consumer package and later imports the engine's `openquake.pfd`; no
+   oq-pfdha rename is needed (the old PR-0 is dropped).
 2. **Single source of truth for models.** The engine's older FDHA seeds
    (`primary_surf_rup/youngs2003.py` ExC/GB/nBR, `primary_surf_displ/youngs2003.py`
    AD/MD, committed 2026-02..06) are superseded by oq-pfdha's newer library
@@ -43,7 +42,7 @@ All decisions below are confirmed and are implemented by the PRs as written.
 
 | # | Decision | Choice |
 |---|---|---|
-| D1 | oq-pfdha package name | top-level `pfdha`; console script `fdha`; imports engine `openquake.fdha` |
+| D1 | Package names | engine library = `openquake.pfd` (renamed, done `e28c8ad91c`); oq-pfdha keeps `openquake.fdha` (CLI/consumer) and imports `openquake.pfd`; no oq-pfdha rename |
 | D2 | Trace geometry source | engine `surface.tor` only; no retained original trace unless parity forces it |
 | D3 | Datastore datasets | reuse `hcurves-*` / `hmaps` keyed by IMT `Disp` |
 | D4 | IMT / storage | reuse IMT `Disp`; store annual rates internally (as the classical path) |
@@ -60,8 +59,9 @@ All decisions below are confirmed and are implemented by the PRs as written.
 
 `~/oq-engine` (gem master `8d5712fe7f`) already has:
 
-- `openquake/fdha/{primary_surf_rup,primary_surf_displ,utils.py}` and
-  `openquake/fdha/tests/` — older, ctx/arg-based Youngs 2003 primary SR + FD.
+- `openquake/pfd/{primary_surf_rup,primary_surf_displ,utils.py}` and
+  `openquake/pfd/tests/` — older, ctx/arg-based Youngs 2003 primary SR + FD
+  (renamed from `openquake/fdha` in `e28c8ad91c`).
 - `openquake/hazardlib/scalerel/wc1994.py` — SRL/RLD/RW (no displacement
   methods); `thingbaijam2017.py` — median/std width; `leonard2010/2014`.
 - `openquake/hazardlib/geo/surface/base.py::get_x_l_ratio` (x/L + L).
@@ -90,7 +90,7 @@ oq-engine
 │  ├─ contexts.py                  # KNOWN_DISTANCES += rtor, x_l; length rup param
 │  ├─ scalerel/                    # AD/MD relations + missing widths
 │  └─ calc/displacement.py         # NEW: FDHA rate kernel
-├─ openquake/fdha/                 # CANONICAL model library (lifted from oq-pfdha)
+├─ openquake/pfd/                  # CANONICAL model library (lifted from oq-pfdha)
 │  ├─ primary_surf_rup/  primary_surf_displ/
 │  ├─ secondary_surf_rup/  secondary_surf_displ/
 │  ├─ base.py                      # 4 ABCs + declarative contracts
@@ -114,15 +114,15 @@ Reused engine layers (no duplication allowed):
 
 ## 3. Workstreams
 
-### A. Package ownership + library consolidation (PR-0 / PR-1)
-- Rename/re-home the oq-pfdha package so it imports, not defines,
-  `openquake.fdha` (PR-0).
+### A. Library consolidation (PR-1)
+- Engine library namespace is `openquake.pfd` (rename already done,
+  `e28c8ad91c`); oq-pfdha keeps `openquake.fdha` and imports `openquake.pfd`.
 - Lift oq-pfdha's four model packages + base ABCs + contracts into the engine's
-  `openquake/fdha/`; **delete** the older seeds.
+  `openquake/pfd/`; **delete** the older seeds.
 - **Unify the model API.** oq-pfdha's `get_prob(d, mag, rx, r, …)` is canonical
   (it is the benchmarked one); the engine seed's `get_prob(d, x_l, mag, rake)`
   and `get_prob(ctx)` are dropped. The ctx→call translation lives in
-  `openquake/fdha/adapter.py`, written once.
+  `openquake/pfd/adapter.py`, written once.
 - Add subclass-scan registries per slot (the `scalerel._get_available_class`
   pattern) so logic-tree class names resolve with no hand-maintained imports.
 
@@ -193,7 +193,7 @@ Reused engine layers (no duplication allowed):
 - `MULTIFAULT_REFERENCE_LINE` routing (ECS/LCP/segments) via `MultiSurface`;
   keep model metadata inert until implemented.
 - Kuehn 2024, Chiou 2025, Lavrentiadis 2023, Visini 2025 rank-2 pipeline; data
-  tables shipped under `openquake/fdha/**/data/` as in oq-pfdha.
+  tables shipped under `openquake/pfd/**/data/` as in oq-pfdha.
 
 ### I. Strip oq-pfdha of duplicated logic (final phase)
 - Remove oq-pfdha's model packages, `calc/`, `logic_tree/`, output writers once
@@ -206,9 +206,9 @@ Reused engine layers (no duplication allowed):
 
 | oq-pfdha | Engine destination | Action |
 |---|---|---|
-| `primary_surf_rup/`, `primary_surf_displ/`, `secondary_surf_rup/`, `secondary_surf_displ/` | `openquake/fdha/**` | lift; API canonical |
-| model base classes + contracts | `openquake/fdha/base.py` | lift |
-| `calc/model_adapter.py` | `openquake/fdha/adapter.py` | lift, engine ctx facade |
+| `primary_surf_rup/`, `primary_surf_displ/`, `secondary_surf_rup/`, `secondary_surf_displ/` | `openquake/pfd/**` | lift; API canonical |
+| model base classes + contracts | `openquake/pfd/base.py` | lift |
+| `calc/model_adapter.py` | `openquake/pfd/adapter.py` | lift, engine ctx facade |
 | `calc/location_weight.py`, `calc/hazard.py` kernel | `openquake/hazardlib/calc/displacement.py` | port semantics |
 | `calc/utils/{rupture_distance,segments,interpolation,probability,lcp,ecs}.py` | `hazardlib/calc/`, `hazardlib/geo/` | fold into engine (distances, map inversion) |
 | `calc/{contexts,config_loader,calculators}.py` | — | **discard**; use engine ContextMaker/oqvalidation/calculators |
@@ -221,8 +221,8 @@ Reused engine layers (no duplication allowed):
 
 | PR | Scope | Depends on | Acceptance |
 |---|---|---|---|
-| **PR-0** | Rename oq-pfdha package to top-level `pfdha` (D1) | — | oq-pfdha imports engine `openquake.fdha`; no shadowing |
-| **PR-1** | Engine library consolidation: lift oq-pfdha models, delete old seeds, adapter, registries | PR-0 | oq-pfdha model tests pass against in-engine classes |
+| ~~PR-0~~ | ~~Rename oq-pfdha package~~ — **dropped**; the engine library was renamed to `openquake.pfd` instead (`e28c8ad91c`) | — | done |
+| **PR-1** | Engine library consolidation: lift oq-pfdha models into `openquake/pfd`, delete old seeds, adapter, registries | — | oq-pfdha model tests pass against in-engine classes |
 | **PR-2** | scalerel AD/MD + widths (Workstream C) | — | pinned to papers + oq-pfdha outputs |
 | **PR-3** | `rtor` + `x_l` + `length` (Workstream B) | — | distance parity vs oq-pfdha (Norcia/IAEA) |
 | **PR-4** | Remaining SR/FD models (distance-dependent) | PR-2, PR-3 | model tests + parity |
@@ -238,7 +238,7 @@ Reused engine layers (no duplication allowed):
    (themselves pinned to fdhpy and published papers).
 2. **Parity harness in oq-pfdha** (extend
    `test/integration/test_engine_parity.py`): import the engine's
-   `openquake.fdha`, assert `get_prob`/distance equality over a grid and over
+   `openquake.pfd`, assert `get_prob`/distance equality over a grid and over
    the benchmark fixtures — the regression net while both trees coexist.
 3. **End-to-end goldens**: the two public examples must reproduce oq-pfdha's
    `aggregate_hazard.csv` / displacement maps — byte-exact where the geometry
@@ -262,7 +262,8 @@ Decisions D1–D12 are settled (§0.1); the items below remain engineering risks
 
 ## 8. Immediate next action
 
-Open **PR-0** (oq-pfdha package rename/re-home) because it unblocks the
-one-library rule. Then **PR-1**: lift oq-pfdha's library into the engine, delete
-the older seeds, add `openquake/fdha/adapter.py` + registries, and point the
-engine's `openquake/fdha/tests` at oq-pfdha's expected fixtures.
+The engine library namespace rename to `openquake.pfd` is done (`e28c8ad91c`),
+so the old PR-0 is dropped. Proceed with **PR-1**: lift oq-pfdha's library into
+`openquake/pfd`, delete the older seeds, add `openquake/pfd/adapter.py` +
+registries, and point the engine's `openquake/pfd/tests` at oq-pfdha's expected
+fixtures. Self-contained engine work (PR-2/PR-3) can proceed in parallel.
