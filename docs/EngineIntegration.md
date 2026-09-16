@@ -225,7 +225,7 @@ Reused engine layers (no duplication allowed):
 | ~~PR-1~~ | ~~Engine library consolidation: lift oq-pfdha models into `openquake/pfd`, delete old seeds, adapter, registries~~ — **done** (`cafbc8dce7`) | — | oq-pfdha model tests pass against in-engine classes |
 | ~~PR-2~~ | ~~scalerel AD/MD + widths (Workstream C)~~ — **done** (`4b54e8462c`): folded into `hazardlib/scalerel`, `openquake/pfd/scalerel` deleted, `width_model` scalerel instances | — | pinned to papers + oq-pfdha outputs (`hazardlib/tests/scalerel/fdha_scalerel_test.py`) |
 | ~~PR-3~~ | ~~`rtor` + `x_l` + `length` (Workstream B)~~ — **done** (`91b09801a3`) | — | distance parity vs oq-pfdha (Norcia/IAEA) |
-| **PR-4** | Remaining SR/FD models (distance-dependent) | PR-2, PR-3 | model tests + parity |
+| ~~PR-4~~ | ~~Remaining SR/FD models (distance-dependent)~~ — **done** (`c3eaa2e1e5`): adapter wired to the engine `rtor`/`x_l`/`length` context, style from rake, wiring + parity tests | PR-2, PR-3 | model tests + parity |
 | **PR-5** | FDHA logic tree + oqparam params (Workstream E) | PR-1, PR-4 | branch enumeration matches oq-pfdha manifest |
 | **PR-6** | `hazardlib/calc/displacement.py` + `calculators/fdha.py` curve mode under `hcurves-*` (D3/D4/D12) | PR-3, PR-5 | reproduces `hazard_curve_minimal` within tolerance |
 | **PR-7** | map mode + exports/views/plots | PR-6 | reproduces `hazard_map_minimal` |
@@ -262,14 +262,14 @@ Decisions D1–D12 are settled (§0.1); the items below remain engineering risks
 
 ## 8. Immediate next action
 
-PR-0, PR-1 (`cafbc8dce7`), PR-2 (`4b54e8462c`) and PR-3 (`91b09801a3`) are done
-on the engine's `oq-integration` branch. The FDHA library now lives in
-`openquake/pfd`, the `rtor`/`x_l`/`length` distances are wired in hazardlib,
-and the FD scaling relations are folded into `openquake/hazardlib/scalerel`
-with `openquake/pfd/scalerel` removed.
+PR-0, PR-1 (`cafbc8dce7`), PR-2 (`4b54e8462c`), PR-3 (`91b09801a3`) and PR-4
+(`c3eaa2e1e5`) are done on the engine's `oq-integration` branch. The FDHA
+library lives in `openquake/pfd`, the `rtor`/`x_l`/`length` distances are wired
+in hazardlib, the FD scaling relations are folded into
+`openquake/hazardlib/scalerel`, and the model adapter now consumes the engine
+`RuptureContext` fields.
 
-Proceed with **PR-4**: port/validate the remaining distance-dependent SR/FD
-models (the models themselves were lifted in PR-1; what is left is their
-engine-context wiring and parity coverage) and, when ready, **PR-5**: the FDHA
-logic tree + oqparam parameters, which unblocks the **PR-6** kernel and
-calculator.
+Proceed with **PR-5**: the FDHA logic tree + oqparam parameters (Workstream E).
+This unblocks the **PR-6** kernel (`hazardlib/calc/displacement.py` +
+`calculators/fdha.py` curve mode). The remaining distance-dependent models are
+already in; PR-6 exercises them end to end on the minimal example.
