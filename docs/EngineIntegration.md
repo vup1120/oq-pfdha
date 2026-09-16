@@ -46,7 +46,7 @@ All decisions below are confirmed and are implemented by the PRs as written.
 | D2 | Trace geometry source | engine `surface.tor` only; no retained original trace unless parity forces it |
 | D3 | Datastore datasets | reuse `hcurves-*` / `hmaps` keyed by IMT `Disp` |
 | D4 | IMT / storage | reuse IMT `Disp`; store annual rates internally (as the classical path) |
-| D5 | FDHA logic-tree schema | keep oq-pfdha's XML, parsed by `hazardlib.logictree` |
+| D5 | FDHA logic-tree schema | keep oq-pfdha's XML but with `<logicTreeBranchSet>` directly under `<logicTree>` (the legacy `<logicTreeBranchingLevel>` wrapper is obsolete for FDHA and rejected); parsed by `hazardlib.gsim_lt.FdhaLogicTree` |
 | D6 | CLI ownership | engine exposes the `fdha` calculation mode; oq-pfdha keeps a thin `fdha` wrapper |
 | D7 | Canonical model API | oq-pfdha explicit `get_prob(d, mag, rx, r, …)`; one engine ctx adapter |
 | D8 | Numeric parity | 1e-12 rel. on rates for identical geometry; documented tolerance where `tor` differs |
@@ -163,7 +163,8 @@ Reused engine layers (no duplication allowed):
   downstream machinery.
 
 ### E. FDHA logic tree + job parameters
-- Reuse `hazardlib.logictree`; map `fdhaPrimarySRModel`, `fdhaPrimaryFDModel`,
+- Reuse the engine NRML scaffolding via `hazardlib.gsim_lt.FdhaLogicTree`;
+  map `fdhaPrimarySRModel`, `fdhaPrimaryFDModel`,
   `fdhaSecondarySRModel`, `fdhaSecondaryFDModel` and `fdhaCalcRSigma` onto the
   four slots + calc-param slot (mirror oq-pfdha's `logic_tree/types.py`).
 - `oqvalidation.py`: add `'fdha'` to `ALL_CALCULATORS`; declare
@@ -277,3 +278,8 @@ IMT `Disp`) together with the `oqvalidation.py` job parameters
 `r_threshold_km`, `r_sigma_km`) that the calculator consumes and validates.
 The end-to-end acceptance is reproducing `examples/hazard_curve_minimal`
 (`~/oq-pfdha`) within tolerance.
+
+Before that acceptance can run, the oq-pfdha FDHA logic-tree files still need
+the mechanical migration from `<logicTreeBranchingLevel>` to branch sets
+directly under `<logicTree>` (`examples/`, benchmark configs, test fixtures,
+demo generators): `FdhaLogicTree` now rejects the obsolete wrapper.
