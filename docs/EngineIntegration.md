@@ -226,7 +226,7 @@ Reused engine layers (no duplication allowed):
 | ~~PR-2~~ | ~~scalerel AD/MD + widths (Workstream C)~~ — **done** (`4b54e8462c`): folded into `hazardlib/scalerel`, `openquake/pfd/scalerel` deleted, `width_model` scalerel instances | — | pinned to papers + oq-pfdha outputs (`hazardlib/tests/scalerel/fdha_scalerel_test.py`) |
 | ~~PR-3~~ | ~~`rtor` + `x_l` + `length` (Workstream B)~~ — **done** (`91b09801a3`) | — | distance parity vs oq-pfdha (Norcia/IAEA) |
 | ~~PR-4~~ | ~~Remaining SR/FD models (distance-dependent)~~ — **done** (`c3eaa2e1e5`): adapter wired to the engine `rtor`/`x_l`/`length` context, style from rake, wiring + parity tests | PR-2, PR-3 | model tests + parity |
-| **PR-5** | FDHA logic tree + oqparam params (Workstream E) — logic tree **done** (`1ee022c2db`): engine-side reader/enumerator, oq-pfdha schema + filters; **oqparam declarations deferred to PR-6** | PR-1, PR-4 | branch enumeration matches oq-pfdha manifest |
+| **PR-5** | FDHA logic tree + oqparam params (Workstream E) — logic tree **done** (`bfbf32886c`): `hazardlib.gsim_lt.FdhaLogicTree`, oq-pfdha schema + filters; **oqparam declarations deferred to PR-6** | PR-1, PR-4 | branch enumeration matches oq-pfdha manifest |
 | **PR-6** | `hazardlib/calc/displacement.py` + `calculators/fdha.py` curve mode under `hcurves-*` (D3/D4/D12) — kernel **done** (`27687f1bdf`): `location_weight` + rate kernel, parity-verified; **calculator + oqparam params remaining** | PR-3, PR-5 | reproduces `hazard_curve_minimal` within tolerance |
 | **PR-7** | map mode + exports/views/plots | PR-6 | reproduces `hazard_map_minimal` |
 | **PR-8** | heavy models + multi-fault | PR-6 | benchmarks pass |
@@ -266,7 +266,9 @@ PR-0..PR-5 are done on the engine's `oq-integration` branch and **PR-6** is
 half-done: `openquake/hazardlib/calc/displacement.py` holds the FDHA rate
 kernel (`location_weight` verified bit-identical to oq-pfdha; the
 principal/distributed rate core and the aggregate single-bucket routing), and
-`openquake/pfd/logictree.py` enumerates the oq-pfdha end branches.
+`openquake/hazardlib/gsim_lt.py::FdhaLogicTree` enumerates the oq-pfdha end
+branches (the parallel `openquake/pfd/logictree.py` was folded into
+`gsim_lt.py`, reusing its NRML scaffolding).
 
 Proceed with the **second half of PR-6**: `openquake/calculators/fdha.py`
 (the `fdha`/`fdha_classical` curve mode storing under `hcurves-rlzs` keyed by
