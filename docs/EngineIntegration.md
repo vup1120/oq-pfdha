@@ -222,9 +222,9 @@ Reused engine layers (no duplication allowed):
 | PR | Scope | Depends on | Acceptance |
 |---|---|---|---|
 | ~~PR-0~~ | ~~Rename oq-pfdha package~~ — **dropped**; the engine library was renamed to `openquake.pfd` instead (`e28c8ad91c`) | — | done |
-| **PR-1** | Engine library consolidation: lift oq-pfdha models into `openquake/pfd`, delete old seeds, adapter, registries | — | oq-pfdha model tests pass against in-engine classes |
-| **PR-2** | scalerel AD/MD + widths (Workstream C) | — | pinned to papers + oq-pfdha outputs |
-| **PR-3** | `rtor` + `x_l` + `length` (Workstream B) | — | distance parity vs oq-pfdha (Norcia/IAEA) |
+| ~~PR-1~~ | ~~Engine library consolidation: lift oq-pfdha models into `openquake/pfd`, delete old seeds, adapter, registries~~ — **done** (`cafbc8dce7`) | — | oq-pfdha model tests pass against in-engine classes |
+| ~~PR-2~~ | ~~scalerel AD/MD + widths (Workstream C)~~ — **done** (`4b54e8462c`): folded into `hazardlib/scalerel`, `openquake/pfd/scalerel` deleted, `width_model` scalerel instances | — | pinned to papers + oq-pfdha outputs (`hazardlib/tests/scalerel/fdha_scalerel_test.py`) |
+| ~~PR-3~~ | ~~`rtor` + `x_l` + `length` (Workstream B)~~ — **done** (`91b09801a3`) | — | distance parity vs oq-pfdha (Norcia/IAEA) |
 | **PR-4** | Remaining SR/FD models (distance-dependent) | PR-2, PR-3 | model tests + parity |
 | **PR-5** | FDHA logic tree + oqparam params (Workstream E) | PR-1, PR-4 | branch enumeration matches oq-pfdha manifest |
 | **PR-6** | `hazardlib/calc/displacement.py` + `calculators/fdha.py` curve mode under `hcurves-*` (D3/D4/D12) | PR-3, PR-5 | reproduces `hazard_curve_minimal` within tolerance |
@@ -262,8 +262,14 @@ Decisions D1–D12 are settled (§0.1); the items below remain engineering risks
 
 ## 8. Immediate next action
 
-The engine library namespace rename to `openquake.pfd` is done (`e28c8ad91c`),
-so the old PR-0 is dropped. Proceed with **PR-1**: lift oq-pfdha's library into
-`openquake/pfd`, delete the older seeds, add `openquake/pfd/adapter.py` +
-registries, and point the engine's `openquake/pfd/tests` at oq-pfdha's expected
-fixtures. Self-contained engine work (PR-2/PR-3) can proceed in parallel.
+PR-0, PR-1 (`cafbc8dce7`), PR-2 (`4b54e8462c`) and PR-3 (`91b09801a3`) are done
+on the engine's `oq-integration` branch. The FDHA library now lives in
+`openquake/pfd`, the `rtor`/`x_l`/`length` distances are wired in hazardlib,
+and the FD scaling relations are folded into `openquake/hazardlib/scalerel`
+with `openquake/pfd/scalerel` removed.
+
+Proceed with **PR-4**: port/validate the remaining distance-dependent SR/FD
+models (the models themselves were lifted in PR-1; what is left is their
+engine-context wiring and parity coverage) and, when ready, **PR-5**: the FDHA
+logic tree + oqparam parameters, which unblocks the **PR-6** kernel and
+calculator.
