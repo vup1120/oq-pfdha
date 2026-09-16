@@ -227,7 +227,7 @@ Reused engine layers (no duplication allowed):
 | ~~PR-3~~ | ~~`rtor` + `x_l` + `length` (Workstream B)~~ — **done** (`91b09801a3`) | — | distance parity vs oq-pfdha (Norcia/IAEA) |
 | ~~PR-4~~ | ~~Remaining SR/FD models (distance-dependent)~~ — **done** (`c3eaa2e1e5`): adapter wired to the engine `rtor`/`x_l`/`length` context, style from rake, wiring + parity tests | PR-2, PR-3 | model tests + parity |
 | **PR-5** | FDHA logic tree + oqparam params (Workstream E) — logic tree **done** (`1ee022c2db`): engine-side reader/enumerator, oq-pfdha schema + filters; **oqparam declarations deferred to PR-6** | PR-1, PR-4 | branch enumeration matches oq-pfdha manifest |
-| **PR-6** | `hazardlib/calc/displacement.py` + `calculators/fdha.py` curve mode under `hcurves-*` (D3/D4/D12) | PR-3, PR-5 | reproduces `hazard_curve_minimal` within tolerance |
+| **PR-6** | `hazardlib/calc/displacement.py` + `calculators/fdha.py` curve mode under `hcurves-*` (D3/D4/D12) — kernel **done** (`27687f1bdf`): `location_weight` + rate kernel, parity-verified; **calculator + oqparam params remaining** | PR-3, PR-5 | reproduces `hazard_curve_minimal` within tolerance |
 | **PR-7** | map mode + exports/views/plots | PR-6 | reproduces `hazard_map_minimal` |
 | **PR-8** | heavy models + multi-fault | PR-6 | benchmarks pass |
 | **PR-9** | Strip oq-pfdha duplicated logic (Workstream I) | PR-6..8 | oq-pfdha runs on engine imports only |
@@ -262,15 +262,16 @@ Decisions D1–D12 are settled (§0.1); the items below remain engineering risks
 
 ## 8. Immediate next action
 
-PR-0..PR-4 are done on the engine's `oq-integration` branch, and **PR-5** is
-half-done: `openquake/pfd/logictree.py` reads the oq-pfdha NRML schema through
-the engine's `hazardlib.nrml` reader and enumerates end branches (four model
-slots + `fdhaCalcRSigma`, `applyToSources`/`applyToBranches`/`applyToStyle`,
-weight validation), reproducing the `hazard_curve_minimal` chain (`1ee022c2db`).
+PR-0..PR-5 are done on the engine's `oq-integration` branch and **PR-6** is
+half-done: `openquake/hazardlib/calc/displacement.py` holds the FDHA rate
+kernel (`location_weight` verified bit-identical to oq-pfdha; the
+principal/distributed rate core and the aggregate single-bucket routing), and
+`openquake/pfd/logictree.py` enumerates the oq-pfdha end branches.
 
-The `oqvalidation.py` job-parameter declarations (`calculation_mode`,
-`fdha_logic_tree_file`, `displacement_measure_levels`, `r_threshold_km`,
-`r_sigma_km`) are deliberately deferred to **PR-6**: without the calculator they
-cannot be validated end to end. Proceed with **PR-6**: the kernel
-(`hazardlib/calc/displacement.py`) and the `calculators/fdha.py` curve mode,
-which will declare and consume the job parameters.
+Proceed with the **second half of PR-6**: `openquake/calculators/fdha.py`
+(the `fdha`/`fdha_classical` curve mode storing under `hcurves-rlzs` keyed by
+IMT `Disp`) together with the `oqvalidation.py` job parameters
+(`calculation_mode`, `fdha_logic_tree_file`, `displacement_measure_levels`,
+`r_threshold_km`, `r_sigma_km`) that the calculator consumes and validates.
+The end-to-end acceptance is reproducing `examples/hazard_curve_minimal`
+(`~/oq-pfdha`) within tolerance.
