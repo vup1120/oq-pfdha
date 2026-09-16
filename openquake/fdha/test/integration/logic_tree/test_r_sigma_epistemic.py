@@ -48,20 +48,43 @@ S1, W1 = 0.0, 0.4
 S2, W2 = 0.3, 0.6
 
 
+def _assert_csv_close(got: Path, exp: Path, rtol: float = 1e-12) -> None:
+    """Compare two numeric CSV tables with a relative tolerance.
+
+    Byte-exact text comparison is not portable across numpy/BLAS builds (the
+    last formatted digit can differ); the header is compared exactly and
+    every numeric field at ``rtol``.
+    """
+    glines = got.read_text().splitlines()
+    elines = exp.read_text().splitlines()
+    assert len(glines) == len(elines), f"{got.name}: line count differs"
+    assert glines[0] == elines[0], f"{got.name}: header differs"
+    for i, (g, e) in enumerate(zip(glines[1:], elines[1:]), 1):
+        gf, ef = g.split(","), e.split(",")
+        assert len(gf) == len(ef), f"{got.name}:{i}: field count differs"
+        for gv, ev in zip(gf, ef):
+            try:
+                gfv, efv = float(gv), float(ev)
+            except ValueError:
+                assert gv == ev, f"{got.name}:{i}: {gv!r} != {ev!r}"
+            else:
+                assert np.isclose(gfv, efv, rtol=rtol, atol=0), \
+                    f"{got.name}:{i}: {gfv!r} != {efv!r}"
+
+
 def _sigma_branching_level(branches: list[tuple[str, str, str]]) -> str:
     lines = [
-        '    <logicTreeBranchingLevel branchingLevelID="bl_5_r_sigma">',
-        '      <logicTreeBranchSet branchSetID="bs_5_r_sigma" '
+        '    <logicTreeBranchSet branchSetID="bs_5_r_sigma" '
         'uncertaintyType="fdhaCalcRSigma">',
     ]
     for bid, value, weight in branches:
         lines += [
-            f'        <logicTreeBranch branchID="{bid}">',
-            f'          <uncertaintyModel>{value}</uncertaintyModel>',
-            f'          <uncertaintyWeight>{weight}</uncertaintyWeight>',
-            '        </logicTreeBranch>',
+            f'      <logicTreeBranch branchID="{bid}">',
+            f'        <uncertaintyModel>{value}</uncertaintyModel>',
+            f'        <uncertaintyWeight>{weight}</uncertaintyWeight>',
+            '      </logicTreeBranch>',
         ]
-    lines += ['      </logicTreeBranchSet>', '    </logicTreeBranchingLevel>']
+    lines += ['    </logicTreeBranchSet>']
     return "\n".join(lines)
 
 
@@ -141,12 +164,14 @@ def test_mode_b_single_zero_branch_equals_mode_a_curve_fixture(tmp_path):
     lt.run(outdir=tmp_path / "out")
 
     fix = FIXTURES_DIR / "curve_explicit"
-    assert (tmp_path / "out" / "aggregate_hazard.csv").read_bytes() == (
-        fix / "aggregate_hazard.csv"
-    ).read_bytes()
-    assert (
-        tmp_path / "out" / "hazard_curves" / "branch_0000.csv"
-    ).read_bytes() == (fix / "branch_0000.csv").read_bytes()
+    _assert_csv_close(
+        tmp_path / "out" / "aggregate_hazard.csv",
+        fix / "aggregate_hazard.csv",
+    )
+    _assert_csv_close(
+        tmp_path / "out" / "hazard_curves" / "branch_0000.csv",
+        fix / "branch_0000.csv",
+    )
 
     # The branch INI must carry the materialised value on the same key the
     # MODE A scalar uses (single shared consumption point).
@@ -161,7 +186,7 @@ def test_mode_b_single_zero_branch_equals_mode_a_curve_fixture(tmp_path):
 @pytest.mark.regression
 def test_mode_b_single_zero_branch_equals_mode_a_map_fixture(tmp_path):
     """MODE B sigma-0 branch == the map fixture (no r_sigma_km, boxcar path):
-    bit-identical CSVs / <=1e-12 HDF5 rates."""
+    CSV rates equal within 1e-12 / <=1e-12 HDF5 rates."""
     ini = _make_map_job(tmp_path / "job", branches=[("RS_V", "0.0", "1.0")])
     lt = FdhaLogicTree.from_ini(str(ini))
     lt.run(outdir=tmp_path / "out")
@@ -175,9 +200,9 @@ def test_mode_b_single_zero_branch_equals_mode_a_map_fixture(tmp_path):
         "displacement_map_quantile-0.84.csv",
         "displacement_map_quantile-0.95.csv",
     ):
-        assert (tmp_path / "out" / "aggregate" / name).read_bytes() == (
-            fix / name
-        ).read_bytes(), f"aggregate/{name} deviates from MODE A baseline"
+        _assert_csv_close(
+            tmp_path / "out" / "aggregate" / name, fix / name)
+        # aggregate/name deviates from MODE A baseline
 
     h5py = pytest.importorskip("h5py")
     frozen = np.load(fix / "rates_baseline.npz")

@@ -13,34 +13,30 @@
 <nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
   <logicTree logicTreeID="example_fdha_lt">
 
-    <logicTreeBranchingLevel branchingLevelID="bl1">
-      <logicTreeBranchSet branchSetID="bs_psr"
-                          uncertaintyType="fdhaPrimarySRModel"
-                          applyToStyle="strike-slip">
-        <logicTreeBranch branchID="PSR">
-          <uncertaintyModel>
-            [Pizza2023PrimarySR]
-            style = "all"
-          </uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+  <logicTreeBranchSet branchSetID="bs_psr"
+                      uncertaintyType="fdhaPrimarySRModel"
+                      applyToStyle="strike-slip">
+    <logicTreeBranch branchID="PSR">
+      <uncertaintyModel>
+        [Pizza2023PrimarySR]
+        style = "all"
+      </uncertaintyModel>
+      <uncertaintyWeight>1.0</uncertaintyWeight>
+    </logicTreeBranch>
+  </logicTreeBranchSet>
 
-    <logicTreeBranchingLevel branchingLevelID="bl2">
-      <logicTreeBranchSet branchSetID="bs_pfd"
-                          uncertaintyType="fdhaPrimaryFDModel"
-                          applyToBranches="PSR"
-                          applyToStyle="strike-slip">
-        <logicTreeBranch branchID="PFD">
-          <uncertaintyModel>
-            [Petersen2011PrimaryFD]
-            version = bilinear
-          </uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+  <logicTreeBranchSet branchSetID="bs_pfd"
+                      uncertaintyType="fdhaPrimaryFDModel"
+                      applyToBranches="PSR"
+                      applyToStyle="strike-slip">
+    <logicTreeBranch branchID="PFD">
+      <uncertaintyModel>
+        [Petersen2011PrimaryFD]
+        version = bilinear
+      </uncertaintyModel>
+      <uncertaintyWeight>1.0</uncertaintyWeight>
+    </logicTreeBranch>
+  </logicTreeBranchSet>
 
   </logicTree>
 </nrml>

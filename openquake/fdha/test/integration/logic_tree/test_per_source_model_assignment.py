@@ -63,53 +63,45 @@ _SFD_YOUNGS_95 = "[Youngs2003SecondaryFD]\npercentile = 95"
 _SFD_PETERSEN = "[Petersen2011SecondaryFD]\npixel_size = 25"
 
 _COMMON_LEVELS = """\
-    <logicTreeBranchingLevel branchingLevelID="bl1">
-      <logicTreeBranchSet branchSetID="bs1" uncertaintyType="fdhaPrimarySRModel">
-        <logicTreeBranch branchID="PSR">
-          <uncertaintyModel><![CDATA[[Youngs2003PrimarySR]
+  <logicTreeBranchSet branchSetID="bs1" uncertaintyType="fdhaPrimarySRModel">
+    <logicTreeBranch branchID="PSR">
+      <uncertaintyModel><![CDATA[[Youngs2003PrimarySR]
 style = all]]></uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
-    <logicTreeBranchingLevel branchingLevelID="bl2">
-      <logicTreeBranchSet branchSetID="bs2" uncertaintyType="fdhaPrimaryFDModel">
-        <logicTreeBranch branchID="PFD">
-          <uncertaintyModel><![CDATA[[Youngs2003PrimaryFD]
+      <uncertaintyWeight>1.0</uncertaintyWeight>
+    </logicTreeBranch>
+  </logicTreeBranchSet>
+  <logicTreeBranchSet branchSetID="bs2" uncertaintyType="fdhaPrimaryFDModel">
+    <logicTreeBranch branchID="PFD">
+      <uncertaintyModel><![CDATA[[Youngs2003PrimaryFD]
 style = normal
 norm_disp_type = AD]]></uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
-    <logicTreeBranchingLevel branchingLevelID="bl3">
-      <logicTreeBranchSet branchSetID="bs3" uncertaintyType="fdhaSecondarySRModel">
-        <logicTreeBranch branchID="SSR">
-          <uncertaintyModel><![CDATA[[Youngs2003SecondarySR]
+      <uncertaintyWeight>1.0</uncertaintyWeight>
+    </logicTreeBranch>
+  </logicTreeBranchSet>
+  <logicTreeBranchSet branchSetID="bs3" uncertaintyType="fdhaSecondarySRModel">
+    <logicTreeBranch branchID="SSR">
+      <uncertaintyModel><![CDATA[[Youngs2003SecondarySR]
 version = 3]]></uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+      <uncertaintyWeight>1.0</uncertaintyWeight>
+    </logicTreeBranch>
+  </logicTreeBranchSet>
 """
 
 
 def _sfd_level(bl_id, bs_id, branches, apply_to=None):
     ats = f' applyToSources="{apply_to}"' if apply_to else ""
     body = "".join(
-        f"""        <logicTreeBranch branchID="{bid}">
-          <uncertaintyModel><![CDATA[{model}]]></uncertaintyModel>
-          <uncertaintyWeight>{weight}</uncertaintyWeight>
-        </logicTreeBranch>\n"""
+        f"""      <logicTreeBranch branchID="{bid}">
+        <uncertaintyModel><![CDATA[{model}]]></uncertaintyModel>
+        <uncertaintyWeight>{weight}</uncertaintyWeight>
+      </logicTreeBranch>\n"""
         for bid, model, weight in branches
     )
     return (
-        f'    <logicTreeBranchingLevel branchingLevelID="{bl_id}">\n'
-        f'      <logicTreeBranchSet branchSetID="{bs_id}" '
+        f'    <logicTreeBranchSet branchSetID="{bs_id}" '
         f'uncertaintyType="fdhaSecondaryFDModel"{ats}>\n'
         f"{body}"
-        f"      </logicTreeBranchSet>\n"
-        f"    </logicTreeBranchingLevel>\n"
+        f"    </logicTreeBranchSet>\n"
     )
 
 

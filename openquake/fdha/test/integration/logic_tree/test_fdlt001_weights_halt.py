@@ -34,18 +34,16 @@ def test_fdlt001_weights_sum_halts_before_run(tmp_path):
         """<?xml version="1.0" encoding="UTF-8"?>
 <nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
   <logicTree logicTreeID="pfdha">
-    <logicTreeBranchingLevel branchingLevelID="bl1">
-      <logicTreeBranchSet branchSetID="bs1" uncertaintyType="fdhaPrimarySRModel">
-        <logicTreeBranch branchID="A">
-          <uncertaintyModel>Pizza2023PrimarySR</uncertaintyModel>
-          <uncertaintyWeight>0.4</uncertaintyWeight>
-        </logicTreeBranch>
-        <logicTreeBranch branchID="B">
-          <uncertaintyModel>Pizza2023PrimarySR</uncertaintyModel>
-          <uncertaintyWeight>0.5</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+    <logicTreeBranchSet branchSetID="bs1" uncertaintyType="fdhaPrimarySRModel">
+      <logicTreeBranch branchID="A">
+        <uncertaintyModel>Pizza2023PrimarySR</uncertaintyModel>
+        <uncertaintyWeight>0.4</uncertaintyWeight>
+      </logicTreeBranch>
+      <logicTreeBranch branchID="B">
+        <uncertaintyModel>Pizza2023PrimarySR</uncertaintyModel>
+        <uncertaintyWeight>0.5</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
   </logicTree>
 </nrml>
 """

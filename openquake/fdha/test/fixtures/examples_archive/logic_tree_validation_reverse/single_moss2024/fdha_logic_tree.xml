@@ -12,37 +12,33 @@
 <nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
   <logicTree logicTreeID="pfdha_validation_rv_single_moss2024">
 
-    <logicTreeBranchingLevel branchingLevelID="bl1_rv_psr">
-      <logicTreeBranchSet branchSetID="bs1_rv_psr"
-                          uncertaintyType="fdhaPrimarySRModel"
-                          applyToStyle="reverse">
-        <logicTreeBranch branchID="RV_PSR_PIZZA2023">
-          <uncertaintyModel>
-            [Pizza2023PrimarySR]
-            style = "all"
-          </uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+  <logicTreeBranchSet branchSetID="bs1_rv_psr"
+                      uncertaintyType="fdhaPrimarySRModel"
+                      applyToStyle="reverse">
+    <logicTreeBranch branchID="RV_PSR_PIZZA2023">
+      <uncertaintyModel>
+        [Pizza2023PrimarySR]
+        style = "all"
+      </uncertaintyModel>
+      <uncertaintyWeight>1.0</uncertaintyWeight>
+    </logicTreeBranch>
+  </logicTreeBranchSet>
 
-    <logicTreeBranchingLevel branchingLevelID="bl2_rv_pfd">
-      <logicTreeBranchSet branchSetID="bs2_rv_pfd"
-                          uncertaintyType="fdhaPrimaryFDModel"
-                          applyToBranches="RV_PSR_PIZZA2023"
-                          applyToStyle="reverse">
-        <logicTreeBranch branchID="RV_PFD_MOSS2024">
-          <uncertaintyModel>
-            [Moss2024PrimaryFD]
-            style = "reverse"
-            version = "AD"
-            source = "EQS"
-            completeness = "all"
-          </uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+  <logicTreeBranchSet branchSetID="bs2_rv_pfd"
+                      uncertaintyType="fdhaPrimaryFDModel"
+                      applyToBranches="RV_PSR_PIZZA2023"
+                      applyToStyle="reverse">
+    <logicTreeBranch branchID="RV_PFD_MOSS2024">
+      <uncertaintyModel>
+        [Moss2024PrimaryFD]
+        style = "reverse"
+        version = "AD"
+        source = "EQS"
+        completeness = "all"
+      </uncertaintyModel>
+      <uncertaintyWeight>1.0</uncertaintyWeight>
+    </logicTreeBranch>
+  </logicTreeBranchSet>
 
   </logicTree>
 </nrml>

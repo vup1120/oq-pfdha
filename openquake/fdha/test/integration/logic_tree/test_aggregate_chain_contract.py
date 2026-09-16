@@ -21,22 +21,19 @@ from openquake.fdha.logic_tree.types import LogicTreeValidationError
 pytestmark = pytest.mark.integration
 
 _SECONDARY_LEVELS = """
-    <logicTreeBranchingLevel branchingLevelID="bl3">
-      <logicTreeBranchSet branchSetID="bs3" uncertaintyType="fdhaSecondarySRModel" applyToBranches="FD">
-        <logicTreeBranch branchID="SSR">
-          <uncertaintyModel>[FixedSecondarySR]\nvalue = 0.0</uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
-    <logicTreeBranchingLevel branchingLevelID="bl4">
-      <logicTreeBranchSet branchSetID="bs4" uncertaintyType="fdhaSecondaryFDModel" applyToBranches="SSR">
-        <logicTreeBranch branchID="SFD">
-          <uncertaintyModel>[Youngs2003SecondaryFD]\nstyle = 'all'</uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>"""
+    <logicTreeBranchSet branchSetID="bs3" uncertaintyType="fdhaSecondarySRModel" applyToBranches="FD">
+      <logicTreeBranch branchID="SSR">
+        <uncertaintyModel>[FixedSecondarySR]\nvalue = 0.0</uncertaintyModel>
+        <uncertaintyWeight>1.0</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
+    <logicTreeBranchSet branchSetID="bs4" uncertaintyType="fdhaSecondaryFDModel" applyToBranches="SSR">
+      <logicTreeBranch branchID="SFD">
+        <uncertaintyModel>[Youngs2003SecondaryFD]\nstyle = 'all'</uncertaintyModel>
+        <uncertaintyWeight>1.0</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
+"""
 
 
 def _write_job(tmp_path: Path, with_secondary: bool) -> Path:
@@ -64,22 +61,19 @@ def _write_job(tmp_path: Path, with_secondary: bool) -> Path:
         f"""<?xml version="1.0" encoding="UTF-8"?>
 <nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
   <logicTree logicTreeID="pfdha">
-    <logicTreeBranchingLevel branchingLevelID="bl1">
-      <logicTreeBranchSet branchSetID="bs1" uncertaintyType="fdhaPrimarySRModel">
-        <logicTreeBranch branchID="SR1">
-          <uncertaintyModel>[FixedPrimarySR]\nvalue = 1.0</uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
-    <logicTreeBranchingLevel branchingLevelID="bl2">
-      <logicTreeBranchSet branchSetID="bs2" uncertaintyType="fdhaPrimaryFDModel" applyToBranches="SR1">
-        <logicTreeBranch branchID="FD">
-          <uncertaintyModel>[Lavrentiadis2023PrimaryFD_aggregate]</uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>{_SECONDARY_LEVELS if with_secondary else ''}
+    <logicTreeBranchSet branchSetID="bs1" uncertaintyType="fdhaPrimarySRModel">
+      <logicTreeBranch branchID="SR1">
+        <uncertaintyModel>[FixedPrimarySR]\nvalue = 1.0</uncertaintyModel>
+        <uncertaintyWeight>1.0</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
+    <logicTreeBranchSet branchSetID="bs2" uncertaintyType="fdhaPrimaryFDModel" applyToBranches="SR1">
+      <logicTreeBranch branchID="FD">
+        <uncertaintyModel>[Lavrentiadis2023PrimaryFD_aggregate]</uncertaintyModel>
+        <uncertaintyWeight>1.0</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
+{_SECONDARY_LEVELS if with_secondary else ''}
   </logicTree>
 </nrml>
 """

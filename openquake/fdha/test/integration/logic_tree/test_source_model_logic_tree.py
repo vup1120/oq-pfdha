@@ -71,45 +71,37 @@ def _write_fdha_lt(path: Path) -> None:
         """<?xml version="1.0" encoding="UTF-8"?>
 <nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
   <logicTree logicTreeID="pfdha">
-    <logicTreeBranchingLevel branchingLevelID="bl1">
-      <logicTreeBranchSet branchSetID="bs1" uncertaintyType="fdhaPrimarySRModel">
-        <logicTreeBranch branchID="SR0">
-          <uncertaintyModel>[FixedPrimarySR]\nvalue = 0.0</uncertaintyModel>
-          <uncertaintyWeight>0.4</uncertaintyWeight>
-        </logicTreeBranch>
-        <logicTreeBranch branchID="SR1">
-          <uncertaintyModel>[FixedPrimarySR]\nvalue = 1.0</uncertaintyModel>
-          <uncertaintyWeight>0.6</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
-    <logicTreeBranchingLevel branchingLevelID="bl2">
-      <logicTreeBranchSet branchSetID="bs2" uncertaintyType="fdhaPrimaryFDModel"
-                          applyToBranches="SR0 SR1">
-        <logicTreeBranch branchID="FD">
-          <uncertaintyModel>[Youngs2003PrimaryFD]\nstyle = 'normal'\nscaling_model = 'WC1994'\nnorm_disp_type = 'AD'</uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
-    <logicTreeBranchingLevel branchingLevelID="bl3">
-      <logicTreeBranchSet branchSetID="bs3" uncertaintyType="fdhaSecondarySRModel"
-                          applyToBranches="SR0 SR1">
-        <logicTreeBranch branchID="SSR">
-          <uncertaintyModel>[FixedSecondarySR]\nvalue = 0.0</uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
-    <logicTreeBranchingLevel branchingLevelID="bl4">
-      <logicTreeBranchSet branchSetID="bs4" uncertaintyType="fdhaSecondaryFDModel"
-                          applyToBranches="SSR">
-        <logicTreeBranch branchID="SFD">
-          <uncertaintyModel>[Youngs2003SecondaryFD]\nstyle = 'all'</uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+    <logicTreeBranchSet branchSetID="bs1" uncertaintyType="fdhaPrimarySRModel">
+      <logicTreeBranch branchID="SR0">
+        <uncertaintyModel>[FixedPrimarySR]\nvalue = 0.0</uncertaintyModel>
+        <uncertaintyWeight>0.4</uncertaintyWeight>
+      </logicTreeBranch>
+      <logicTreeBranch branchID="SR1">
+        <uncertaintyModel>[FixedPrimarySR]\nvalue = 1.0</uncertaintyModel>
+        <uncertaintyWeight>0.6</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
+    <logicTreeBranchSet branchSetID="bs2" uncertaintyType="fdhaPrimaryFDModel"
+                        applyToBranches="SR0 SR1">
+      <logicTreeBranch branchID="FD">
+        <uncertaintyModel>[Youngs2003PrimaryFD]\nstyle = 'normal'\nscaling_model = 'WC1994'\nnorm_disp_type = 'AD'</uncertaintyModel>
+        <uncertaintyWeight>1.0</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
+    <logicTreeBranchSet branchSetID="bs3" uncertaintyType="fdhaSecondarySRModel"
+                        applyToBranches="SR0 SR1">
+      <logicTreeBranch branchID="SSR">
+        <uncertaintyModel>[FixedSecondarySR]\nvalue = 0.0</uncertaintyModel>
+        <uncertaintyWeight>1.0</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
+    <logicTreeBranchSet branchSetID="bs4" uncertaintyType="fdhaSecondaryFDModel"
+                        applyToBranches="SSR">
+      <logicTreeBranch branchID="SFD">
+        <uncertaintyModel>[Youngs2003SecondaryFD]\nstyle = 'all'</uncertaintyModel>
+        <uncertaintyWeight>1.0</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
   </logicTree>
 </nrml>
 """
@@ -379,45 +371,37 @@ def _write_nonzero_two_branch_fdha_lt(path: Path) -> None:
         """<?xml version="1.0" encoding="UTF-8"?>
 <nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
   <logicTree logicTreeID="pfdha">
-    <logicTreeBranchingLevel branchingLevelID="bl1">
-      <logicTreeBranchSet branchSetID="bs1" uncertaintyType="fdhaPrimarySRModel">
-        <logicTreeBranch branchID="PSR">
-          <uncertaintyModel>[FixedPrimarySR]\nvalue = 1.0</uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
-    <logicTreeBranchingLevel branchingLevelID="bl2">
-      <logicTreeBranchSet branchSetID="bs2" uncertaintyType="fdhaPrimaryFDModel"
-                          applyToBranches="PSR">
-        <logicTreeBranch branchID="PFD">
-          <uncertaintyModel>[Youngs2003PrimaryFD]\nstyle = 'normal'\nscaling_model = 'WC1994'\nnorm_disp_type = 'AD'</uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
-    <logicTreeBranchingLevel branchingLevelID="bl3">
-      <logicTreeBranchSet branchSetID="bs3" uncertaintyType="fdhaSecondarySRModel"
-                          applyToBranches="PFD">
-        <logicTreeBranch branchID="SSR0">
-          <uncertaintyModel>[FixedSecondarySR]\nvalue = 0.5</uncertaintyModel>
-          <uncertaintyWeight>0.4</uncertaintyWeight>
-        </logicTreeBranch>
-        <logicTreeBranch branchID="SSR1">
-          <uncertaintyModel>[FixedSecondarySR]\nvalue = 1.0</uncertaintyModel>
-          <uncertaintyWeight>0.6</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
-    <logicTreeBranchingLevel branchingLevelID="bl4">
-      <logicTreeBranchSet branchSetID="bs4" uncertaintyType="fdhaSecondaryFDModel"
-                          applyToBranches="SSR0 SSR1">
-        <logicTreeBranch branchID="SFD">
-          <uncertaintyModel>[Youngs2003SecondaryFD]\nstyle = 'all'</uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+    <logicTreeBranchSet branchSetID="bs1" uncertaintyType="fdhaPrimarySRModel">
+      <logicTreeBranch branchID="PSR">
+        <uncertaintyModel>[FixedPrimarySR]\nvalue = 1.0</uncertaintyModel>
+        <uncertaintyWeight>1.0</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
+    <logicTreeBranchSet branchSetID="bs2" uncertaintyType="fdhaPrimaryFDModel"
+                        applyToBranches="PSR">
+      <logicTreeBranch branchID="PFD">
+        <uncertaintyModel>[Youngs2003PrimaryFD]\nstyle = 'normal'\nscaling_model = 'WC1994'\nnorm_disp_type = 'AD'</uncertaintyModel>
+        <uncertaintyWeight>1.0</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
+    <logicTreeBranchSet branchSetID="bs3" uncertaintyType="fdhaSecondarySRModel"
+                        applyToBranches="PFD">
+      <logicTreeBranch branchID="SSR0">
+        <uncertaintyModel>[FixedSecondarySR]\nvalue = 0.5</uncertaintyModel>
+        <uncertaintyWeight>0.4</uncertaintyWeight>
+      </logicTreeBranch>
+      <logicTreeBranch branchID="SSR1">
+        <uncertaintyModel>[FixedSecondarySR]\nvalue = 1.0</uncertaintyModel>
+        <uncertaintyWeight>0.6</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
+    <logicTreeBranchSet branchSetID="bs4" uncertaintyType="fdhaSecondaryFDModel"
+                        applyToBranches="SSR0 SSR1">
+      <logicTreeBranch branchID="SFD">
+        <uncertaintyModel>[Youngs2003SecondaryFD]\nstyle = 'all'</uncertaintyModel>
+        <uncertaintyWeight>1.0</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
   </logicTree>
 </nrml>
 """
@@ -433,38 +417,30 @@ def _write_singletrack_fdha_lt(path: Path) -> None:
         """<?xml version="1.0" encoding="UTF-8"?>
 <nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
   <logicTree logicTreeID="pfdha">
-    <logicTreeBranchingLevel branchingLevelID="bl1">
-      <logicTreeBranchSet branchSetID="bs1" uncertaintyType="fdhaPrimarySRModel">
-        <logicTreeBranch branchID="SR">
-          <uncertaintyModel>[FixedPrimarySR]\nvalue = 1.0</uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
-    <logicTreeBranchingLevel branchingLevelID="bl2">
-      <logicTreeBranchSet branchSetID="bs2" uncertaintyType="fdhaPrimaryFDModel" applyToBranches="SR">
-        <logicTreeBranch branchID="FD">
-          <uncertaintyModel>[Youngs2003PrimaryFD]\nstyle = 'normal'\nscaling_model = 'WC1994'\nnorm_disp_type = 'AD'</uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
-    <logicTreeBranchingLevel branchingLevelID="bl3">
-      <logicTreeBranchSet branchSetID="bs3" uncertaintyType="fdhaSecondarySRModel" applyToBranches="SR">
-        <logicTreeBranch branchID="SSR">
-          <uncertaintyModel>[FixedSecondarySR]\nvalue = 1.0</uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
-    <logicTreeBranchingLevel branchingLevelID="bl4">
-      <logicTreeBranchSet branchSetID="bs4" uncertaintyType="fdhaSecondaryFDModel" applyToBranches="SSR">
-        <logicTreeBranch branchID="SFD">
-          <uncertaintyModel>[Youngs2003SecondaryFD]\nstyle = 'all'</uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+    <logicTreeBranchSet branchSetID="bs1" uncertaintyType="fdhaPrimarySRModel">
+      <logicTreeBranch branchID="SR">
+        <uncertaintyModel>[FixedPrimarySR]\nvalue = 1.0</uncertaintyModel>
+        <uncertaintyWeight>1.0</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
+    <logicTreeBranchSet branchSetID="bs2" uncertaintyType="fdhaPrimaryFDModel" applyToBranches="SR">
+      <logicTreeBranch branchID="FD">
+        <uncertaintyModel>[Youngs2003PrimaryFD]\nstyle = 'normal'\nscaling_model = 'WC1994'\nnorm_disp_type = 'AD'</uncertaintyModel>
+        <uncertaintyWeight>1.0</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
+    <logicTreeBranchSet branchSetID="bs3" uncertaintyType="fdhaSecondarySRModel" applyToBranches="SR">
+      <logicTreeBranch branchID="SSR">
+        <uncertaintyModel>[FixedSecondarySR]\nvalue = 1.0</uncertaintyModel>
+        <uncertaintyWeight>1.0</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
+    <logicTreeBranchSet branchSetID="bs4" uncertaintyType="fdhaSecondaryFDModel" applyToBranches="SSR">
+      <logicTreeBranch branchID="SFD">
+        <uncertaintyModel>[Youngs2003SecondaryFD]\nstyle = 'all'</uncertaintyModel>
+        <uncertaintyWeight>1.0</uncertaintyWeight>
+      </logicTreeBranch>
+    </logicTreeBranchSet>
   </logicTree>
 </nrml>
 """

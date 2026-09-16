@@ -23,11 +23,9 @@ def _xml_with_branches(branches: str) -> str:
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
   <logicTree logicTreeID="lt_rs">
-    <logicTreeBranchingLevel branchingLevelID="bl_rs">
-      <logicTreeBranchSet branchSetID="bs_rs" uncertaintyType="fdhaCalcRSigma">
+    <logicTreeBranchSet branchSetID="bs_rs" uncertaintyType="fdhaCalcRSigma">
 {branches}
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+    </logicTreeBranchSet>
   </logicTree>
 </nrml>
 """
@@ -48,16 +46,12 @@ def _two_set_xml(scope1: str | None, scope2: str | None) -> str:
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
   <logicTree logicTreeID="lt_rs">
-    <logicTreeBranchingLevel branchingLevelID="bl_rs1">
-      <logicTreeBranchSet branchSetID="bs_rs1" uncertaintyType="fdhaCalcRSigma"{a1}>
+    <logicTreeBranchSet branchSetID="bs_rs1" uncertaintyType="fdhaCalcRSigma"{a1}>
 {_branch("RS_A", "0.027", "1.0")}
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
-    <logicTreeBranchingLevel branchingLevelID="bl_rs2">
-      <logicTreeBranchSet branchSetID="bs_rs2" uncertaintyType="fdhaCalcRSigma"{a2}>
+    </logicTreeBranchSet>
+    <logicTreeBranchSet branchSetID="bs_rs2" uncertaintyType="fdhaCalcRSigma"{a2}>
 {_branch("RS_B", "0.116", "1.0")}
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+    </logicTreeBranchSet>
   </logicTree>
 </nrml>
 """
@@ -246,11 +240,9 @@ def test_no_conflict_without_branch_set(tmp_path):
     xml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
   <logicTree logicTreeID="lt">
-    <logicTreeBranchingLevel branchingLevelID="bl1">
-      <logicTreeBranchSet branchSetID="bs1" uncertaintyType="fdhaPrimarySRModel">
+    <logicTreeBranchSet branchSetID="bs1" uncertaintyType="fdhaPrimarySRModel">
 {_branch("B1", "Youngs2003PrimarySR", "1.0")}
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+    </logicTreeBranchSet>
   </logicTree>
 </nrml>
 """
