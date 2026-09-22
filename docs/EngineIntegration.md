@@ -231,7 +231,7 @@ Reused engine layers (no duplication allowed):
 | ~~PR-4~~ | ~~Remaining SR/FD models (distance-dependent)~~ — **done** (`c3eaa2e1e5`): adapter wired to the engine `rtor`/`x_l`/`length` context, style from rake, wiring + parity tests | PR-2, PR-3 | model tests + parity |
 | **PR-5** | FDHA logic tree + oqparam params (Workstream E) — logic tree **done** (`bfbf32886c`, later moved to `hazardlib.pfd_lt.PFDLogicTree` with h5 serialization and Monte-Carlo sampling): oq-pfdha schema + filters; **oqparam declarations deferred to PR-6** | PR-1, PR-4 | branch enumeration matches oq-pfdha manifest |
 | **PR-6** | `hazardlib/calc/displacement.py` + `calculators/displacement.py` curve mode under `hcurves-*` (D3/D4/D12) — kernel **done** (`27687f1bdf`): `location_weight` + rate kernel, parity-verified; oqparam surface + logic-tree entry point **done**: `readinput.get_pfd_lt` (reads `pfd_logic_tree_file`) dispatched from `get_gsim_lt` when `calculation_mode == 'displacement'`; **calculator remaining** | PR-3, PR-5 | reproduces `hazard_curve_minimal` within tolerance |
-| **PR-7** | map mode + exports/views/plots | PR-6 | reproduces `hazard_map_minimal` |
+| **PR-7** | map mode + exports/views/plots — **map mode done**: the calculator fills `hmaps-rlzs`/`hmaps-stats` when `poes` are set, with the `qa_tests_data/pfd/case_2` region fixture and CSV export tests | PR-6 | reproduces `hazard_map_minimal` |
 | **PR-8** | heavy models + multi-fault | PR-6 | benchmarks pass |
 | **PR-9** | Strip oq-pfdha duplicated logic (Workstream I) | PR-6..8 | oq-pfdha runs on engine imports only |
 
