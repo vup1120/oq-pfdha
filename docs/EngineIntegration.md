@@ -55,6 +55,7 @@ All decisions below are confirmed and are implemented by the PRs as written.
 | D11 | oq-pfdha library | fully removed at PR-9; no vendored fallback |
 | D12 | `get_poes` bypass | confirmed — FDHA kernel writes `MapArray` directly |
 | D13 | Mode / function naming | `calculation_mode = displacement` (renamed from the provisional `fdha_classical`), `readinput.get_pfd_lt`, `hazardlib.pfd_lt.PFDLogicTree`, library `openquake.pfd`. The mode requires `use_rates = true` and `disagg_by_src = true` (the kernel is per source and yields annual rates). The PFD logic tree is passed through a dedicated `pfd_logic_tree_file` key (`readinput.get_gsim_lt` returns the trivial one-branch `PFDGMPE` tree instead) and to `FullLogicTree` as `extra_lt` (mutually exclusive with the amplification tree), and displacement levels use `intensity_measure_types_and_levels = {"Disp": [...]}` (no `displacement_measure_levels`) |
+| D14 | Surface-rupture depth tolerance | a rupture contributes surface-displacement hazard only if its top edge is shallower than `surface_rupture_depth_tolerance_km` (default 0.01 km), like oq-pfdha's `is_surface_rupturing`; `PFDGMPE` requires `ztor` and the calculator filters contexts on it |
 
 ## 1. Ground truth (both trees, at plan time)
 
@@ -170,7 +171,8 @@ Reused engine layers (no duplication allowed):
   four slots + calc-param slot (mirror oq-pfdha's `logic_tree/types.py`).
 - `oqvalidation.py`: add `'displacement'` to `ALL_CALCULATORS`; the PFD
   logic tree is passed through a dedicated `pfd_logic_tree_file`; declare
-  `r_threshold_km`, `r_sigma_km`; reject scalar-vs-branch
+  `r_threshold_km`, `r_sigma_km`, `surface_rupture_depth_tolerance_km`;
+  reject scalar-vs-branch
   `r_sigma` conflicts up front. Displacement levels use
   `intensity_measure_types_and_levels = {"Disp": [...]}` (D3/D4).
 - Reuse IMT `Disp` for the IML container, storing annual rates (D3/D4).
@@ -260,8 +262,10 @@ Decisions D1–D13 are settled (§0.1); the items below remain engineering risks
   frozen `curve_explicit` / `map_default` fixtures.
 - **`hcurves`/`hmaps` compatibility** — confirm no existing consumer hard-codes
   a non-`Disp` IMT assumption that the D3 reuse would violate.
-- **`tor` divergence magnitude** — if the parity harness shows more than corner
-  tolerance, escalate per D2.
+- **`tor` divergence magnitude** — material only for characteristic /
+  multi-section sources (D2, D14); for simple floating-rupture faults the
+  engine and oq-pfdha distances are bit-identical. Deciding whether to
+  retain the original trace for those source types is open (PR-8).
 
 ## 8. Immediate next action
 
@@ -298,11 +302,22 @@ treated `x_l` as a paired attribute (because of the underscore) and
 `PFDGMPE` needed `rx` for the secondary models.
 
 A fresh in-engine run of the `hazard_curve_minimal` example reproduces
-`oq-pfdha`'s `aggregate_hazard.csv` to within **3.75% at the smallest
-displacement (0.1 mm), converging to ~6e-4 at 10 m**. The gap is exactly the
-`tor`/`rx` divergence of D2: oq-pfdha measures `r` on the original NRML trace
-and uses a signed `calculate_signed_site_to_trace_distances()`, while the
-engine uses `surface.tor` and `get_rx_distance`.
+`oq-pfdha`'s `aggregate_hazard.csv` to within **~0.04%**. The previously
+reported 3.75% gap turned out to be the **missing surface-rupture depth
+filter** (D14), not the `tor`/`rx` divergence: the engine source yields 15
+floating ruptures of which 5 are buried down-dip floats
+(`ztor = 1..4 km`) that oq-pfdha drops via `is_surface_rupturing`; the
+engine was including them. With the filter the gap drops to ~0.04%.
+
+The `tor` vs original-NRML-trace divergence of D2 is material only for
+**characteristic/multi-section** sources (oq-pfdha attaches the exact
+declared top edge; the engine resamples `surface.tor`): on the `case_2`
+grid site closest to each characteristic fault the engine matches
+oq-pfdha's *mesh* path exactly, while the declared trace gives `r`
+differences of up to ~22% near the trace (which produces the ~9.6% map
+divergence). For simple floating-rupture faults the two are bit-identical.
+The `rx` convention (engine GC2 `t` vs oq-pfdha signed distance) differs
+only beyond the fault ends, outside `maximum_distance`.
 
 Proceed with the **second half of PR-6**: `openquake/calculators/displacement.py`
 (the `displacement` curve mode storing under `hcurves-rlzs` keyed by
