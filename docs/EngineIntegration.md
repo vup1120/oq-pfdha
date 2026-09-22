@@ -44,17 +44,17 @@ All decisions below are confirmed and are implemented by the PRs as written.
 |---|---|---|
 | D1 | Package names | engine library = `openquake.pfd` (renamed, done `e28c8ad91c`); oq-pfdha keeps `openquake.fdha` (CLI/consumer) and imports `openquake.pfd`; no oq-pfdha rename |
 | D2 | Trace geometry source | engine `surface.tor` only; no retained original trace unless parity forces it |
-| D3 | Datastore datasets | reuse `hcurves-*` / `hmaps` keyed by IMT `Disp` |
+| D3 | Datastore datasets | reuse `hcurves-*` / `hmaps` keyed by IMT `Disp`; `hcurves-rlzs` has the full logic-tree cardinality `R = len(sm_rlzs) * gsim_paths * pfd_paths` including the PFD realizations (PFD branches are realization dimensions, not averaged away) |
 | D4 | IMT / storage | reuse IMT `Disp`; store annual rates internally (as the classical path) |
 | D5 | FDHA logic-tree schema | keep oq-pfdha's XML with `<logicTreeBranchSet>` directly under `<logicTree>`; parsed by `hazardlib.pfd_lt.PFDLogicTree` (moved out of `gsim_lt` and renamed from `FdhaLogicTree`). The legacy `<logicTreeBranchingLevel>` wrapper is accepted too (oq-pfdha has migrated its files) |
-| D6 | CLI ownership | engine exposes the FDHA calculation mode; oq-pfdha keeps a thin `fdha` wrapper. The mode is provisionally `fdha_classical` (D13) |
+| D6 | CLI ownership | engine exposes the FDHA calculation mode; oq-pfdha keeps a thin `fdha` wrapper. The mode is `displacement` (D13) |
 | D7 | Canonical model API | oq-pfdha explicit `get_prob(d, mag, rx, r, …)`; one engine ctx adapter |
 | D8 | Numeric parity | 1e-12 rel. on rates for identical geometry; documented tolerance where `tor` differs |
 | D9 | Site/grid builder | shared helper in hazardlib/commonlib |
 | D10 | Output buckets | keep `principal`/`distributed` components + aggregate single-bucket routing |
 | D11 | oq-pfdha library | fully removed at PR-9; no vendored fallback |
 | D12 | `get_poes` bypass | confirmed — FDHA kernel writes `MapArray` directly |
-| D13 | Mode / function naming | provisional for the moment: `calculation_mode = fdha_classical`, `readinput.get_pfd_lt`, `hazardlib.pfd_lt.PFDLogicTree`, library `openquake.pfd`. Names may change in the future (e.g. `pfd_classical`) |
+| D13 | Mode / function naming | `calculation_mode = displacement` (renamed from the provisional `fdha_classical`), `readinput.get_pfd_lt`, `hazardlib.pfd_lt.PFDLogicTree`, library `openquake.pfd`. The mode requires `use_rates = true` and `disagg_by_src = true` (the kernel is per source and yields annual rates). The PFD logic tree is passed through a dedicated `pfd_logic_tree_file` key (`readinput.get_gsim_lt` returns the trivial one-branch `PFDGMPE` tree instead) and to `FullLogicTree` as `extra_lt` (mutually exclusive with the amplification tree), and displacement levels use `intensity_measure_types_and_levels = {"Disp": [...]}` (no `displacement_measure_levels`) |
 
 ## 1. Ground truth (both trees, at plan time)
 
@@ -168,10 +168,11 @@ Reused engine layers (no duplication allowed):
   map `fdhaPrimarySRModel`, `fdhaPrimaryFDModel`,
   `fdhaSecondarySRModel`, `fdhaSecondaryFDModel` and `fdhaCalcRSigma` onto the
   four slots + calc-param slot (mirror oq-pfdha's `logic_tree/types.py`).
-- `oqvalidation.py`: add `'fdha'` to `ALL_CALCULATORS`; declare
-  `fdha_logic_tree_file`, `displacement_measure_levels`, `r_threshold_km`,
-  `r_sigma_km`, `return_period`, `quantiles`; reject scalar-vs-branch
-  `r_sigma` conflicts up front.
+- `oqvalidation.py`: add `'displacement'` to `ALL_CALCULATORS`; the PFD
+  logic tree is passed through a dedicated `pfd_logic_tree_file`; declare
+  `r_threshold_km`, `r_sigma_km`; reject scalar-vs-branch
+  `r_sigma` conflicts up front. Displacement levels use
+  `intensity_measure_types_and_levels = {"Disp": [...]}` (D3/D4).
 - Reuse IMT `Disp` for the IML container, storing annual rates (D3/D4).
 
 ### F. Calculator (`openquake/calculators/fdha.py`)
@@ -225,11 +226,11 @@ Reused engine layers (no duplication allowed):
 |---|---|---|---|
 | ~~PR-0~~ | ~~Rename oq-pfdha package~~ — **dropped**; the engine library was renamed to `openquake.pfd` instead (`e28c8ad91c`) | — | done |
 | ~~PR-1~~ | ~~Engine library consolidation: lift oq-pfdha models into `openquake/pfd`, delete old seeds, adapter, registries~~ — **done** (`cafbc8dce7`) | — | oq-pfdha model tests pass against in-engine classes |
-| ~~PR-2~~ | ~~scalerel AD/MD + widths (Workstream C)~~ — **done** (`4b54e8462c`): folded into `hazardlib/scalerel`, `openquake/pfd/scalerel` deleted, `width_model` scalerel instances | — | pinned to papers + oq-pfdha outputs (`hazardlib/tests/scalerel/fdha_scalerel_test.py`) |
+| ~~PR-2~~ | ~~scalerel AD/MD + widths (Workstream C)~~ — **done** (`4b54e8462c`): folded into `hazardlib/scalerel`, `openquake/pfd/scalerel` deleted, `width_model` scalerel instances | — | pinned to papers + oq-pfdha outputs (`hazardlib/tests/scalerel/pfd_scalerel_test.py`) |
 | ~~PR-3~~ | ~~`rtor` + `x_l` + `length` (Workstream B)~~ — **done** (`91b09801a3`) | — | distance parity vs oq-pfdha (Norcia/IAEA) |
 | ~~PR-4~~ | ~~Remaining SR/FD models (distance-dependent)~~ — **done** (`c3eaa2e1e5`): adapter wired to the engine `rtor`/`x_l`/`length` context, style from rake, wiring + parity tests | PR-2, PR-3 | model tests + parity |
 | **PR-5** | FDHA logic tree + oqparam params (Workstream E) — logic tree **done** (`bfbf32886c`, later moved to `hazardlib.pfd_lt.PFDLogicTree` with h5 serialization and Monte-Carlo sampling): oq-pfdha schema + filters; **oqparam declarations deferred to PR-6** | PR-1, PR-4 | branch enumeration matches oq-pfdha manifest |
-| **PR-6** | `hazardlib/calc/displacement.py` + `calculators/fdha.py` curve mode under `hcurves-*` (D3/D4/D12) — kernel **done** (`27687f1bdf`): `location_weight` + rate kernel, parity-verified; logic-tree entry point **done**: `readinput.get_pfd_lt` (reads `fdha_logic_tree_file`) dispatched from `get_gsim_lt` when `calculation_mode == 'fdha_classical'`; **calculator + oqparam params remaining** | PR-3, PR-5 | reproduces `hazard_curve_minimal` within tolerance |
+| **PR-6** | `hazardlib/calc/displacement.py` + `calculators/fdha.py` curve mode under `hcurves-*` (D3/D4/D12) — kernel **done** (`27687f1bdf`): `location_weight` + rate kernel, parity-verified; oqparam surface + logic-tree entry point **done**: `readinput.get_pfd_lt` (reads `pfd_logic_tree_file`) dispatched from `get_gsim_lt` when `calculation_mode == 'displacement'`; **calculator remaining** | PR-3, PR-5 | reproduces `hazard_curve_minimal` within tolerance |
 | **PR-7** | map mode + exports/views/plots | PR-6 | reproduces `hazard_map_minimal` |
 | **PR-8** | heavy models + multi-fault | PR-6 | benchmarks pass |
 | **PR-9** | Strip oq-pfdha duplicated logic (Workstream I) | PR-6..8 | oq-pfdha runs on engine imports only |
@@ -274,17 +275,43 @@ renamed from `FdhaLogicTree`, with h5 serialization and Monte-Carlo sampling)
 enumerates the oq-pfdha end branches.
 
 The logic-tree entry point is now wired: `readinput.get_pfd_lt(oqparam)` reads
-the `fdha_logic_tree_file` input and builds the `PFDLogicTree`, and
-`readinput.get_gsim_lt` returns it when
-`calculation_mode == 'fdha_classical'` (provisional name, D13).
+the dedicated `pfd_logic_tree_file` input and builds the `PFDLogicTree`,
+while `readinput.get_gsim_lt` returns the trivial one-branch `PFDGMPE` logic
+tree when `calculation_mode == 'displacement'` (D13). The oqparam
+surface is also done: `'displacement'` in `ALL_CALCULATORS`, `r_threshold_km`
+(default 0.1) and `r_sigma_km` (default 0.0), displacement levels via
+`intensity_measure_types_and_levels = {"Disp": [...]}`, a default
+`maximum_distance = 10` km, and mandatory `use_rates = true` and
+`disagg_by_src = true`. `check_gsim_lt` reads `pfd_logic_tree_file`, and
+`is_valid_maximum_distance` / `get_input_files` have `displacement` handling.
+
+**`get_full_lt` is now attacked.** FDHA has no GSIMs, so `FullLogicTree` is
+built with a trivial one-branch GSIM logic tree holding one no-op `PFDGMPE`
+per source TRT (`openquake/pfd/gsim.py`); the dummy declares the FDHA context
+requirements (`REQUIRES_DISTANCES = {rtor, x_l, rx}`,
+`REQUIRES_RUPTURE_PARAMETERS = {mag, dip, rake, length}`) so `ContextMaker`
+builds contexts with exactly those fields. The PFD logic tree is passed to
+`FullLogicTree` as `extra_lt` (the same slot used by the amplification logic
+tree; the two are mutually exclusive) and serialized generically via its own
+`__toh5__`/`__fromh5__`. This also fixed two engine issues: `set_distances`
+treated `x_l` as a paired attribute (because of the underscore) and
+`PFDGMPE` needed `rx` for the secondary models.
+
+A fresh in-engine run of the `hazard_curve_minimal` example reproduces
+`oq-pfdha`'s `aggregate_hazard.csv` to within **3.75% at the smallest
+displacement (0.1 mm), converging to ~6e-4 at 10 m**. The gap is exactly the
+`tor`/`rx` divergence of D2: oq-pfdha measures `r` on the original NRML trace
+and uses a signed `calculate_signed_site_to_trace_distances()`, while the
+engine uses `surface.tor` and `get_rx_distance`.
 
 Proceed with the **second half of PR-6**: `openquake/calculators/fdha.py`
-(the `fdha_classical` curve mode storing under `hcurves-rlzs` keyed by
-IMT `Disp`) together with the `oqvalidation.py` job parameters
-(`calculation_mode`, `fdha_logic_tree_file`, `displacement_measure_levels`,
-`r_threshold_km`, `r_sigma_km`) that the calculator consumes and validates.
-The end-to-end acceptance is reproducing `examples/hazard_curve_minimal`
-(`~/oq-pfdha`) within tolerance.
+(the `displacement` curve mode storing under `hcurves-rlzs` keyed by
+IMT `Disp`). The calculator can now lean on `get_full_lt`/`csm.get_cmakers()`
+for source-model realizations and contexts, and on `full_lt.extra_lt` for the
+PFD model chains (the `extra_lt` slot is serialized by `FullLogicTree`, so it
+is already available in the workers). The end-to-end acceptance is
+reproducing `examples/hazard_curve_minimal` (`~/oq-pfdha`, with its INI
+migrated to the engine `Disp` format) within the documented `tor` tolerance.
 
 The oq-pfdha FDHA logic-tree files have already been migrated from
 `<logicTreeBranchingLevel>` to branch sets directly under `<logicTree>`
