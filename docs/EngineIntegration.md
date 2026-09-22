@@ -43,7 +43,7 @@ All decisions below are confirmed and are implemented by the PRs as written.
 | # | Decision | Choice |
 |---|---|---|
 | D1 | Package names | engine library = `openquake.pfd` (renamed, done `e28c8ad91c`); oq-pfdha keeps `openquake.fdha` (CLI/consumer) and imports `openquake.pfd`; no oq-pfdha rename |
-| D2 | Trace geometry source | engine `surface.tor` only; no retained original trace unless parity forces it |
+| D2 | Trace geometry source | simple floating faults use `surface.tor` (the rupture mesh top edge); characteristic faults carry the declared NRML top edge as `surface.original_tor` (parity forced it, `ecb481b75d`) |
 | D3 | Datastore datasets | reuse `hcurves-*` / `hmaps` keyed by IMT `Disp`; `hcurves-rlzs` has the full logic-tree cardinality `R = len(sm_rlzs) * gsim_paths * pfd_paths` including the PFD realizations (PFD branches are realization dimensions, not averaged away). Like classical, the rates are stored sparsely in `_rates` and the curves are recomputed with `getters.MapGetter` (here `gid` = realization ordinal); `hcurves-rlzs`/`hmaps-rlzs` are stored only when `R == 1` or `individual_rlzs` |
 | D4 | IMT / storage | reuse IMT `Disp`; store annual rates internally (as the classical path) |
 | D5 | FDHA logic-tree schema | keep oq-pfdha's XML with `<logicTreeBranchSet>` directly under `<logicTree>`; parsed by `hazardlib.pfd_lt.PFDLogicTree` (moved out of `gsim_lt` and renamed from `FdhaLogicTree`). The legacy `<logicTreeBranchingLevel>` wrapper is accepted too (oq-pfdha has migrated its files) |
@@ -234,7 +234,7 @@ Reused engine layers (no duplication allowed):
 | **PR-5** | FDHA logic tree + oqparam params (Workstream E) — logic tree **done** (`bfbf32886c`, later moved to `hazardlib.pfd_lt.PFDLogicTree` with h5 serialization and Monte-Carlo sampling): oq-pfdha schema + filters; **oqparam declarations deferred to PR-6** | PR-1, PR-4 | branch enumeration matches oq-pfdha manifest |
 | **PR-6** | `hazardlib/calc/displacement.py` + `calculators/displacement.py` curve mode under `hcurves-*` (D3/D4/D12) — kernel **done** (`27687f1bdf`): `location_weight` + rate kernel, parity-verified; oqparam surface + logic-tree entry point **done**: `readinput.get_pfd_lt` (reads `pfd_logic_tree_file`) dispatched from `get_gsim_lt` when `calculation_mode == 'displacement'`; calculator **done** (`18e8cef8f5`): `_rates`/`MapGetter` storage (`gid` = realization ordinal), `source_info`/`source_data`, `base.create_hcurves_maps` shared with classical | PR-3, PR-5 | reproduces `hazard_curve_minimal` within tolerance |
 | **PR-7** | map mode + exports/views/plots — **map mode done**: the calculator fills `hmaps-rlzs`/`hmaps-stats` when `poes` are set, with the `qa_tests_data/pfd/case_2` region fixture and CSV export tests | PR-6 | reproduces `hazard_map_minimal` |
-| **PR-8** | heavy models + multi-fault | PR-6 | benchmarks pass |
+| **PR-8** | heavy models + multi-fault — characteristic declared-top-edge done (`ecb481b75d`); heavy models (`Kuehn2024`/`Chiou2025`/`Lavrentiadis2023`/`Visini2025`) lifted but not benchmarked in-engine; `MULTIFAULT_REFERENCE_LINE` (`ecs`/`lcp`/`segments`) routing still to do | PR-6 | benchmarks pass |
 | **PR-9** | Strip oq-pfdha duplicated logic (Workstream I) | PR-6..8 | oq-pfdha runs on engine imports only |
 
 ## 6. Validation strategy
@@ -262,10 +262,10 @@ Decisions D1–D13 are settled (§0.1); the items below remain engineering risks
   frozen `curve_explicit` / `map_default` fixtures.
 - **`hcurves`/`hmaps` compatibility** — confirm no existing consumer hard-codes
   a non-`Disp` IMT assumption that the D3 reuse would violate.
-- **`tor` divergence magnitude** — material only for characteristic /
-  multi-section sources (D2, D14); for simple floating-rupture faults the
-  engine and oq-pfdha distances are bit-identical. Deciding whether to
-  retain the original trace for those source types is open (PR-8).
+- **`tor` divergence magnitude** — resolved: simple floating faults use
+  `surface.tor` and match oq-pfdha bit-identically; characteristic faults
+  now carry the declared top edge (`surface.original_tor`, `ecb481b75d`),
+  dropping the `case_2` map gap from ~9.6% to ~1.4% (mean 0.1%).
 
 ## 8. Immediate next action
 
@@ -311,13 +311,13 @@ engine was including them. With the filter the gap drops to ~0.04%.
 
 The `tor` vs original-NRML-trace divergence of D2 is material only for
 **characteristic/multi-section** sources (oq-pfdha attaches the exact
-declared top edge; the engine resamples `surface.tor`): on the `case_2`
-grid site closest to each characteristic fault the engine matches
-oq-pfdha's *mesh* path exactly, while the declared trace gives `r`
-differences of up to ~22% near the trace (which produces the ~9.6% map
-divergence). For simple floating-rupture faults the two are bit-identical.
-The `rx` convention (engine GC2 `t` vs oq-pfdha signed distance) differs
-only beyond the fault ends, outside `maximum_distance`.
+declared top edge; the engine resampled `surface.tor`). This is now fixed:
+the converter attaches the declared top edge to characteristic surfaces as
+`surface.original_tor` and `_get_tor()` prefers it, so `r`/`x_l`/`L` match
+oq-pfdha; the `case_2` map gap drops from ~9.6% to ~1.4% (mean 0.1%).
+The residual ~1.4% is not `rx` or `dip` (both aligned/tested and neutral)
+and is left as the documented tolerance. For simple floating-rupture faults
+the two are bit-identical.
 
 Proceed with the **second half of PR-6**: `openquake/calculators/displacement.py`
 (the `displacement` curve mode storing under `hcurves-rlzs` keyed by
