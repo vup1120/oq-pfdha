@@ -16,7 +16,7 @@ FINAL OWNERSHIP
   ├─ openquake/pfd/             models      ├─ CLI (fdha) + examples
   ├─ openquake/hazardlib/       distances   ├─ benchmark/validation suites
   │    scalerel/, calc/…                    ├─ docs + web GUI
-  └─ openquake/calculators/fdha.py          └─ imports openquake.pfd from engine
+  └─ openquake/calculators/displacement.py          └─ imports openquake.pfd from engine
 ```
 
 Consequences that must be decided/fixed first:
@@ -97,7 +97,7 @@ oq-engine
 │  ├─ base.py                      # 4 ABCs + declarative contracts
 │  ├─ adapter.py                   # ctx recarray -> model call (engine facade)
 │  └─ registry.py                  # subclass-scan registries per slot
-└─ openquake/calculators/fdha.py   # @base.calculators.add('fdha')
+└─ openquake/calculators/displacement.py   # @base.calculators.add('displacement')
 ```
 
 Reused engine layers (no duplication allowed):
@@ -175,8 +175,8 @@ Reused engine layers (no duplication allowed):
   `intensity_measure_types_and_levels = {"Disp": [...]}` (D3/D4).
 - Reuse IMT `Disp` for the IML container, storing annual rates (D3/D4).
 
-### F. Calculator (`openquake/calculators/fdha.py`)
-- `@base.calculators.add('fdha')`, building on `base.HazardCalculator` /
+### F. Calculator (`openquake/calculators/displacement.py`)
+- `@base.calculators.add('displacement')`, building on `base.HazardCalculator` /
   `preclassical` to inherit source reading, csm, realizations, datastore,
   checkpointing.
 - Reuse `get_cmakers`/`read_full_lt_by_label` for branch enumeration; feed the
@@ -215,7 +215,7 @@ Reused engine layers (no duplication allowed):
 | `calc/location_weight.py`, `calc/hazard.py` kernel | `openquake/hazardlib/calc/displacement.py` | port semantics |
 | `calc/utils/{rupture_distance,segments,interpolation,probability,lcp,ecs}.py` | `hazardlib/calc/`, `hazardlib/geo/` | fold into engine (distances, map inversion) |
 | `calc/{contexts,config_loader,calculators}.py` | — | **discard**; use engine ContextMaker/oqvalidation/calculators |
-| `logic_tree/**` | engine `logictree` + `calculators/fdha.py` | **discard** LT engine; keep branch-set mapping |
+| `logic_tree/**` | engine `logictree` + `calculators/displacement.py` | **discard** LT engine; keep branch-set mapping |
 | `scalerel/**` | `hazardlib/scalerel/` | lift/fold |
 | `main.py`, `logic_tree/io.py` writers | engine calculator + exports | **discard** |
 | `demo/`, `webgui_demo/`, `test/benchmark` | stays in oq-pfdha | consumer |
@@ -230,7 +230,7 @@ Reused engine layers (no duplication allowed):
 | ~~PR-3~~ | ~~`rtor` + `x_l` + `length` (Workstream B)~~ — **done** (`91b09801a3`) | — | distance parity vs oq-pfdha (Norcia/IAEA) |
 | ~~PR-4~~ | ~~Remaining SR/FD models (distance-dependent)~~ — **done** (`c3eaa2e1e5`): adapter wired to the engine `rtor`/`x_l`/`length` context, style from rake, wiring + parity tests | PR-2, PR-3 | model tests + parity |
 | **PR-5** | FDHA logic tree + oqparam params (Workstream E) — logic tree **done** (`bfbf32886c`, later moved to `hazardlib.pfd_lt.PFDLogicTree` with h5 serialization and Monte-Carlo sampling): oq-pfdha schema + filters; **oqparam declarations deferred to PR-6** | PR-1, PR-4 | branch enumeration matches oq-pfdha manifest |
-| **PR-6** | `hazardlib/calc/displacement.py` + `calculators/fdha.py` curve mode under `hcurves-*` (D3/D4/D12) — kernel **done** (`27687f1bdf`): `location_weight` + rate kernel, parity-verified; oqparam surface + logic-tree entry point **done**: `readinput.get_pfd_lt` (reads `pfd_logic_tree_file`) dispatched from `get_gsim_lt` when `calculation_mode == 'displacement'`; **calculator remaining** | PR-3, PR-5 | reproduces `hazard_curve_minimal` within tolerance |
+| **PR-6** | `hazardlib/calc/displacement.py` + `calculators/displacement.py` curve mode under `hcurves-*` (D3/D4/D12) — kernel **done** (`27687f1bdf`): `location_weight` + rate kernel, parity-verified; oqparam surface + logic-tree entry point **done**: `readinput.get_pfd_lt` (reads `pfd_logic_tree_file`) dispatched from `get_gsim_lt` when `calculation_mode == 'displacement'`; **calculator remaining** | PR-3, PR-5 | reproduces `hazard_curve_minimal` within tolerance |
 | **PR-7** | map mode + exports/views/plots | PR-6 | reproduces `hazard_map_minimal` |
 | **PR-8** | heavy models + multi-fault | PR-6 | benchmarks pass |
 | **PR-9** | Strip oq-pfdha duplicated logic (Workstream I) | PR-6..8 | oq-pfdha runs on engine imports only |
@@ -304,7 +304,7 @@ displacement (0.1 mm), converging to ~6e-4 at 10 m**. The gap is exactly the
 and uses a signed `calculate_signed_site_to_trace_distances()`, while the
 engine uses `surface.tor` and `get_rx_distance`.
 
-Proceed with the **second half of PR-6**: `openquake/calculators/fdha.py`
+Proceed with the **second half of PR-6**: `openquake/calculators/displacement.py`
 (the `displacement` curve mode storing under `hcurves-rlzs` keyed by
 IMT `Disp`). The calculator can now lean on `get_full_lt`/`csm.get_cmakers()`
 for source-model realizations and contexts, and on `full_lt.extra_lt` for the
