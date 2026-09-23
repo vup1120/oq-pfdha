@@ -58,10 +58,10 @@ import pytest
 
 from openquake.fdha.calc.location_weight import location_weight
 from openquake.fdha.calc.model_adapter import NEAR_FIELD_FLOOR_KM
-from openquake.fdha.primary_surf_displ import Petersen2011PrimaryFD
-from openquake.fdha.primary_surf_rup import WC1993PrimarySR
-from openquake.fdha.secondary_surf_displ import Petersen2011SecondaryFD
-from openquake.fdha.secondary_surf_rup import Petersen2011SecondarySR
+from openquake.pfd.primary_surf_displ import Petersen2011PrimaryFD
+from openquake.pfd.primary_surf_rup import WC1993PrimarySR
+from openquake.pfd.secondary_surf_displ import Petersen2011SecondaryFD
+from openquake.pfd.secondary_surf_rup import Petersen2011SecondarySR
 
 pytestmark = [pytest.mark.benchmark, pytest.mark.petersen2011]
 

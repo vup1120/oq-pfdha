@@ -195,11 +195,11 @@ def test_contextmaker_always_computes_segments_mask_r():
 def test_visini_models_declare_segments():
     """The Visini et al. (2025) models declare the segmentation-direct
     treatment; the generic bases default to the smoothed LCP line."""
-    from openquake.fdha.secondary_surf_rup.visini2025 import (
+    from openquake.pfd.secondary_surf_rup.visini2025 import (
         Visini2025SecondarySR)
-    from openquake.fdha.secondary_surf_displ.visini2025 import (
+    from openquake.pfd.secondary_surf_displ.visini2025 import (
         Visini2025SecondaryFD)
-    from openquake.fdha.secondary_surf_rup.petersen2011 import (
+    from openquake.pfd.secondary_surf_rup.petersen2011 import (
         Petersen2011SecondarySR)
 
     assert Visini2025SecondarySR.MULTIFAULT_REFERENCE_LINE == 'segments'

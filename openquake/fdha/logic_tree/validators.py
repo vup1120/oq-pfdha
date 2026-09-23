@@ -59,7 +59,7 @@ _FD_DISPL_UTYPES = {"fdhaPrimaryFDModel", "fdhaSecondaryFDModel"}
 def _resolve_model_class(class_name: str):
     """Return the registered FDHA model class for ``class_name`` or None."""
     try:
-        from openquake.fdha import (
+        from openquake.pfd import (
             primary_surf_rup,
             primary_surf_displ,
             secondary_surf_rup,

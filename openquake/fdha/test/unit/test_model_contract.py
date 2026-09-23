@@ -15,9 +15,9 @@ import inspect
 import numpy as np
 import pytest
 
-from openquake.fdha import primary_surf_displ, secondary_surf_displ
+from openquake.pfd import primary_surf_displ, secondary_surf_displ
 from openquake.fdha.calc.model_adapter import effective_displacement_definition
-from openquake.fdha.primary_surf_displ.base import (
+from openquake.pfd.primary_surf_displ.base import (
     BasePrimarySurfDispl,
     BaseSecondarySurfDispl,
     DISPLACEMENT_COMPONENTS,

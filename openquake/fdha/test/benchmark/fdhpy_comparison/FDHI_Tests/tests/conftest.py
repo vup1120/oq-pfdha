@@ -124,7 +124,7 @@ def pfdha_models() -> Dict[str, Any]:
     """Import and return all pfdha model classes."""
     models = {}
     try:
-        from openquake.fdha.primary_surf_displ import (
+        from openquake.pfd.primary_surf_displ import (
             Youngs2003PrimaryFD,
             Petersen2011PrimaryFD,
             Moss2024PrimaryFD,

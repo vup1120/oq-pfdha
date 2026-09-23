@@ -135,9 +135,9 @@ def test_combination_c_receives_the_same_style():
 def test_strike_slip_rake_fails_loudly_with_real_models():
     """Visini is a dip-slip model: a strike-slip rupture without an explicit
     style must raise, not silently compute with 'normal' coefficients."""
-    from openquake.fdha.secondary_surf_rup.visini2025 import (
+    from openquake.pfd.secondary_surf_rup.visini2025 import (
         Visini2025SecondarySR)
-    from openquake.fdha.secondary_surf_displ.visini2025 import (
+    from openquake.pfd.secondary_surf_displ.visini2025 import (
         Visini2025SecondaryFD)
 
     visini_calc = VisiniSecondaryCalculator(

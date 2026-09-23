@@ -39,7 +39,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from openquake.fdha.primary_surf_displ import Takao2013PrimaryFD
+from openquake.pfd.primary_surf_displ import Takao2013PrimaryFD
 
 HERE = Path(__file__).resolve().parent
 

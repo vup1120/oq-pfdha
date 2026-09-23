@@ -12,7 +12,7 @@ never active with the default configuration.
 import numpy as np
 import pytest
 
-from openquake.fdha.secondary_surf_displ.visini2025 import Visini2025SecondaryFD
+from openquake.pfd.secondary_surf_displ.visini2025 import Visini2025SecondaryFD
 
 pytestmark = [pytest.mark.unit, pytest.mark.visini2025]
 

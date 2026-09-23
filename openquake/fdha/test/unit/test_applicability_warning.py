@@ -12,9 +12,9 @@ import pytest
 
 from openquake.fdha.calc.contexts import FDHAContext
 from openquake.fdha.calc.hazard import ApplicabilityTracker
-from openquake.fdha.secondary_surf_displ.petersen2011 import (
+from openquake.pfd.secondary_surf_displ.petersen2011 import (
     Petersen2011SecondaryFD)
-from openquake.fdha.secondary_surf_displ.visini2025 import (
+from openquake.pfd.secondary_surf_displ.visini2025 import (
     Visini2025SecondaryFD)
 
 pytestmark = pytest.mark.unit
@@ -65,7 +65,7 @@ def test_inside_range_no_warning(caplog):
 
 
 def test_no_declared_range_no_warning(caplog):
-    from openquake.fdha.secondary_surf_displ.moss2022 import (
+    from openquake.pfd.secondary_surf_displ.moss2022 import (
         Moss2022SecondaryFD)
     tracker = ApplicabilityTracker(r_threshold_km=0.1, r_sigma_km=0.0)
     tracker.observe(Moss2022SecondaryFD(), _ctx([50.0, 100.0]))

@@ -28,29 +28,29 @@ pytestmark = pytest.mark.unit
 # declarations
 # --------------------------------------------------------------------------- #
 def test_chiou2025_declares_ecs():
-    from openquake.fdha.primary_surf_displ.chiou2025 import Chiou2025PrimaryFD
+    from openquake.pfd.primary_surf_displ.chiou2025 import Chiou2025PrimaryFD
     assert Chiou2025PrimaryFD.MULTIFAULT_REFERENCE_LINE == 'ecs'
 
 
 def test_visini2025_declares_segments():
-    from openquake.fdha.secondary_surf_rup.visini2025 import (
+    from openquake.pfd.secondary_surf_rup.visini2025 import (
         Visini2025SecondarySR)
-    from openquake.fdha.secondary_surf_displ.visini2025 import (
+    from openquake.pfd.secondary_surf_displ.visini2025 import (
         Visini2025SecondaryFD)
     assert Visini2025SecondarySR.MULTIFAULT_REFERENCE_LINE == 'segments'
     assert Visini2025SecondaryFD.MULTIFAULT_REFERENCE_LINE == 'segments'
 
 
 def test_listed_primary_fd_models_declare_lcp():
-    from openquake.fdha.primary_surf_displ.youngs2003 import Youngs2003PrimaryFD
-    from openquake.fdha.primary_surf_displ.petersen2011 import Petersen2011PrimaryFD
-    from openquake.fdha.primary_surf_displ.moss_ross2011 import MossRoss2011PrimaryFD
-    from openquake.fdha.primary_surf_displ.moss2024 import Moss2024PrimaryFD
-    from openquake.fdha.primary_surf_displ.moss2022 import Moss2022PrimaryFD
-    from openquake.fdha.primary_surf_displ.takao2013 import Takao2013PrimaryFD
-    from openquake.fdha.primary_surf_displ.lavrentiadis2023 import (
+    from openquake.pfd.primary_surf_displ.youngs2003 import Youngs2003PrimaryFD
+    from openquake.pfd.primary_surf_displ.petersen2011 import Petersen2011PrimaryFD
+    from openquake.pfd.primary_surf_displ.moss_ross2011 import MossRoss2011PrimaryFD
+    from openquake.pfd.primary_surf_displ.moss2024 import Moss2024PrimaryFD
+    from openquake.pfd.primary_surf_displ.moss2022 import Moss2022PrimaryFD
+    from openquake.pfd.primary_surf_displ.takao2013 import Takao2013PrimaryFD
+    from openquake.pfd.primary_surf_displ.lavrentiadis2023 import (
         Lavrentiadis2023PrimaryFD_aggregate)
-    from openquake.fdha.primary_surf_displ.kuehn2024.kuehn2024 import (
+    from openquake.pfd.primary_surf_displ.kuehn2024.kuehn2024 import (
         Kuehn2024PrimaryFD)
 
     for model in (Youngs2003PrimaryFD, Petersen2011PrimaryFD,
@@ -61,10 +61,10 @@ def test_listed_primary_fd_models_declare_lcp():
 
 
 def test_bases_default_to_lcp():
-    from openquake.fdha.primary_surf_rup.base import BasePrimarySurfRup
-    from openquake.fdha.primary_surf_displ.base import (
+    from openquake.pfd.primary_surf_rup.base import BasePrimarySurfRup
+    from openquake.pfd.primary_surf_displ.base import (
         BasePrimarySurfDispl, BaseSecondarySurfDispl)
-    from openquake.fdha.secondary_surf_rup.base import BaseSecondarySurfRup
+    from openquake.pfd.secondary_surf_rup.base import BaseSecondarySurfRup
     for base in (BasePrimarySurfRup, BasePrimarySurfDispl,
                  BaseSecondarySurfDispl, BaseSecondarySurfRup):
         assert base.MULTIFAULT_REFERENCE_LINE == 'lcp', base.__name__
@@ -78,8 +78,8 @@ def test_calculator_collects_union_of_declarations():
         def __init__(self):  # bypass config loading entirely
             pass
 
-    from openquake.fdha.primary_surf_displ.chiou2025 import Chiou2025PrimaryFD
-    from openquake.fdha.secondary_surf_rup.visini2025 import (
+    from openquake.pfd.primary_surf_displ.chiou2025 import Chiou2025PrimaryFD
+    from openquake.pfd.secondary_surf_rup.visini2025 import (
         Visini2025SecondarySR)
 
     calc = _Fake()
@@ -150,9 +150,9 @@ def test_filter_masks_ref_metrics():
 def test_adapter_selects_model_declared_metrics():
     """LegacyModelAdapter routes each model to its declared metric set."""
     from openquake.fdha.calc.model_adapter import LegacyModelAdapter
-    from openquake.fdha.secondary_surf_rup.visini2025 import (
+    from openquake.pfd.secondary_surf_rup.visini2025 import (
         Visini2025SecondarySR)
-    from openquake.fdha.secondary_surf_rup.petersen2011 import (
+    from openquake.pfd.secondary_surf_rup.petersen2011 import (
         Petersen2011SecondarySR)
 
     ctx = _ctx(ref_metrics=_metrics())

@@ -512,7 +512,7 @@ class ModelRunner:
             "include_prob_zero": include_prob_zero
         })
         if pfdha_params.get("output_type") == "disp_prnc_prime":
-            from openquake.fdha.primary_surf_displ import (
+            from openquake.pfd.primary_surf_displ import (
                 Lavrentiadis2023PrimaryFD_principal)
             pfdha_params.pop("output_type")
             pfdha_model = Lavrentiadis2023PrimaryFD_principal()

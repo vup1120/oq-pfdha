@@ -76,6 +76,11 @@ def run_calculation(
     from openquake.fdha.calc.config_loader import calculation_requests_fdha_logic_tree
 
     calc_cfg = config.get("calculation", {})
+    general_cfg = config.get("general", {})
+    if (isinstance(general_cfg, dict)
+            and general_cfg.get("calculation_mode") == "displacement"):
+        return _run_engine(config_path, plot, plot_file)
+
     has_fdha_lt = (
         calculation_requests_fdha_logic_tree(calc_cfg) if isinstance(calc_cfg, dict) else False
     )
@@ -93,6 +98,32 @@ def run_calculation(
         "Configuration must provide canonical [calculation].fdha_logic_tree_file "
         "and [calculation].source_model_logic_tree_file."
     )
+
+
+def _run_engine(
+    config_path: str,
+    plot: bool,
+    plot_file: Optional[str],
+) -> Dict[str, Any]:
+    """Run an engine-owned displacement calculation.
+
+    The standalone command remains a thin consumer: parsing, execution,
+    datastore handling, and exports are all delegated to the engine.
+    """
+    from openquake.engine.engine import create_jobs, run_jobs
+
+    jobs = create_jobs([config_path])
+    run_jobs(jobs)
+    job = jobs[0]
+    if plot or plot_file:
+        logger.warning("Plotting engine outputs is not yet handled by fdha")
+    return {
+        "engine": True,
+        "calc_id": job.calc_id,
+        "outdir": str(Path(config_path).parent),
+        "n_sites": None,
+        "n_displ": None,
+    }
 
 
 def _run_logic_tree(

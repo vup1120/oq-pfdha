@@ -431,7 +431,7 @@ class TestHazardEndToEnd:
         assert rates.shape == (1, 4)
         assert np.asarray(results['rate_principal']).max() > 0.0
         # Youngs2003 normal-style P(SR|M7) gate
-        from openquake.fdha.primary_surf_rup import Youngs2003PrimarySR
+        from openquake.pfd.primary_surf_rup import Youngs2003PrimarySR
         p_sr = float(Youngs2003PrimarySR().get_prob(7.0, style="normal"))
         assert rates.max() <= 0.001 * p_sr * 1.0001
         assert rates.max() > 0.5 * 0.001 * p_sr

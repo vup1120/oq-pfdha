@@ -10,7 +10,10 @@ from openquake.hazardlib.site import Site, SiteCollection
 from openquake.hazardlib.geo import Point
 from openquake.fdha.calc.utils.parsing import parse_source_model_faults
 from openquake.fdha.calc.config_loader import load_config
-from openquake.fdha import (
+# The engine owns the canonical PFD models. The standalone calculator keeps
+# this compatibility path temporarily, but resolves model classes from the
+# engine so the CLI and validation runs exercise one implementation.
+from openquake.pfd import (
     primary_surf_rup, primary_surf_displ,
     secondary_surf_rup, secondary_surf_displ,
 )
@@ -24,7 +27,7 @@ MODEL_REGISTRY = {
     for pkg in (primary_surf_rup, primary_surf_displ,
                 secondary_surf_rup, secondary_surf_displ)
     for name, obj in vars(pkg).items()
-    if inspect.isclass(obj) and obj.__module__.startswith('openquake.fdha')
+    if inspect.isclass(obj) and obj.__module__.startswith('openquake.pfd')
 }
 
 #: Parameters consumed by LegacyModelAdapter itself (not by the model's

@@ -234,8 +234,8 @@ Reused engine layers (no duplication allowed):
 | **PR-5** | FDHA logic tree + oqparam params (Workstream E) — logic tree **done** (`bfbf32886c`, later moved to `hazardlib.pfd_lt.PFDLogicTree` with h5 serialization and Monte-Carlo sampling): oq-pfdha schema + filters; **oqparam declarations deferred to PR-6** | PR-1, PR-4 | branch enumeration matches oq-pfdha manifest |
 | **PR-6** | `hazardlib/calc/displacement.py` + `calculators/displacement.py` curve mode under `hcurves-*` (D3/D4/D12) — kernel **done** (`27687f1bdf`): `location_weight` + rate kernel, parity-verified; oqparam surface + logic-tree entry point **done**: `readinput.get_pfd_lt` (reads `pfd_logic_tree_file`) dispatched from `get_gsim_lt` when `calculation_mode == 'displacement'`; calculator **done** (`18e8cef8f5`): `_rates`/`MapGetter` storage (`gid` = realization ordinal), `source_info`/`source_data`, `base.create_hcurves_maps` shared with classical | PR-3, PR-5 | reproduces `hazard_curve_minimal` within tolerance |
 | **PR-7** | map mode + exports/views/plots — **map mode done**: the calculator fills `hmaps-rlzs`/`hmaps-stats` when `poes` are set, with the `qa_tests_data/pfd/case_2` region fixture and CSV export tests | PR-6 | reproduces `hazard_map_minimal` |
-| **PR-8** | heavy models + multi-fault — characteristic declared-top-edge done (`ecb481b75d`); multi-surface `segments` metrics done (`f151e46fb4`, `c2a05befea`: `MultiSurface.get_x_l_ratio`/`get_tor_length`, multi-fault `rtor`/`x_l` context wiring, `case_4` kite `multiFaultSource` test); heavy models benchmarked end-to-end in-engine (`case_5` Kuehn2024, `case_6` Chiou2025, `case_7` Lavrentiadis2023, `case_8` Visini2025) with the MC reduction default switched to `mean` (oq-pfdha's) and the combined Visini secondary pipeline ported (`openquake/pfd/visini.py`) plus the declared-dip fix (`original_dip` on characteristic simple faults); `MULTIFAULT_REFERENCE_LINE` `ecs`/`lcp` reference lines still to do | PR-6 | benchmarks pass |
-| **PR-9** | Strip oq-pfdha duplicated logic (Workstream I) | PR-6..8 | oq-pfdha runs on engine imports only |
+| **PR-8** | heavy models + multi-fault — characteristic declared-top-edge done (`ecb481b75d`); multi-surface `segments` metrics done (`f151e46fb4`, `c2a05befea`: `MultiSurface.get_x_l_ratio`/`get_tor_length`, multi-fault `rtor`/`x_l` context wiring, `case_4` kite `multiFaultSource` test); heavy models benchmarked end-to-end in-engine (`case_5` Kuehn2024, `case_6` Chiou2025, `case_7` Lavrentiadis2023, `case_8` Visini2025) with the MC reduction default switched to `mean` (oq-pfdha's) and the combined Visini secondary pipeline ported (`openquake/pfd/visini.py`) plus the declared-dip fix (`original_dip` on characteristic simple faults); `MULTIFAULT_REFERENCE_LINE` `ecs`/`lcp` reference lines done in engine (`675e738875`, with the 1 GiB guard in `5da91b52e4`) | PR-6 | benchmarks pass |
+| **PR-9** | Strip oq-pfdha duplicated logic (Workstream I) — in progress: model/scalerel compatibility modules now re-export engine implementations; engine-backed `displacement` CLI path is active for migrated examples | PR-6..8 | oq-pfdha runs on engine imports only |
 
 ## 6. Validation strategy
 
@@ -269,65 +269,24 @@ Decisions D1–D13 are settled (§0.1); the items below remain engineering risks
 
 ## 8. Immediate next action
 
-PR-0..PR-5 are done on the engine's `oq-integration` branch (which is
-currently identical to `master`) and **PR-6** is half-done:
-`openquake/hazardlib/calc/displacement.py` holds the FDHA rate kernel
-(`location_weight` verified bit-identical to oq-pfdha; the
-principal/distributed rate core and the aggregate single-bucket routing), and
-`openquake/hazardlib/pfd_lt.py::PFDLogicTree` (moved out of `gsim_lt.py` and
-renamed from `FdhaLogicTree`, with h5 serialization and Monte-Carlo sampling)
-enumerates the oq-pfdha end branches.
+PR-0..PR-8 are complete on the engine `oq-integration` branch. The engine
+now runs the migrated curve and map examples in `displacement` mode, owns the
+PFD models, rate kernel, logic tree, contexts, exports, heavy-model paths, and
+multi-fault `segments`/`ecs`/`lcp` reference-line calculations. Reference-line
+raster/path construction is guarded by a hard 1 GiB memory budget.
 
-The logic-tree entry point is now wired: `readinput.get_pfd_lt(oqparam)` reads
-the dedicated `pfd_logic_tree_file` input and builds the `PFDLogicTree`,
-while `readinput.get_gsim_lt` returns the trivial one-branch `PFDGMPE` logic
-tree when `calculation_mode == 'displacement'` (D13). The oqparam
-surface is also done: `'displacement'` in `ALL_CALCULATORS`, `r_threshold_km`
-(default 0.1) and `r_sigma_km` (default 0.0), displacement levels via
-`intensity_measure_types_and_levels = {"Disp": [...]}`, a default
-`maximum_distance = 10` km, and mandatory `use_rates = true` and
-`disagg_by_src = true`. `check_gsim_lt` reads `pfd_logic_tree_file`, and
-`is_valid_maximum_distance` / `get_input_files` have `displacement` handling.
+PR-9 is in progress in this repository:
 
-**`get_full_lt` is now attacked.** FDHA has no GSIMs, so `FullLogicTree` is
-built with a trivial one-branch GSIM logic tree holding one no-op `PFDGMPE`
-per source TRT (`openquake/pfd/gsim.py`); the dummy declares the FDHA context
-requirements (`REQUIRES_DISTANCES = {rtor, x_l, rx}`,
-`REQUIRES_RUPTURE_PARAMETERS = {mag, dip, rake, length}`) so `ContextMaker`
-builds contexts with exactly those fields. The PFD logic tree is passed to
-`FullLogicTree` as `extra_lt` (the same slot used by the amplification logic
-tree; the two are mutually exclusive) and serialized generically via its own
-`__toh5__`/`__fromh5__`. This also fixed two engine issues: `set_distances`
-treated `x_l` as a paired attribute (because of the underscore) and
-`PFDGMPE` needed `rx` for the secondary models.
+- the standalone calculator registry resolves classes from `openquake.pfd`;
+- the four model families and scaling-relation packages are compatibility
+  re-exports rather than duplicate implementations;
+- migrated examples use `calculation_mode = displacement`, `Disp`, and
+  `pfd_logic_tree_file`;
+- `fdha` dispatches migrated displacement jobs to the engine's calculator;
+- unit and benchmark tests now import the engine-owned model classes.
 
-A fresh in-engine run of the `hazard_curve_minimal` example reproduces
-`oq-pfdha`'s `aggregate_hazard.csv` to within **~0.04%**. The previously
-reported 3.75% gap turned out to be the **missing surface-rupture depth
-filter** (D14), not the `tor`/`rx` divergence: the engine source yields 15
-floating ruptures of which 5 are buried down-dip floats
-(`ztor = 1..4 km`) that oq-pfdha drops via `is_surface_rupturing`; the
-engine was including them. With the filter the gap drops to ~0.04%.
-
-The `tor` vs original-NRML-trace divergence of D2 is material only for
-**characteristic/multi-section** sources (oq-pfdha attaches the exact
-declared top edge; the engine resampled `surface.tor`). This is now fixed:
-the converter attaches the declared top edge to characteristic surfaces as
-`surface.original_tor` and `_get_tor()` prefers it, so `r`/`x_l`/`L` match
-oq-pfdha; the `case_2` map gap drops from ~9.6% to ~1.4% (mean 0.1%).
-The residual ~1.4% is not `rx` or `dip` (both aligned/tested and neutral)
-and is left as the documented tolerance. For simple floating-rupture faults
-the two are bit-identical.
-
-Proceed with the **second half of PR-6**: `openquake/calculators/displacement.py`
-(the `displacement` curve mode storing under `hcurves-rlzs` keyed by
-IMT `Disp`). The calculator can now lean on `get_full_lt`/`csm.get_cmakers()`
-for source-model realizations and contexts, and on `full_lt.extra_lt` for the
-PFD model chains (the `extra_lt` slot is serialized by `FullLogicTree`, so it
-is already available in the workers). The end-to-end acceptance is
-reproducing `examples/hazard_curve_minimal` (`~/oq-pfdha`, with its INI
-migrated to the engine `Disp` format) within the documented `tor` tolerance.
-
-The oq-pfdha FDHA logic-tree files have already been migrated from
-`<logicTreeBranchingLevel>` to branch sets directly under `<logicTree>`
-(oq-pfdha commit `4453c72`); `PFDLogicTree` accepts both forms.
+The remaining PR-9 work is to remove the standalone calculation and logic-tree
+execution paths, replace their tests with engine-backed parity/validation
+suites where appropriate, and retain only the CLI, examples, documentation,
+web GUI, and benchmark material in `oq-pfdha`. Do not delete the compatibility
+surface until all consumers have been migrated and the full test suite passes.

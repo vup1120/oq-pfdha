@@ -49,9 +49,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from openquake.fdha.primary_surf_rup import Takao2013PrimarySR
-from openquake.fdha.secondary_surf_rup import Takao2013SecondarySR
-from openquake.fdha.secondary_surf_displ import Takao2013SecondaryFD
+from openquake.pfd.primary_surf_rup import Takao2013PrimarySR
+from openquake.pfd.secondary_surf_rup import Takao2013SecondarySR
+from openquake.pfd.secondary_surf_displ import Takao2013SecondaryFD
 
 HERE = Path(__file__).resolve().parent
 

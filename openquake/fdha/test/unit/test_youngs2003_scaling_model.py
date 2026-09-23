@@ -18,7 +18,7 @@ them to a warning + silently-zero hazard.
 import numpy as np
 import pytest
 
-from openquake.fdha.primary_surf_displ.youngs2003 import Youngs2003PrimaryFD
+from openquake.pfd.primary_surf_displ.youngs2003 import Youngs2003PrimaryFD
 
 
 D = np.array([0.01, 0.1, 1.0])

@@ -26,7 +26,7 @@ from fdhpy import (
 
 # Import pfdha models; fail the module if pfdha is not importable
 try:
-    from openquake.fdha.primary_surf_displ import (
+    from openquake.pfd.primary_surf_displ import (
         Youngs2003PrimaryFD,
         Petersen2011PrimaryFD,
         Moss2024PrimaryFD,

@@ -14,7 +14,7 @@ pytestmark = pytest.mark.unit
 # =====================================================================
 # Primary FD
 # =====================================================================
-from openquake.fdha.primary_surf_displ.moss2022 import (
+from openquake.pfd.primary_surf_displ.moss2022 import (
     Moss2022PrimaryFD, SCALING, GAMMA_REGRESSION, GAMMA_GLOBAL,
 )
 
@@ -167,7 +167,7 @@ class TestMoss2022PrimaryFDProduction:
 # =====================================================================
 # Secondary SR
 # =====================================================================
-from openquake.fdha.secondary_surf_rup.moss2022 import Moss2022SecondarySR
+from openquake.pfd.secondary_surf_rup.moss2022 import Moss2022SecondarySR
 
 
 class TestMoss2022SecondarySR:
@@ -222,7 +222,7 @@ class TestMoss2022SecondarySR:
 # =====================================================================
 # Secondary FD
 # =====================================================================
-from openquake.fdha.secondary_surf_displ.moss2022 import (
+from openquake.pfd.secondary_surf_displ.moss2022 import (
     Moss2022SecondaryFD, ENVELOPE_50, ENVELOPE_85,
 )
 

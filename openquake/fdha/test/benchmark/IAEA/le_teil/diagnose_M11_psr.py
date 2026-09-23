@@ -47,8 +47,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from openquake.fdha.primary_surf_rup import Moss2013PrimarySR
-from openquake.fdha.primary_surf_displ import MossRoss2011PrimaryFD
+from openquake.pfd.primary_surf_rup import Moss2013PrimarySR
+from openquake.pfd.primary_surf_displ import MossRoss2011PrimaryFD
 
 HERE = Path(__file__).resolve().parent
 RATE = 4.6e-5

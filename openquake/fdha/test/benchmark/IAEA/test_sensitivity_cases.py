@@ -77,7 +77,7 @@ def test_norcia_sens3_added_source_higher_hazard():
 
 
 def test_kumamoto_sens3_head_is_rate_times_p1p():
-    from openquake.fdha.primary_surf_rup import Takao2013PrimarySR
+    from openquake.pfd.primary_surf_rup import Takao2013PrimarySR
 
     _, rates = _get("kumamoto", "principal_T13_sens3")
     expected = 23.3e-5 * float(Takao2013PrimarySR().get_prob(5.8))

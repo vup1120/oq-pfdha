@@ -10,7 +10,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from openquake.fdha.primary_surf_displ import MossRoss2011PrimaryFD
+from openquake.pfd.primary_surf_displ import MossRoss2011PrimaryFD
 
 
 FIG6_DIGITIZED = {
