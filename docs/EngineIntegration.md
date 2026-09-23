@@ -235,7 +235,7 @@ Reused engine layers (no duplication allowed):
 | **PR-6** | `hazardlib/calc/displacement.py` + `calculators/displacement.py` curve mode under `hcurves-*` (D3/D4/D12) — kernel **done** (`27687f1bdf`): `location_weight` + rate kernel, parity-verified; oqparam surface + logic-tree entry point **done**: `readinput.get_pfd_lt` (reads `pfd_logic_tree_file`) dispatched from `get_gsim_lt` when `calculation_mode == 'displacement'`; calculator **done** (`18e8cef8f5`): `_rates`/`MapGetter` storage (`gid` = realization ordinal), `source_info`/`source_data`, `base.create_hcurves_maps` shared with classical | PR-3, PR-5 | reproduces `hazard_curve_minimal` within tolerance |
 | **PR-7** | map mode + exports/views/plots — **map mode done**: the calculator fills `hmaps-rlzs`/`hmaps-stats` when `poes` are set, with the `qa_tests_data/pfd/case_2` region fixture and CSV export tests | PR-6 | reproduces `hazard_map_minimal` |
 | **PR-8** | heavy models + multi-fault — characteristic declared-top-edge done (`ecb481b75d`); multi-surface `segments` metrics done (`f151e46fb4`, `c2a05befea`: `MultiSurface.get_x_l_ratio`/`get_tor_length`, multi-fault `rtor`/`x_l` context wiring, `case_4` kite `multiFaultSource` test); heavy models benchmarked end-to-end in-engine (`case_5` Kuehn2024, `case_6` Chiou2025, `case_7` Lavrentiadis2023, `case_8` Visini2025) with the MC reduction default switched to `mean` (oq-pfdha's) and the combined Visini secondary pipeline ported (`openquake/pfd/visini.py`) plus the declared-dip fix (`original_dip` on characteristic simple faults); `MULTIFAULT_REFERENCE_LINE` `ecs`/`lcp` reference lines done in engine (`675e738875`, with the 1 GiB guard in `5da91b52e4`) | PR-6 | benchmarks pass |
-| **PR-9** | Strip oq-pfdha duplicated logic (Workstream I) — in progress: model/scalerel compatibility modules now re-export engine implementations; engine-backed `displacement` CLI path is active for migrated examples | PR-6..8 | oq-pfdha runs on engine imports only |
+| **PR-9** | Strip oq-pfdha duplicated logic (Workstream I) — core removal done: standalone `calc/` and `logic_tree/` trees deleted; model/scalerel packages are engine compatibility imports; `fdha` dispatches engine `displacement` jobs | PR-6..8 | engine is the sole runtime implementation; validation-suite cleanup remains |
 
 ## 6. Validation strategy
 
@@ -285,8 +285,10 @@ PR-9 is in progress in this repository:
 - `fdha` dispatches migrated displacement jobs to the engine's calculator;
 - unit and benchmark tests now import the engine-owned model classes.
 
-The remaining PR-9 work is to remove the standalone calculation and logic-tree
-execution paths, replace their tests with engine-backed parity/validation
-suites where appropriate, and retain only the CLI, examples, documentation,
-web GUI, and benchmark material in `oq-pfdha`. Do not delete the compatibility
-surface until all consumers have been migrated and the full test suite passes.
+The core PR-9 removal is complete: the standalone `calc/` and `logic_tree/`
+execution trees are gone, and the CLI delegates migrated jobs to the engine.
+The immediate follow-up is validation cleanup: remove or rewrite tests and
+fixture scripts that still import the deleted paths, retaining engine-backed
+parity, benchmark, and validation coverage. The final consumer should contain
+only the CLI wrapper, examples, documentation, web GUI, and validation
+material.

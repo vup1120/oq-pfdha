@@ -9,19 +9,17 @@ OpenQuake-style invocation:
 
 """
 
+import argparse
+import configparser
+import logging
 import os
 import sys
-import argparse
-import logging
 from pathlib import Path
-from typing import Optional, Dict, Any, TYPE_CHECKING
+from typing import Any, Dict, Optional
 
-# Apply the h3 v3/v4 compatibility shim before any OpenQuake (hazardlib)
-# module that uses h3 is imported by the calculation path.
-from openquake.fdha import h3_compat  # noqa: E402,F401
 
-if TYPE_CHECKING:  # avoid importing heavy modules at CLI startup
-    from openquake.fdha.logic_tree.driver import LogicTreeResult
+class ConfigurationError(ValueError):
+    """Raised when a job is not an engine displacement job."""
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +44,11 @@ def parse_config_file(config_path: str) -> Dict[str, Any]:
     Returns:
         Configuration dictionary
     """
-    from openquake.fdha.calc.config_loader import load_config
-    return load_config(config_path)
+    parser = configparser.ConfigParser()
+    if not parser.read(config_path):
+        raise ConfigurationError(f"Configuration file not found: {config_path}")
+    return {section: dict(parser.items(section))
+            for section in parser.sections()}
 
 
 def run_calculation(
@@ -76,8 +77,6 @@ def run_calculation(
     if (isinstance(general_cfg, dict)
             and general_cfg.get("calculation_mode") == "displacement"):
         return _run_engine(config_path, plot, plot_file)
-
-    from openquake.fdha.calc.config_loader import ConfigurationError
 
     raise ConfigurationError(
         "The fdha wrapper accepts only engine jobs with "
