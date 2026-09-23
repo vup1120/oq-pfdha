@@ -545,13 +545,14 @@ def build_fdha_lt_xml(selections: dict) -> str:
     """Serialize the 4-slot selection to one NRML logic-tree XML (schema per
     openquake/fdha/logic_tree/nrml_reader.py:24-56).
 
-    All four slots are presented to the user as independent choices. Levels
-    1-3 serialize as plain branch sets. At level 4, engine-coupled FD models
-    (COUPLED_DISTRIBUTED) are chained to their SR partner with
-    applyToBranches, and the remaining FD models are chained to the
-    remaining SR branches - applyToBranches matches by set intersection
-    (enumerator.py:81-84), so one branch set serves many parents. With no
-    coupled model selected the tree is fully flat.
+    All four slots are presented to the user as independent choices. The
+    branch sets are serialized directly under <logicTree> (the legacy
+    <logicTreeBranchingLevel> wrapper is obsolete). At the distributed FD
+    slot, engine-coupled FD models (COUPLED_DISTRIBUTED) are chained to
+    their SR partner with applyToBranches, and the remaining FD models are
+    chained to the remaining SR branches - applyToBranches matches by set
+    intersection (enumerator.py:81-84), so one branch set serves many
+    parents. With no coupled model selected the tree is fully flat.
     """
     def branch(ind: str, bid: str, m: dict, weight) -> list[str]:
         # oq-engine GMPE logic-tree style: plain indented text, one
@@ -583,12 +584,11 @@ def build_fdha_lt_xml(selections: dict) -> str:
                     "fdhaSecondarySRModel"]
     for i, utype in enumerate(plain_levels, 1):
         slot = REGISTRY["slots"][utype]["package"].rsplit(".", 1)[-1]
-        parts.append(f'    <logicTreeBranchingLevel branchingLevelID="bl_{i}_{slot}">')
-        parts.append(f'      <logicTreeBranchSet branchSetID="bs_{i}_{slot}"'
+        parts.append(f'    <logicTreeBranchSet branchSetID="bs_{i}_{slot}"'
                      f' uncertaintyType="{utype}">')
         for bid, m in zip(slot_bids(utype, i), selections[utype]):
-            parts += branch("        ", bid, m, m["weight"])
-        parts += ["      </logicTreeBranchSet>", "    </logicTreeBranchingLevel>"]
+            parts += branch("      ", bid, m, m["weight"])
+        parts.append("    </logicTreeBranchSet>")
 
     ssr = selections["fdhaSecondarySRModel"]
     sfd = selections["fdhaSecondaryFDModel"]
@@ -606,23 +606,21 @@ def build_fdha_lt_xml(selections: dict) -> str:
     for bid, m in zip(ssr_bids, ssr):
         sr_id_by_class.setdefault(m["class_name"], bid)
 
-    parts.append('    <logicTreeBranchingLevel branchingLevelID="bl_4_secondary_surf_displ">')
     if free_fd:
         cond = (f' applyToBranches="{" ".join(free_sr_ids)}"'
                 if coupled_fd else "")
-        parts.append('      <logicTreeBranchSet branchSetID="bs_4_secondary_surf_displ"'
+        parts.append('    <logicTreeBranchSet branchSetID="bs_4_secondary_surf_displ"'
                      f' uncertaintyType="fdhaSecondaryFDModel"{cond}>')
         for bid, m in free_fd:
-            parts += branch("        ", bid, m, m["weight"])
-        parts.append("      </logicTreeBranchSet>")
+            parts += branch("      ", bid, m, m["weight"])
+        parts.append("    </logicTreeBranchSet>")
     for j, (bid, m) in enumerate(coupled_fd):
         sr_id = sr_id_by_class.get(COUPLED_FD_TO_SR[m["class_name"]], "")
-        parts.append(f'      <logicTreeBranchSet branchSetID="bs_4_{m["class_name"].lower()}_{j}"'
+        parts.append(f'    <logicTreeBranchSet branchSetID="bs_4_{m["class_name"].lower()}_{j}"'
                      f' uncertaintyType="fdhaSecondaryFDModel"'
                      f' applyToBranches="{sr_id}">')
-        parts += branch("        ", bid, m, "1.0")
-        parts.append("      </logicTreeBranchSet>")
-    parts.append("    </logicTreeBranchingLevel>")
+        parts += branch("      ", bid, m, "1.0")
+        parts.append("    </logicTreeBranchSet>")
     parts += ["  </logicTree>", "</nrml>"]
     return "\n".join(parts)
 

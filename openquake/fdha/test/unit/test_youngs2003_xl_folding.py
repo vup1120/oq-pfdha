@@ -8,7 +8,7 @@ import numpy as np
 import math
 import pytest
 
-from openquake.fdha.primary_surf_displ.youngs2003 import Youngs2003PrimaryFD
+from openquake.pfd.primary_surf_displ.youngs2003 import Youngs2003PrimaryFD
 
 pytestmark = pytest.mark.unit
 

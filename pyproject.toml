@@ -58,8 +58,6 @@ namespaces = true
 
 [tool.setuptools.package-data]
 "openquake.fdha.logic_tree" = ["*.yaml"]
-"openquake.fdha.primary_surf_displ" = ["data/*.csv"]
-"openquake.fdha.primary_surf_displ.kuehn2024" = ["data/*.csv"]
 
 [tool.pytest.ini_options]
 # Mirrors openquake/fdha/test/pytest.ini so that running ``pytest`` from the

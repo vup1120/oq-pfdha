@@ -9,34 +9,30 @@
 <nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
   <logicTree logicTreeID="pfdha_validation_single_elliptical">
 
-    <logicTreeBranchingLevel branchingLevelID="bl1_ss_psr">
-      <logicTreeBranchSet branchSetID="bs1_ss_psr"
-                          uncertaintyType="fdhaPrimarySRModel"
-                          applyToStyle="strike-slip">
-        <logicTreeBranch branchID="SS_PSR_PIZZA2023">
-          <uncertaintyModel>
-            [Pizza2023PrimarySR]
-            style = "all"
-          </uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+  <logicTreeBranchSet branchSetID="bs1_ss_psr"
+                      uncertaintyType="fdhaPrimarySRModel"
+                      applyToStyle="strike-slip">
+    <logicTreeBranch branchID="SS_PSR_PIZZA2023">
+      <uncertaintyModel>
+        [Pizza2023PrimarySR]
+        style = "all"
+      </uncertaintyModel>
+      <uncertaintyWeight>1.0</uncertaintyWeight>
+    </logicTreeBranch>
+  </logicTreeBranchSet>
 
-    <logicTreeBranchingLevel branchingLevelID="bl2_ss_pfd">
-      <logicTreeBranchSet branchSetID="bs2_ss_pfd"
-                          uncertaintyType="fdhaPrimaryFDModel"
-                          applyToBranches="SS_PSR_PIZZA2023"
-                          applyToStyle="strike-slip">
-        <logicTreeBranch branchID="SS_PFD_ELLIPTICAL">
-          <uncertaintyModel>
-            [Petersen2011PrimaryFD]
-            version = elliptical
-          </uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+  <logicTreeBranchSet branchSetID="bs2_ss_pfd"
+                      uncertaintyType="fdhaPrimaryFDModel"
+                      applyToBranches="SS_PSR_PIZZA2023"
+                      applyToStyle="strike-slip">
+    <logicTreeBranch branchID="SS_PFD_ELLIPTICAL">
+      <uncertaintyModel>
+        [Petersen2011PrimaryFD]
+        version = "elliptical"
+      </uncertaintyModel>
+      <uncertaintyWeight>1.0</uncertaintyWeight>
+    </logicTreeBranch>
+  </logicTreeBranchSet>
 
   </logicTree>
 </nrml>

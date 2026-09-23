@@ -46,8 +46,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from openquake.fdha.primary_surf_displ import MossRoss2011PrimaryFD
-from openquake.fdha.primary_surf_rup import MossRoss2011PrimarySR, WC1993PrimarySR
+from openquake.pfd.primary_surf_displ import MossRoss2011PrimaryFD
+from openquake.pfd.primary_surf_rup import MossRoss2011PrimarySR, WC1993PrimarySR
 
 HERE = Path(__file__).resolve().parent
 

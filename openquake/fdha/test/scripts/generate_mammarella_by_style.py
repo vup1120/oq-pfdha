@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 from pathlib import Path
 
-from openquake.fdha.primary_surf_rup.mammarella2024 import MammarellaEtAl2024PrimarySR
+from openquake.pfd.primary_surf_rup.mammarella2024 import MammarellaEtAl2024PrimarySR
 
 SCRIPT_DIR = Path(__file__).parent
 OUTPUT_DIR = SCRIPT_DIR / "outputs"

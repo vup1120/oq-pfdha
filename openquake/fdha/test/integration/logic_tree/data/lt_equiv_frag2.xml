@@ -1,19 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
   <logicTree logicTreeID="pfdha_equiv_frag2">
-    <logicTreeBranchingLevel branchingLevelID="bl2_ss_pfd">
-      <logicTreeBranchSet branchSetID="bs2_ss_pfd"
-                          uncertaintyType="fdhaPrimaryFDModel"
-                          applyToBranches="SS_PSR_PIZZA2023"
-                          applyToStyle="strike-slip">
-        <logicTreeBranch branchID="SS_PFD_BILINEAR">
-          <uncertaintyModel>
-            [Petersen2011PrimaryFD]
-            version = bilinear
-          </uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+  <logicTreeBranchSet branchSetID="bs2_ss_pfd"
+                      uncertaintyType="fdhaPrimaryFDModel"
+                      applyToBranches="SS_PSR_PIZZA2023"
+                      applyToStyle="strike-slip">
+    <logicTreeBranch branchID="SS_PFD_BILINEAR">
+      <uncertaintyModel>
+        [Petersen2011PrimaryFD]
+        version = "bilinear"
+      </uncertaintyModel>
+      <uncertaintyWeight>1.0</uncertaintyWeight>
+    </logicTreeBranch>
+  </logicTreeBranchSet>
   </logicTree>
 </nrml>

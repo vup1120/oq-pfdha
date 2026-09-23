@@ -92,18 +92,17 @@ def wp_gauss(r_km: float, sig_km: float) -> float:
 
 def sigma_level(branches):
     rows = [
-        '    <logicTreeBranchingLevel branchingLevelID="bl_5_r_sigma">',
-        '      <logicTreeBranchSet branchSetID="bs_5_r_sigma" '
+        '    <logicTreeBranchSet branchSetID="bs_5_r_sigma" '
         'uncertaintyType="fdhaCalcRSigma">',
     ]
     for bid, value, weight in branches:
         rows += [
-            f'        <logicTreeBranch branchID="{bid}">',
-            f'          <uncertaintyModel>{value}</uncertaintyModel>',
-            f'          <uncertaintyWeight>{weight}</uncertaintyWeight>',
-            '        </logicTreeBranch>',
+            f'      <logicTreeBranch branchID="{bid}">',
+            f'        <uncertaintyModel>{value}</uncertaintyModel>',
+            f'        <uncertaintyWeight>{weight}</uncertaintyWeight>',
+            '      </logicTreeBranch>',
         ]
-    rows += ['      </logicTreeBranchSet>', '    </logicTreeBranchingLevel>']
+    rows += ['    </logicTreeBranchSet>']
     return "\n".join(rows)
 
 

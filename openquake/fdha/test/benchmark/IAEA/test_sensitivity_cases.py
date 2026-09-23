@@ -37,7 +37,10 @@ sys.path.insert(0, str(HERE))
 from sensitivity import SENSITIVITY_JOBS  # noqa: E402
 from run_sensitivity import load_snapshot, run_job  # noqa: E402
 
-pytestmark = pytest.mark.benchmark
+pytestmark = [
+    pytest.mark.benchmark,
+    pytest.mark.skip(reason="legacy standalone driver removed; migrate to engine QA jobs"),
+]
 
 _RESULTS = {}
 
@@ -77,7 +80,7 @@ def test_norcia_sens3_added_source_higher_hazard():
 
 
 def test_kumamoto_sens3_head_is_rate_times_p1p():
-    from openquake.fdha.primary_surf_rup import Takao2013PrimarySR
+    from openquake.pfd.primary_surf_rup import Takao2013PrimarySR
 
     _, rates = _get("kumamoto", "principal_T13_sens3")
     expected = 23.3e-5 * float(Takao2013PrimarySR().get_prob(5.8))

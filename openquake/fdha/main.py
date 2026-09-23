@@ -9,19 +9,17 @@ OpenQuake-style invocation:
 
 """
 
+import argparse
+import configparser
+import logging
 import os
 import sys
-import argparse
-import logging
 from pathlib import Path
-from typing import Optional, Dict, Any, TYPE_CHECKING
+from typing import Any, Dict, Optional
 
-# Apply the h3 v3/v4 compatibility shim before any OpenQuake (hazardlib)
-# module that uses h3 is imported by the calculation path.
-from openquake.fdha import h3_compat  # noqa: E402,F401
 
-if TYPE_CHECKING:  # avoid importing heavy modules at CLI startup
-    from openquake.fdha.logic_tree.driver import LogicTreeResult
+class ConfigurationError(ValueError):
+    """Raised when a job is not an engine displacement job."""
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +44,11 @@ def parse_config_file(config_path: str) -> Dict[str, Any]:
     Returns:
         Configuration dictionary
     """
-    from openquake.fdha.calc.config_loader import load_config
-    return load_config(config_path)
+    parser = configparser.ConfigParser()
+    if not parser.read(config_path):
+        raise ConfigurationError(f"Configuration file not found: {config_path}")
+    return {section: dict(parser.items(section))
+            for section in parser.sections()}
 
 
 def run_calculation(
@@ -72,84 +73,41 @@ def run_calculation(
     # Parse config
     config = parse_config_file(config_path)
 
-    # Logic-tree dispatch (new path)
-    from openquake.fdha.calc.config_loader import calculation_requests_fdha_logic_tree
-
-    calc_cfg = config.get("calculation", {})
-    has_fdha_lt = (
-        calculation_requests_fdha_logic_tree(calc_cfg) if isinstance(calc_cfg, dict) else False
-    )
-
-    if has_fdha_lt:
-        return _run_logic_tree(
-            config_path=config_path,
-            plot=plot,
-            plot_file=plot_file,
-        )
-
-    from openquake.fdha.calc.config_loader import ConfigurationError
+    general_cfg = config.get("general", {})
+    if (isinstance(general_cfg, dict)
+            and general_cfg.get("calculation_mode") == "displacement"):
+        return _run_engine(config_path, plot, plot_file)
 
     raise ConfigurationError(
-        "Configuration must provide canonical [calculation].fdha_logic_tree_file "
-        "and [calculation].source_model_logic_tree_file."
+        "The fdha wrapper accepts only engine jobs with "
+        "calculation_mode = displacement."
     )
 
 
-def _run_logic_tree(
+def _run_engine(
     config_path: str,
     plot: bool,
     plot_file: Optional[str],
 ) -> Dict[str, Any]:
-    """Run the logic-tree driver and collect convenience paths for the CLI."""
-    from openquake.fdha.logic_tree.driver import FdhaLogicTree
+    """Run an engine-owned displacement calculation.
 
-    lt = FdhaLogicTree.from_ini(config_path)
-    result = lt.run()
-    outdir = Path(result.outdir)
+    The standalone command remains a thin consumer: parsing, execution,
+    datastore handling, and exports are all delegated to the engine.
+    """
+    from openquake.engine.engine import create_jobs, run_jobs
 
-    # Infer shape metadata so that the CLI summary in main() prints meaningful
-    # numbers for logic-tree jobs (legacy dict keys are not produced here).
-    n_sites = len(result.site_lons) if result.site_lons else (
-        len(result.mean_rates) if result.mean_rates else 1
-    )
-    n_displ = len(result.d0) if result.d0 else 0
-
-    # Validator reports are written per source-model branch; keep the legacy
-    # top-level key only when that file actually exists (older layouts).
-    validator_reports = sorted(
-        str(p) for p in outdir.glob("source_model_branches/*/validator_report.txt")
-    )
-    top_level_report = outdir / "validator_report.txt"
-    if top_level_report.exists():
-        validator_reports.insert(0, str(top_level_report))
-
-    results: Dict[str, Any] = {
-        "logic_tree": True,
-        "outdir": str(outdir),
-        "mode": result.mode,
-        "n_sites": n_sites,
-        "n_displ": n_displ,
-        "manifest_json": str(outdir / "manifest.json"),
-        "validator_reports": validator_reports,
-    }
-
-    if result.mode == "hazard_curve":
-        results["aggregate_hazard_csv"] = str(outdir / "aggregate_hazard.csv")
-    elif result.mode == "hazard_map":
-        agg = outdir / "aggregate"
-        results["rates_mean_h5"] = str(agg / "rates_mean.h5")
-        results["rates_fractiles_h5"] = str(agg / "rates_fractiles.h5")
-        results["displacement_map_mean_csv"] = str(agg / "displacement_map_mean.csv")
-        if result.target_return_period is not None:
-            results["target_return_period"] = float(result.target_return_period)
-
+    jobs = create_jobs([config_path])
+    run_jobs(jobs)
+    job = jobs[0]
     if plot or plot_file:
-        try:
-            _plot_logic_tree_result(result, plot_file=plot_file)
-        except Exception as e:  # never let plotting break the CLI
-            logger.warning(f"Plot generation failed (logic-tree mode): {e}")
-
-    return results
+        logger.warning("Plotting engine outputs is not yet handled by fdha")
+    return {
+        "engine": True,
+        "calc_id": job.calc_id,
+        "outdir": str(Path(config_path).parent),
+        "n_sites": None,
+        "n_displ": None,
+    }
 
 
 def _save_or_show(fig, plot_file: Optional[str]) -> None:

@@ -1,29 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
   <logicTree logicTreeID="lt_fdha_job_kuehn2024">
-    <logicTreeBranchingLevel branchingLevelID="bl_1_primary_surf_rup">
-      <logicTreeBranchSet branchSetID="bs_1_primary_surf_rup" uncertaintyType="fdhaPrimarySRModel">
-        <logicTreeBranch branchID="B1_PRIMARY_SURF_RUP">
-          <uncertaintyModel>
-            [Youngs2003PrimarySR]
-            style = all
-          </uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
-    <logicTreeBranchingLevel branchingLevelID="bl_2_primary_surf_displ">
-      <logicTreeBranchSet branchSetID="bs_2_primary_surf_displ" uncertaintyType="fdhaPrimaryFDModel" applyToBranches="B1_PRIMARY_SURF_RUP">
-        <logicTreeBranch branchID="B2_PRIMARY_SURF_DISPL">
-          <uncertaintyModel>
-            [Kuehn2024PrimaryFD]
-            style = normal
-            epistemic_uncertainty = true
-          </uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+  <logicTreeBranchSet branchSetID="bs_1_primary_surf_rup" uncertaintyType="fdhaPrimarySRModel">
+    <logicTreeBranch branchID="B1_PRIMARY_SURF_RUP">
+      <uncertaintyModel>
+        [Youngs2003PrimarySR]
+        style = "all"
+      </uncertaintyModel>
+      <uncertaintyWeight>1.0</uncertaintyWeight>
+    </logicTreeBranch>
+  </logicTreeBranchSet>
+  <logicTreeBranchSet branchSetID="bs_2_primary_surf_displ" uncertaintyType="fdhaPrimaryFDModel" applyToBranches="B1_PRIMARY_SURF_RUP">
+    <logicTreeBranch branchID="B2_PRIMARY_SURF_DISPL">
+      <uncertaintyModel>
+        [Kuehn2024PrimaryFD]
+        style = "normal"
+        epistemic_uncertainty = true
+      </uncertaintyModel>
+      <uncertaintyWeight>1.0</uncertaintyWeight>
+    </logicTreeBranch>
+  </logicTreeBranchSet>
     <!-- Kuehn2024PrimaryFD predicts AGGREGATE displacement (Sarmiento et al.
          2025 Table 1): the distributed contribution is already inside the
          prediction, so the chain runs as a single bucket and the secondary

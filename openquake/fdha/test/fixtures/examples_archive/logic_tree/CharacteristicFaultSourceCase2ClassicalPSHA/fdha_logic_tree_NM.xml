@@ -6,82 +6,74 @@
 
     <!-- =================== BL1: PRIMARY-SR (per rake class) =================== -->
     <!-- Normal -->
-    <logicTreeBranchingLevel branchingLevelID="bl1_nm_psr">
-      <logicTreeBranchSet branchSetID="bs1_nm_psr"
-                          uncertaintyType="fdhaPrimarySRModel"
-                          applyToStyle="normal">
-        <logicTreeBranch branchID="NM_PSR_PIZZA2023">
-          <uncertaintyModel>Pizza2023PrimarySR</uncertaintyModel>
-          <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
-        </logicTreeBranch>
-        <logicTreeBranch branchID="NM_PSR_MAMMA2024">
-          <uncertaintyModel>MammarellaEtAl2024PrimarySR</uncertaintyModel>
-          <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
-        </logicTreeBranch>
-        <logicTreeBranch branchID="NM_PSR_YOUNGS2003">
-          <uncertaintyModel>Youngs2003PrimarySR</uncertaintyModel>
-          <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+  <logicTreeBranchSet branchSetID="bs1_nm_psr"
+                      uncertaintyType="fdhaPrimarySRModel"
+                      applyToStyle="normal">
+    <logicTreeBranch branchID="NM_PSR_PIZZA2023">
+      <uncertaintyModel>Pizza2023PrimarySR</uncertaintyModel>
+      <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
+    </logicTreeBranch>
+    <logicTreeBranch branchID="NM_PSR_MAMMA2024">
+      <uncertaintyModel>MammarellaEtAl2024PrimarySR</uncertaintyModel>
+      <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
+    </logicTreeBranch>
+    <logicTreeBranch branchID="NM_PSR_YOUNGS2003">
+      <uncertaintyModel>Youngs2003PrimarySR</uncertaintyModel>
+      <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
+    </logicTreeBranch>
+  </logicTreeBranchSet>
 
     <!-- ========== BL2: PRIMARY-FD (conditioned on PRIMARY-SR by style) ========== -->
     <!-- Normal -->
-    <logicTreeBranchingLevel branchingLevelID="bl2_nm_pfd_given_psr">
-      <logicTreeBranchSet branchSetID="bs2_nm_pfd_if_psr"
-                          uncertaintyType="fdhaPrimaryFDModel"
-                          applyToBranches="NM_PSR_PIZZA2023 NM_PSR_MAMMA2024 NM_PSR_YOUNGS2003"
-                          applyToStyle="normal">
-        <logicTreeBranch branchID="NM_PFD_YOUNGS2003">
-          <uncertaintyModel>Youngs2003PrimaryFD</uncertaintyModel>
-          <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
-        </logicTreeBranch>
-        <logicTreeBranch branchID="NM_PFD_LAVRENTIADIS2023">
-          <uncertaintyModel>Lavrentiadis2023PrimaryFD_aggregate</uncertaintyModel>
-          <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
-        </logicTreeBranch>
-        <logicTreeBranch branchID="NM_PFD_KUEHN2024">
-          <uncertaintyModel>Kuehn2024PrimaryFD</uncertaintyModel>
-          <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+  <logicTreeBranchSet branchSetID="bs2_nm_pfd_if_psr"
+                      uncertaintyType="fdhaPrimaryFDModel"
+                      applyToBranches="NM_PSR_PIZZA2023 NM_PSR_MAMMA2024 NM_PSR_YOUNGS2003"
+                      applyToStyle="normal">
+    <logicTreeBranch branchID="NM_PFD_YOUNGS2003">
+      <uncertaintyModel>Youngs2003PrimaryFD</uncertaintyModel>
+      <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
+    </logicTreeBranch>
+    <logicTreeBranch branchID="NM_PFD_LAVRENTIADIS2023">
+      <uncertaintyModel>Lavrentiadis2023PrimaryFD_aggregate</uncertaintyModel>
+      <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
+    </logicTreeBranch>
+    <logicTreeBranch branchID="NM_PFD_KUEHN2024">
+      <uncertaintyModel>Kuehn2024PrimaryFD</uncertaintyModel>
+      <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
+    </logicTreeBranch>
+  </logicTreeBranchSet>
 
     <!-- ======= BL3: SECONDARY-SR (conditioned on PRIMARY-SR by style) ======= -->
     <!-- Normal -->
-    <logicTreeBranchingLevel branchingLevelID="bl3_nm_ssr">
-      <logicTreeBranchSet branchSetID="bs3_nm_ssr"
-                          uncertaintyType="fdhaSecondarySRModel"
-                          applyToBranches="NM_PSR_PIZZA2023 NM_PSR_MAMMA2024 NM_PSR_YOUNGS2003"
-                          applyToStyle="normal">
-        <logicTreeBranch branchID="NM_SSR_FERRARIO2021">
-          <uncertaintyModel>FerrarioLivio2021SecondarySR</uncertaintyModel>
-          <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
-        </logicTreeBranch>
-        <logicTreeBranch branchID="NM_SSR_VISINI2025">
-          <uncertaintyModel>Visini2025SecondarySR</uncertaintyModel>
-          <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+  <logicTreeBranchSet branchSetID="bs3_nm_ssr"
+                      uncertaintyType="fdhaSecondarySRModel"
+                      applyToBranches="NM_PSR_PIZZA2023 NM_PSR_MAMMA2024 NM_PSR_YOUNGS2003"
+                      applyToStyle="normal">
+    <logicTreeBranch branchID="NM_SSR_FERRARIO2021">
+      <uncertaintyModel>FerrarioLivio2021SecondarySR</uncertaintyModel>
+      <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
+    </logicTreeBranch>
+    <logicTreeBranch branchID="NM_SSR_VISINI2025">
+      <uncertaintyModel>Visini2025SecondarySR</uncertaintyModel>
+      <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
+    </logicTreeBranch>
+  </logicTreeBranchSet>
 
     <!-- ===== BL4: SECONDARY-FD (conditioned on SECONDARY-SR by style) ===== -->
     <!-- Normal -->
-    <logicTreeBranchingLevel branchingLevelID="bl4_nm_sfd">
-      <logicTreeBranchSet branchSetID="bs4_nm_sfd_if_ssr"
-                          uncertaintyType="fdhaSecondaryFDModel"
-                          applyToBranches="NM_SSR_FERRARIO2021 NM_SSR_VISINI2025"
-                          applyToStyle="normal">
-        <logicTreeBranch branchID="NM_SFD_YOUNGS2003">
-          <uncertaintyModel>Youngs2003SecondaryFD</uncertaintyModel>
-          <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
-        </logicTreeBranch>
-        <logicTreeBranch branchID="NM_SFD_VISINI2025">
-          <uncertaintyModel>Visini2025SecondaryFD</uncertaintyModel>
-          <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+  <logicTreeBranchSet branchSetID="bs4_nm_sfd_if_ssr"
+                      uncertaintyType="fdhaSecondaryFDModel"
+                      applyToBranches="NM_SSR_FERRARIO2021 NM_SSR_VISINI2025"
+                      applyToStyle="normal">
+    <logicTreeBranch branchID="NM_SFD_YOUNGS2003">
+      <uncertaintyModel>Youngs2003SecondaryFD</uncertaintyModel>
+      <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
+    </logicTreeBranch>
+    <logicTreeBranch branchID="NM_SFD_VISINI2025">
+      <uncertaintyModel>Visini2025SecondaryFD</uncertaintyModel>
+      <uncertaintyWeight>PLACEHOLDER_WEIGHT</uncertaintyWeight>
+    </logicTreeBranch>
+  </logicTreeBranchSet>
 
   </logicTree>
 </nrml>

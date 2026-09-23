@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
-from openquake.fdha.primary_surf_displ import MossRoss2011PrimaryFD
+from openquake.pfd.primary_surf_displ import MossRoss2011PrimaryFD
 
 pytestmark = pytest.mark.unit
 

@@ -21,7 +21,7 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-from openquake.fdha.primary_surf_rup.mammarella2024 import (
+from openquake.pfd.primary_surf_rup.mammarella2024 import (
     Mammarella2024PrimarySR,
     TAB1,
     TAB2,

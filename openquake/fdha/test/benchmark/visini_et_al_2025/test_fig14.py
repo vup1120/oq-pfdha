@@ -12,7 +12,7 @@ import os
 import pytest
 from pathlib import Path
 from scipy.stats import norm as _norm_ppf, truncnorm
-from openquake.fdha.secondary_surf_rup.visini2025 import Visini2025SecondarySR
+from openquake.pfd.secondary_surf_rup.visini2025 import Visini2025SecondarySR
 
 pytestmark = pytest.mark.benchmark
 

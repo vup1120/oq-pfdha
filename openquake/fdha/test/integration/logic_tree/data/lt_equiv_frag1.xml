@@ -1,18 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
   <logicTree logicTreeID="pfdha_equiv_frag1">
-    <logicTreeBranchingLevel branchingLevelID="bl1_ss_psr">
-      <logicTreeBranchSet branchSetID="bs1_ss_psr"
-                          uncertaintyType="fdhaPrimarySRModel"
-                          applyToStyle="strike-slip">
-        <logicTreeBranch branchID="SS_PSR_PIZZA2023">
-          <uncertaintyModel>
-            [Pizza2023PrimarySR]
-            style = "all"
-          </uncertaintyModel>
-          <uncertaintyWeight>1.0</uncertaintyWeight>
-        </logicTreeBranch>
-      </logicTreeBranchSet>
-    </logicTreeBranchingLevel>
+  <logicTreeBranchSet branchSetID="bs1_ss_psr"
+                      uncertaintyType="fdhaPrimarySRModel"
+                      applyToStyle="strike-slip">
+    <logicTreeBranch branchID="SS_PSR_PIZZA2023">
+      <uncertaintyModel>
+        [Pizza2023PrimarySR]
+        style = "all"
+      </uncertaintyModel>
+      <uncertaintyWeight>1.0</uncertaintyWeight>
+    </logicTreeBranch>
+  </logicTreeBranchSet>
   </logicTree>
 </nrml>

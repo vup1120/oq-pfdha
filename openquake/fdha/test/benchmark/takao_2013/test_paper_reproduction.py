@@ -25,7 +25,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from openquake.fdha.secondary_surf_displ import Takao2013SecondaryFD
+from openquake.pfd.secondary_surf_displ import Takao2013SecondaryFD
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))

@@ -26,7 +26,7 @@ import pytest
 
 pytestmark = pytest.mark.benchmark
 
-from openquake.fdha.primary_surf_rup.mammarella2024 import Mammarella2024PrimarySR
+from openquake.pfd.primary_surf_rup.mammarella2024 import Mammarella2024PrimarySR
 
 
 GOLDEN_PATH = os.path.join(

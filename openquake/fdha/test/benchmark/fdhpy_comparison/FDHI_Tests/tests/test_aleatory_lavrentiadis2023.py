@@ -25,7 +25,7 @@ fdhpy = pytest.importorskip("fdhpy", reason="fdhpy not installed - FDHI aleatory
 from fdhpy import LavrentiadisAbrahamson2023
 
 try:
-    from openquake.fdha.primary_surf_displ import Lavrentiadis2023PrimaryFD_aggregate
+    from openquake.pfd.primary_surf_displ import Lavrentiadis2023PrimaryFD_aggregate
 except ImportError as e:
     pytest.skip(f"pfdha FD models not importable for aleatory tests: {e}", allow_module_level=True)
 

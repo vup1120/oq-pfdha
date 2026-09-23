@@ -49,8 +49,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from openquake.fdha.primary_surf_rup import Takao2013PrimarySR
-from openquake.fdha.primary_surf_displ import Takao2013PrimaryFD
+from openquake.pfd.primary_surf_rup import Takao2013PrimarySR
+from openquake.pfd.primary_surf_displ import Takao2013PrimaryFD
 
 from figcompare import load_points, match_stats  # noqa: E402 (script-local)
 
