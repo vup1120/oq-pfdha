@@ -22,7 +22,7 @@
     <logicTreeBranch branchID="Y03_PRIMARY_SURF_DISPL">
       <uncertaintyModel>
         [Youngs2003PrimaryFD]
-        norm_disp_type = AD
+        norm_disp_type = "AD"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>
@@ -33,7 +33,7 @@
     <logicTreeBranch branchID="V24_PRIMARY_SURF_DISPL_PROXY">
       <uncertaintyModel>
         [Youngs2003PrimaryFD]
-        norm_disp_type = AD
+        norm_disp_type = "AD"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>
@@ -79,7 +79,7 @@
     <logicTreeBranch branchID="V24_SECONDARY_SURF_DISPL">
       <uncertaintyModel>
         [Visini2025SecondaryFD]
-        scaling_model = WC1994
+        scaling_model = "WC1994"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>

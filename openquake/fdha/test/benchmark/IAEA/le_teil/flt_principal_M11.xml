@@ -13,7 +13,7 @@
     <logicTreeBranch branchID="B2_PFD">
       <uncertaintyModel>
         [MossRoss2011PrimaryFD]
-        norm_disp_type = AD
+        norm_disp_type = "AD"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>
@@ -31,7 +31,7 @@
     <logicTreeBranch branchID="B4_SFD">
       <uncertaintyModel>
         [Youngs2003SecondaryFD]
-        style = all
+        style = "all"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>

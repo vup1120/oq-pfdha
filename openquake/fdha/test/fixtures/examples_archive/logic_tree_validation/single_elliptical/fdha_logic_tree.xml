@@ -28,7 +28,7 @@
     <logicTreeBranch branchID="SS_PFD_ELLIPTICAL">
       <uncertaintyModel>
         [Petersen2011PrimaryFD]
-        version = elliptical
+        version = "elliptical"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>

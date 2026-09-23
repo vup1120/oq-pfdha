@@ -32,7 +32,7 @@
     <logicTreeBranch branchID="PFD">
       <uncertaintyModel>
         [Petersen2011PrimaryFD]
-        version = bilinear
+        version = "bilinear"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>

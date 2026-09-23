@@ -13,7 +13,7 @@
     <logicTreeBranch branchID="B2_PFD">
       <uncertaintyModel>
         [Chiou2025PrimaryFD]
-        version = model7
+        version = "model7"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>
@@ -31,7 +31,7 @@
     <logicTreeBranch branchID="B4_SFD">
       <uncertaintyModel>
         [Youngs2003SecondaryFD]
-        style = all
+        style = "all"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>

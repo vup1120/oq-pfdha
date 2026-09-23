@@ -5,7 +5,7 @@
     <logicTreeBranch branchID="B1_PRIMARY_SURF_RUP">
       <uncertaintyModel>
         [Moss2013PrimarySR]
-        style = reverse
+        style = "reverse"
         vs30 = 600
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
@@ -15,9 +15,9 @@
     <logicTreeBranch branchID="B2_PRIMARY_SURF_DISPL">
       <uncertaintyModel>
         [Moss2024PrimaryFD]
-        version = MD
-        source = EQS
-        completeness = all
+        version = "MD"
+        source = "EQS"
+        completeness = "all"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>
@@ -26,7 +26,7 @@
     <logicTreeBranch branchID="B3_SECONDARY_SURF_RUP">
       <uncertaintyModel>
         [Youngs2003SecondarySR]
-        style = all
+        style = "all"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>
@@ -35,7 +35,7 @@
     <logicTreeBranch branchID="B4_SECONDARY_SURF_DISPL">
       <uncertaintyModel>
         [Youngs2003SecondaryFD]
-        style = all
+        style = "all"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>

@@ -46,21 +46,21 @@
     <logicTreeBranch branchID="SS_PFD_PETERSEN2011_bilinear">
       <uncertaintyModel>
         [Petersen2011PrimaryFD]
-        version = bilinear
+        version = "bilinear"
       </uncertaintyModel>
       <uncertaintyWeight>0.13</uncertaintyWeight>
     </logicTreeBranch>
     <logicTreeBranch branchID="SS_PFD_PETERSEN2011_elliptical">
       <uncertaintyModel>
         [Petersen2011PrimaryFD]
-        version = elliptical
+        version = "elliptical"
       </uncertaintyModel>
       <uncertaintyWeight>0.13</uncertaintyWeight>
     </logicTreeBranch>
     <logicTreeBranch branchID="SS_PFD_PETERSEN2011_quadratic">
       <uncertaintyModel>
         [Petersen2011PrimaryFD]
-        version = quadratic
+        version = "quadratic"
       </uncertaintyModel>
       <uncertaintyWeight>0.14</uncertaintyWeight>
     </logicTreeBranch>

@@ -5,7 +5,7 @@
     <logicTreeBranch branchID="B1_PSR">
       <uncertaintyModel>
         [Youngs2003PrimarySR]
-        style = normal
+        style = "normal"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>
@@ -14,8 +14,8 @@
     <logicTreeBranch branchID="B2_PFD">
       <uncertaintyModel>
         [Youngs2003PrimaryFD]
-        style = normal
-        norm_disp_type = AD
+        style = "normal"
+        norm_disp_type = "AD"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>

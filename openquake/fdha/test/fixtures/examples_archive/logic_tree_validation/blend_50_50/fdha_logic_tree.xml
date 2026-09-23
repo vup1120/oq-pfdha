@@ -30,14 +30,14 @@
     <logicTreeBranch branchID="SS_PFD_BILINEAR">
       <uncertaintyModel>
         [Petersen2011PrimaryFD]
-        version = bilinear
+        version = "bilinear"
       </uncertaintyModel>
       <uncertaintyWeight>0.5</uncertaintyWeight>
     </logicTreeBranch>
     <logicTreeBranch branchID="SS_PFD_ELLIPTICAL">
       <uncertaintyModel>
         [Petersen2011PrimaryFD]
-        version = elliptical
+        version = "elliptical"
       </uncertaintyModel>
       <uncertaintyWeight>0.5</uncertaintyWeight>
     </logicTreeBranch>

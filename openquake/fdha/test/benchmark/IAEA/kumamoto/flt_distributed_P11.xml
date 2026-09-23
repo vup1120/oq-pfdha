@@ -13,7 +13,7 @@
     <logicTreeBranch branchID="B2_PFD">
       <uncertaintyModel>
         [Petersen2011PrimaryFD]
-        version = bilinear
+        version = "bilinear"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>
@@ -23,7 +23,7 @@
       <uncertaintyModel>
         [Petersen2011SecondarySR]
         pixel_size = 100
-        version = default
+        version = "default"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>

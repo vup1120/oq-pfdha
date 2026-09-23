@@ -20,7 +20,7 @@
     <logicTreeBranch branchID="B2_PFD">
       <uncertaintyModel>
         [Lavrentiadis2023PrimaryFD_principal]
-        include_zero_slip = True
+        include_zero_slip = true
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>
@@ -38,7 +38,7 @@
     <logicTreeBranch branchID="B4_SFD">
       <uncertaintyModel>
         [Youngs2003SecondaryFD]
-        style = all
+        style = "all"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>

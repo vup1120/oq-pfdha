@@ -37,7 +37,10 @@ sys.path.insert(0, str(HERE))
 from sensitivity import SENSITIVITY_JOBS  # noqa: E402
 from run_sensitivity import load_snapshot, run_job  # noqa: E402
 
-pytestmark = pytest.mark.benchmark
+pytestmark = [
+    pytest.mark.benchmark,
+    pytest.mark.skip(reason="legacy standalone driver removed; migrate to engine QA jobs"),
+]
 
 _RESULTS = {}
 

@@ -14,7 +14,7 @@
     <logicTreeBranch branchID="B2_PFD">
       <uncertaintyModel>
         [Takao2013PrimaryFD]
-        norm_disp_type = AD
+        norm_disp_type = "AD"
         n_sigma = 5.0
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
@@ -33,7 +33,7 @@
     <logicTreeBranch branchID="B4_SFD">
       <uncertaintyModel>
         [Visini2025SecondaryFD]
-        scaling_model = WC1994
+        scaling_model = "WC1994"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>

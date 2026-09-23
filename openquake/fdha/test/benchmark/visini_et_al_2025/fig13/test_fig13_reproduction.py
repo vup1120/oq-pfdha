@@ -26,7 +26,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-pytestmark = [pytest.mark.benchmark, pytest.mark.visini2025, pytest.mark.slow]
+pytestmark = [
+    pytest.mark.benchmark,
+    pytest.mark.visini2025,
+    pytest.mark.slow,
+    pytest.mark.skip(reason="legacy standalone driver removed; migrate to engine QA jobs"),
+]
 
 BASE = Path(__file__).parent
 

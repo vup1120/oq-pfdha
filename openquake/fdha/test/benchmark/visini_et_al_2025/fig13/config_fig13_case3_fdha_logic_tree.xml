@@ -14,9 +14,9 @@
     <logicTreeBranch branchID="B2_PRIMARY_SURF_DISPL">
       <uncertaintyModel>
         [Moss2024PrimaryFD]
-        version = MD
-        source = EQS
-        completeness = all
+        version = "MD"
+        source = "EQS"
+        completeness = "all"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>
@@ -25,9 +25,9 @@
     <logicTreeBranch branchID="B3_SECONDARY_SURF_RUP">
       <uncertaintyModel>
         [Visini2025SecondarySR]
-        style = normal
+        style = "normal"
         pixel_size = 100
-        rupture_traces = ["R1p5_far1"]
+        rupture_traces = "["R1p5_far1"]"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>
@@ -36,10 +36,10 @@
     <logicTreeBranch branchID="B4_SECONDARY_SURF_DISPL">
       <uncertaintyModel>
         [Visini2025SecondaryFD]
-        style = normal
+        style = "normal"
         tpfm = 1.42
         n_sigma = 3
-        rupture_traces = ["R1p5_far1"]
+        rupture_traces = "["R1p5_far1"]"
       </uncertaintyModel>
       <uncertaintyWeight>1.0</uncertaintyWeight>
     </logicTreeBranch>
