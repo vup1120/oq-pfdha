@@ -280,14 +280,14 @@ class BaseFaultRuptureCalculator:
         #
         #   r_sigma_km   two-sided mapping-accuracy sigma (Petersen Tables
         #                2-3). Selects one of the two SEPARATE W_p paths,
-        #                each with its own combination rule:
+        #                both with distributed weight G = 1 - W_p:
         #                0  -> boxcar 1{|r| <= r_threshold_km}, COMPLEMENTARY
         #                      split (inside h only principal, outside only
         #                      distributed) - the historical behaviour;
         #                >0 -> Petersen's pure Gaussian exp(-r^2/2 sigma^2),
         #                      pinned, truncated at +-2 sigma (fixed, not
-        #                      user-configurable), SUMMED with the full
-        #                      distributed term (Petersen eq.1 + eq.2);
+        #                      user-configurable), complemented by the
+        #                      distributed weight G = 1 - W_p;
         #                      r_threshold_km plays no role on this path.
         #
         # The near-field displacement floor is a fixed kernel constant
@@ -455,5 +455,4 @@ class FaultRuptureProbabilityCalculator(BaseFaultRuptureCalculator):
     def run(self):
         from openquake.fdha.calc.hazard import calculate_fdha_hazard
         return calculate_fdha_hazard(self, self.sitecol)
-
 

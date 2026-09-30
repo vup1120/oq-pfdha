@@ -334,8 +334,8 @@ models (rupture models are uniformly logistic with no aleatory σ on `P`).
   rupture-location term fr(r) of Petersen et al. (2011) enters the
   calculator as the weight W_p: a boxcar of half-width `r_threshold_km` when
   `r_sigma_km` is 0 (with the historical complementary principal/distributed
-  split), or a pinned ±2σ Gaussian when σ > 0, summed with the full
-  distributed term (Tables 2–3 give the two-sided σ per mapping-accuracy
+  split), or a pinned ±2σ Gaussian when σ > 0, also using the
+  complementary distributed weight `G = 1 - W_p` (Tables 2–3 give the two-sided σ per mapping-accuracy
   class). The toolkit exposes the class
   choice as weighted `fdhaCalcRSigma` logic-tree branches (each
   `<uncertaintyModel>` a bare value in km, `0` allowed), following Petersen

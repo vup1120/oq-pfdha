@@ -10,14 +10,14 @@ MODE A/MODE B equivalence, and renders a four-panel figure:
   C. hazard curves at site B (80 m from the trace);
   D. machine-precision consistency check (both sites).
 
-The rupture-location weight W_p has two separate paths, each with its own
-combination rule (docs/design/rupture_location_uncertainty.md, section 2):
+The rupture-location weight W_p has two separate paths, both with the same
+complementary combination rule (docs/design/rupture_location_uncertainty.md, section 2):
 
   sigma = 0    -> boxcar 1{|r| <= r_threshold_km}, COMPLEMENTARY split
                   (inside h only principal, outside only distributed);
   sigma > 0    -> Petersen's pure Gaussian exp(-r^2/2 sigma^2), pinned,
-                  truncated at +-2 sigma, SUMMED with the full distributed
-                  term (Petersen eq. 1 + eq. 2).
+                  truncated at +-2 sigma, with distributed weight
+                  G = 1 - W_p.
 
 The sigma > 0 branches are the four Petersen (2011) Table 2-3 two-sided
 mapping-accuracy classes - Accurate 26.89 m, Approximate 43.82 m, Concealed

@@ -9,10 +9,11 @@ When the principal-slot FD model declares DISPLACEMENT_DEFINITION ==
 
 in the PRINCIPAL bucket, the distributed bucket is exactly zero and the
 secondary models are never evaluated -- on BOTH W_p paths (sigma = 0 boxcar
-and sigma > 0 Gaussian). Non-aggregate chains must be bit-for-bit unchanged.
+and sigma > 0 Gaussian). Non-aggregate chains use complementary weights.
 """
 import numpy as np
 import pytest
+from types import SimpleNamespace
 
 from openquake.fdha.calc.contexts import FDHAContext
 from openquake.fdha.calc.hazard import _compute_rupture_contribution
@@ -153,10 +154,10 @@ def test_aggregate_single_bucket_exact(r_sigma_km):
                          ids=["principal", "sum_of_principal"])
 @pytest.mark.parametrize("r_sigma_km", [0.0, 0.3],
                          ids=["sigma0_boxcar", "sigma_gaussian"])
-def test_non_aggregate_path_unchanged(r_sigma_km, model_cls):
+def test_non_aggregate_complementary_split(r_sigma_km, model_cls):
     """Control: principal- and sum-of-principal-definition models keep the
-    legacy two-bucket combination (complementary at sigma=0, additive at
-    sigma>0); only 'aggregate' single-buckets."""
+    complementary two-bucket combination on both sigma paths;
+    only 'aggregate' single-buckets."""
     principal, distributed, sec_sr, sec_fd, pfd = _run(
         _PrimaryFDAdapter(model_cls()), r_sigma_km)
 
@@ -164,7 +165,7 @@ def test_non_aggregate_path_unchanged(r_sigma_km, model_cls):
         principal, _expected_principal(pfd.p_fd, r_sigma_km))
 
     w_p = location_weight(R_KM, r_threshold_km=H_KM, r_sigma_km=r_sigma_km)
-    g = (1.0 - w_p) if r_sigma_km == 0.0 else np.ones_like(w_p)
+    g = 1.0 - w_p
     p_sr = np.full(len(R_KM), P_SR)
     p_dist = p_sr * 0.0 + 0.5  # secondary SR
     expected_dist = (RATE * p_sr[:, np.newaxis]
@@ -179,7 +180,55 @@ def test_non_aggregate_path_unchanged(r_sigma_km, model_cls):
         assert np.all(distributed[R_KM <= H_KM] == 0.0)
         assert np.all(distributed[R_KM > H_KM] > 0.0)
     else:
-        assert np.all(distributed > 0.0)
+        assert np.all(distributed[R_KM == 0.0] == 0.0)
+        assert np.all(distributed[R_KM > 0.0] > 0.0)
+
+
+@pytest.mark.parametrize("sigma", [0.02689, 0.06552, 0.3])
+@pytest.mark.parametrize("combined", [False, True])
+def test_gaussian_complement_at_trace_and_cutoff(sigma, combined):
+    """Independent analytic weights, including the closed truncation edge;
+    the generic and combined secondary pipelines obey the same rule."""
+    ctx = _ctx()
+    edge = 2.0 * sigma
+    ctx.r[:] = [0.0, -sigma, edge, np.nextafter(edge, np.inf)]
+    ctx.lons = np.zeros(len(ctx))
+    ctx.lats = np.zeros(len(ctx))
+
+    class UnitProbability(_RecordingSecondaryAdapter):
+        def compute_primary_fd(self, ctx, displacements, red_cfg):
+            return np.ones((len(ctx), len(displacements)))
+
+        def compute_secondary_sr(self, ctx, red_cfg):
+            return np.ones(len(ctx))
+
+        def compute_secondary_fd(self, ctx, displacements, red_cfg):
+            return np.ones((len(ctx), len(displacements)))
+
+        def compute(self, **kwargs):
+            return np.ones((len(kwargs['r']), len(kwargs['target_displacements'])))
+
+    unit = UnitProbability()
+    calculator = SimpleNamespace(
+        secondary_surf_rup_model=None, secondary_surf_displ_model=None,
+        get_model_parameters=lambda slot: {})
+    principal, distributed = _compute_rupture_contribution(
+        ctx=ctx, adapters={'primary_sr': _PrimarySRAdapter(),
+                           'primary_fd': unit, 'secondary_sr': unit,
+                           'secondary_fd': unit},
+        target_displacements=D0, p_sr_red_cfg={}, s_sr_red_cfg={},
+        r_threshold_km=H_KM, r_sigma_km=sigma,
+        use_visini=combined, visini_calc=unit, calculator=calculator)
+    wp = np.array([1.0, np.exp(-0.5), np.exp(-2.0), 0.0])
+    shape = np.ones((len(ctx), len(D0)))
+    np.testing.assert_allclose(principal, RATE * P_SR * wp[:, None] * shape,
+                               rtol=1e-14)
+    np.testing.assert_allclose(
+        distributed, RATE * P_SR * (1 - wp[:, None]) * shape, rtol=1e-14)
+    np.testing.assert_array_equal(distributed[0], 0.0)
+    # With both conditional probabilities saturated, the total reaches
+    # (and does not exceed) the surface-rupturing event rate at every site.
+    np.testing.assert_allclose(principal + distributed, RATE * P_SR)
 
 
 def test_kernel_routing_ignores_model_params():

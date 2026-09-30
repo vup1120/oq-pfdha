@@ -14,8 +14,8 @@ Curves, exercising the two W_p paths:
                  inside +-50 m, distributed-only shoulders outside (blue);
   four Gaussians the Petersen (2011) Table 2-3 two-sided mapping-accuracy
                  classes - Accurate 26.89 m, Approximate 43.82 m, Concealed
-                 65.52 m, Inferred 72.69 m - pure Gaussian W_p SUMMED with
-                 distributed, in Fig.-9c-style greys (dark -> light).
+                 65.52 m, Inferred 72.69 m - pure Gaussian W_p with complementary
+                 distributed weight, in Fig.-9c-style greys (dark -> light).
 
 Run with the worktree on PYTHONPATH:
   PYTHONPATH=<repo> python openquake/fdha/demo/r_sigma_epistemic/profile_figure.py
@@ -187,7 +187,7 @@ def main():
 
     profs = {}
     for name, sig, _col in CLASSES:
-        print(f"running {name} (sigma = {sig} km, Gaussian + sum)...")
+        print(f"running {name} (sigma = {sig} km, Gaussian + complementary)...")
         _, rates = run_rates(f"s_{name.lower()}",
                              [(f"RS_{name.upper()}", sig, "1.0")], sites_str)
         profs[name] = displacement_at_rp(d0, rates)

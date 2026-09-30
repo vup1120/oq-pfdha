@@ -9,7 +9,7 @@ hazard map calculations.
 import numpy as np
 from tqdm import tqdm
 import logging
-from typing import Dict, Any, Optional, Tuple, TYPE_CHECKING
+from typing import Dict, Any, Optional, Tuple
 
 from openquake.fdha.calc.contexts import FDHAContext, FDHAContextMaker
 from openquake.hazardlib.site import SiteCollection
@@ -27,12 +27,9 @@ def _inside_declared_exclusion(model, ctx) -> "np.ndarray | None":
     no value to predict inside it: Visini et al. (2025) exclude data
     within 5 m of the principal rupture because such scarps cannot be
     told apart from principal faulting (pp. 11, 20), and their ln(s)
-    predictor is unbounded as s -> 0. On the sigma > 0 path the
-    distributed term is additive everywhere, so an on-trace site at
-    r = 0 would otherwise be served a clamped, wildly extrapolated
-    value - on the Norcia map that produced a 22.6 m "off-fault"
-    displacement sitting on the fault trace, ~570x the principal term at
-    the same point.
+    predictor is unbounded as s -> 0. Complementary Gaussian weights
+    suppress the distributed term on the trace but remain positive just
+    off it, so the model's full exclusion zone must still be enforced.
 
     Returns ``None`` when the model declares no ``r_min_km`` (Youngs
     2003 and Takao are bounded at r = 0 and need no gate; Petersen
@@ -60,10 +57,8 @@ class ApplicabilityTracker:
     site count once at the end of the run.
 
     Sites where the distributed term carries zero weight are NOT counted:
-    on the sigma = 0 (complementary) W_p path the distributed component is
-    masked inside ``|r| <= r_threshold_km``, so e.g. an on-trace site below
-    Visini's 5 m data floor is not an extrapolation -- the model is never
-    used there.
+    the distributed component is masked inside ``|r| <= r_threshold_km``
+    on the boxcar path and where ``W_p == 1`` on the Gaussian path.
     """
 
     def __init__(self, r_threshold_km: float, r_sigma_km: float):
@@ -99,13 +94,11 @@ class ApplicabilityTracker:
             if 'r_max_fw_km' in rng:
                 outside |= fw & (r > float(rng['r_max_fw_km']))
 
-        # Only count sites where the distributed term actually contributes:
-        # sigma = 0 -> complementary split masks distributed inside the
-        # boxcar (G = 1 - W_p = 0 there); sigma > 0 -> additive, G = 1
-        # everywhere (docs/design/rupture_location_uncertainty.md, D1).
-        if self._r_sigma_km == 0.0:
-            outside &= np.abs(np.asarray(ctx.r, dtype=np.float64)) \
-                > self._r_threshold_km
+        # Use the same canonical-distance weight as the hazard kernel;
+        # applicability itself uses the model's own distance metric above.
+        from openquake.fdha.calc.location_weight import location_weight
+        wp = location_weight(ctx.r, self._r_threshold_km, self._r_sigma_km)
+        outside &= (1.0 - wp) > 0.0
 
         if not outside.any():
             return
@@ -484,12 +477,10 @@ def _compute_rupture_contribution(
             boxcar path; > 0 selects Petersen's pure Gaussian path (pinned,
             fixed +-2 sigma truncation; r_threshold_km plays no role there).
 
-    The combination follows the W_p path: at sigma = 0 the historical
-    COMPLEMENTARY boxcar split (inside h principal only, outside distributed
-    only - Youngs 2003 / Takao 2013 either/or); at sigma > 0 principal and
-    distributed are independent contributions of the same surface-rupturing
-    event and are SUMMED (Petersen et al. 2011 eq. 1 + eq. 2; Fig. 10a
-    "total hazard").
+    Both location-weight paths use the complementary distributed weight
+    G = 1 - W_p. At sigma = 0 this is the historical boxcar split; at
+    sigma > 0 it blends principal and distributed contributions according
+    to the pinned, truncated Gaussian. The Gaussian shape is unchanged.
 
     Returns:
         Tuple of (principal_contrib, distributed_contrib) arrays, each shape (N_ctx, n_displ)
@@ -623,14 +614,14 @@ def _compute_rupture_contribution(
         P_dist_combined = P_sr_sec[:, np.newaxis] * P_fd_sec
 
     # =========================================================================
-    # COMBINE CONTRIBUTIONS: per W_p path
+    # COMBINE CONTRIBUTIONS: complementary on both W_p paths
     # =========================================================================
     #     lambda_principal   = rate * P_sr * P_fd_primary       * W_p(r)
     #     lambda_distributed = rate * P_sr * P_dist_combined(r) * G(r)
     #
     # W_p(r) is the probability that the site sits on the principal rupture
-    # at across-strike distance r. Two separate paths (location_weight), each
-    # with its own distributed weight G:
+    # at across-strike distance r. Two separate paths (location_weight), both
+    # with distributed weight G = 1 - W_p:
     #
     #   sigma = 0 -> W_p = boxcar |r| <= h (h = r_threshold_km) and
     #                G = 1 - W_p: the historical COMPLEMENTARY split - inside
@@ -639,9 +630,9 @@ def _compute_rupture_contribution(
     #                Takao 2013 per-fault either/or bookkeeping).
     #   sigma > 0 -> W_p = Petersen's pure Gaussian exp(-r^2/2 sigma^2),
     #                pinned, truncated at +-2 sigma (fixed; h plays no role)
-    #                and G = 1: principal and distributed are independent and
-    #                SUMMED (Petersen et al. 2011, eq. 1 + eq. 2; Fig. 10a
-    #                "total hazard" = sum of its two contribution curves).
+    #                and G = 1 - W_p. On-trace G = 0; beyond 2 sigma G = 1.
+    #                The existing hard truncation gives G a jump at the toe.
+    #                This replaces the historical additive Gaussian rule.
     #
     # abs() inside the helper keeps r symmetric about the trace, matching the
     # old np.abs(ctx.r) test bit-for-bit at sigma=0.
@@ -650,10 +641,7 @@ def _compute_rupture_contribution(
         r_threshold_km=r_threshold_km,
         r_sigma_km=r_sigma_km,
     )
-    if float(r_sigma_km) == 0.0:
-        G = 1.0 - W_p           # complementary (legacy boxcar split, exact)
-    else:
-        G = np.ones_like(W_p)   # additive (Petersen eq. 1 + eq. 2)
+    G = 1.0 - W_p
 
     # Principal zone: uses primary SR and primary FD.
     # rate * P(SR_primary) * P(FD_primary | SR_primary) * W_p(r)

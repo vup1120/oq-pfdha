@@ -74,7 +74,7 @@ Engine's statistics.
 | `return_period` | float | `100000.0` | Hazard map only | Return period used to invert each site hazard curve into map displacement. |
 | `max_distance_km` | float | `10.0` | Hazard map optional | Maximum distance from fault traces used when building hazard-map sites. The loader also accepts this in `[geometry]`. |
 | `r_threshold_km` | float | `0.1` | No | Boxcar half-width of the principal zone, used only when `r_sigma_km` is 0 (the mapped trace is trusted): inside it only the principal component counts, outside it only the distributed component (the historical complementary split). Must be strictly positive; to compute distributed hazard only, leave the `fdhaPrimaryFDModel` branch set out of the logic tree instead. A fixed calculation parameter - never part of the logic tree. |
-| `r_sigma_km` | float | `0.0` | No | Two-sided mapping-accuracy sigma of the rupture-location weight (Petersen et al. 2011, Tables 2–3). `0` selects the boxcar path with the complementary principal/distributed split; `> 0` selects the pure-Gaussian path (pinned, ±2σ; `r_threshold_km` plays no role there), whose weighted principal is summed with the full distributed term (Petersen eq. 1 + eq. 2). Mutually exclusive with `fdhaCalcRSigma` branch set(s) in the FDHA logic tree (see below): defining both is a configuration error. |
+| `r_sigma_km` | float | `0.0` | No | Two-sided mapping-accuracy sigma of the rupture-location weight (Petersen et al. 2011, Tables 2–3). `0` selects the boxcar path with the complementary principal/distributed split; `> 0` selects the pure-Gaussian path (pinned, ±2σ; `r_threshold_km` plays no role there), with complementary distributed weight `G = 1 - W_p`. Mutually exclusive with `fdhaCalcRSigma` branch set(s) in the FDHA logic tree (see below): defining both is a configuration error. |
 | `near_far_threshold_km` | float | implementation default | No | Copied into runtime parameters when supplied. |
 | `surface_rupture_depth_tolerance_km` | float | `0.01` | No | Depth tolerance of the surface-rupturing test: ruptures whose minimum depth exceeds it are treated as buried and contribute no displacement hazard. |
 | `reference_vs30_value` | float | none | No | Vs30 (m/s) assigned to sites without their own value. When absent, such sites carry no vs30 and only models that require it (e.g. Moss 2013) reject the job. |
@@ -236,7 +236,7 @@ types, each `<uncertaintyModel>` contains a single bare non-negative float in
 kilometers. **Zero is a legal branch value** - it selects the boxcar path
 (the mapped trace is trusted; complementary principal/distributed split),
 so a tree can weigh that against Gaussian mapping-error alternatives
-(whose weighted principal is summed with the full distributed term):
+(also using complementary distributed weight `G = 1 - W_p`):
 
 ```xml
 <logicTreeBranchSet branchSetID="bs_r_sigma"

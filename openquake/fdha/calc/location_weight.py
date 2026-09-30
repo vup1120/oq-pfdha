@@ -43,7 +43,9 @@ second:
 
   This is the standard-normal density normalised to its peak (pin at r = 0),
   i.e. a pure bell -- no boxcar, no plateau. Its width scales with sigma and it
-  vanishes at the toe ``|r| = n*sigma``.
+  is zero strictly beyond the toe ``|r| = n*sigma``. The distributed
+  contribution uses the complementary weight ``G = 1 - W_p``, as on the
+  boxcar path; the hard cutoff gives both weights a jump at the toe.
 
 The two paths are deliberately NOT a smooth limit of one another: ``h`` and
 ``sigma`` describe different things (a fixed rupture-zone half-width vs a

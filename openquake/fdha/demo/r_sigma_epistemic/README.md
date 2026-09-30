@@ -17,23 +17,32 @@ of two separate W_p paths (`docs/design/rupture_location_uncertainty.md`):
   **complementary** split: inside the half-width **only principal**, outside
   **only distributed** (Youngs 2003 / Takao 2013 either/or).
 - `σ > 0` → **Petersen's pure Gaussian** `exp(−r²/2σ²)`, pinned to 1 on the
-  trace, truncated at ±2σ, **summed** with the full distributed term
-  (Petersen eq. 1 + eq. 2; `r_threshold_km` plays no role on this path).
+  trace, truncated at ±2σ, with **complementary** distributed weight
+  `G = 1 - W_p`; `r_threshold_km` plays no role on this path.
 
 **Both branches carry the same 50 m location knowledge, treated
 differently** - hard cliff vs soft tail - and the two sites show BOTH sides
-of that trade:
+of that trade. Every Gaussian branch combines
+`W_p × principal + (1 - W_p) × distributed`, so each plateau is a convex
+blend of the principal-only and distributed-only rates at that site
+(here ~8.6e-5 and ~5.8e-6 /yr respectively - principal is ~15x larger, so
+the complementary distributed term cannot offset a reduced `W_p`):
 
 - **site A, r = 0.04 km (inside the boxcar):** σ=0 gives the **full
   principal and nothing else** (either/or, plateau 8.7e-5 /yr); the four
-  classes give W_p = 0.33/0.66/0.83/0.86 × principal + distributed
-  (plateaus 3.4e-5 → 8.0e-5 /yr) → the hard edge sits **above** every
-  Gaussian class inside the band.
+  classes give W_p = 0.33/0.66/0.83/0.86, blending in the much smaller
+  distributed term (plateaus 3.1e-5 → 7.5e-5 /yr, rising with σ) → the hard
+  edge sits **above** every Gaussian class inside the band, and the widest
+  class is the closest to it.
 - **site B, r = 0.08 km (outside the boxcar):** σ=0 gives **distributed
-  only** (5.4e-6 /yr); Accurate (2σ = 54 m < 80 m) coincides with it
-  exactly, while Approximate/Concealed/Inferred give W_p =
-  0.19/0.48/0.55 × principal + distributed (up to 5.3e-5 /yr) → the hard
-  edge **understates** the hazard just outside the cliff.
+  only** (5.4e-6 /yr); Accurate (2σ = 54 m < 80 m) has W_p = 0 and therefore
+  coincides with it **exactly**, while Approximate/Concealed/Inferred give
+  W_p = 0.19/0.47/0.55 and blend in the far larger principal term (up to
+  4.9e-5 /yr) → the hard edge **understates** the hazard just outside the
+  cliff.
+
+Both effects are monotone in σ because a wider Gaussian moves weight from
+the distributed term onto the principal one at any fixed `r` inside its toe.
 
 σ = 0.05 km sits inside Petersen's own two-sided mapping classes
 (0.027–0.116 km); treating the class choice as weighted branches follows

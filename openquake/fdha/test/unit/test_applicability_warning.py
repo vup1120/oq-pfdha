@@ -64,6 +64,29 @@ def test_inside_range_no_warning(caplog):
     assert not caplog.records
 
 
+def test_gaussian_zero_weight_excludes_warning_in_model_metric(caplog):
+    """An on-trace canonical distance masks even a far model-specific
+    distance; a nearby site with positive G must still be reported."""
+    ctx = _ctx([0.0, 0.01])
+    ctx.metrics_for = lambda method: (np.array([3.0, 3.0]), ctx.x_L, ctx.L)
+    tracker = ApplicabilityTracker(r_threshold_km=0.1, r_sigma_km=0.05)
+    tracker.observe(Petersen2011SecondaryFD(), ctx)
+    with caplog.at_level(logging.WARNING, logger="openquake.fdha.calc.hazard"):
+        tracker.emit()
+    assert len(caplog.records) == 1
+    assert "1 site(s)" in caplog.records[0].getMessage()
+
+
+def test_declared_exclusion_keeps_its_own_metric_and_closed_outer_edge():
+    from openquake.fdha.calc.hazard import _inside_declared_exclusion
+    ctx = _ctx([0.1, 0.1, 0.1])
+    ctx.metrics_for = lambda method: (
+        np.array([0.0, 0.004, 0.005]), ctx.x_L, ctx.L)
+    np.testing.assert_array_equal(
+        _inside_declared_exclusion(Visini2025SecondaryFD(), ctx),
+        [True, True, False])
+
+
 def test_no_declared_range_no_warning(caplog):
     from openquake.fdha.secondary_surf_displ.moss2022 import (
         Moss2022SecondaryFD)
@@ -93,8 +116,8 @@ def test_visini_sub_5m_site_is_excluded_not_extrapolated(caplog):
     """A site inside Visini's declared 5 m exclusion is never an
     *extrapolation*: on either W_p path the distributed term is not
     evaluated there. At sigma = 0 the complementary split masks it; at
-    sigma > 0 the additive path would evaluate it, so the kernel gates it
-    off (``_inside_declared_exclusion``) and the site carries the
+    sigma > 0 the Gaussian complement is positive off-trace, so the kernel
+    gates it off (``_inside_declared_exclusion``) and the site carries the
     principal contribution only. Neither case may report extrapolation."""
     model = Visini2025SecondaryFD()
 

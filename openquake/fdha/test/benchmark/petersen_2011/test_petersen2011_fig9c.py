@@ -16,8 +16,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-"""Benchmark: Petersen et al. (2011) Fig. 9c (paper p. 820) vs the tool's
-rupture-location kernel (roadmap stage C5).
+"""Historical additive Petersen et al. (2011) Fig. 9c reference (stage C5).
+
+The additive reference curves below retain their historical equations and
+digitization checks. Since 2026-09-23 the runtime kernel instead uses
+G = 1 - W_p for positive sigma too. The separate
+test_current_kernel_complements_petersen_reference checks that intentional
+change against the real hazard kernel; Fig. 9c fit is not its acceptance
+target.
 
 Setup (paper's worked example, p. 819): characteristic M 7.0 every 140 yr
 (alpha = 1/140/yr), P(sr != 0 | m) from eq. 5 (``WC1993PrimarySR``), bilinear
@@ -28,7 +34,7 @@ displacement at 25-m cells (``Petersen2011SecondarySR``,
 ``NEAR_FIELD_FLOOR_KM``), rupture-location weight ``W_p(r)`` from
 ``openquake.fdha.calc.location_weight.location_weight`` on the sigma > 0
 (pure Gaussian, pinned, +/-2 sigma truncated) path, additively combined with
-the distributed term per the kernel spec (D1, sigma > 0 -> G(r) = 1):
+the distributed term per the historical rule (sigma > 0 -> G(r) = 1):
 
     lambda_total(D0, r) = alpha * P_sr * [W_p(r) * P(D_p > D0)
                                           + P(d != 0 | r) * P(D_d > D0 | r)]
@@ -43,9 +49,9 @@ and kernel (``location_weight``, ``WC1993PrimarySR``,
 See README.md in this directory for the digitization provenance and the
 documented text-vs-figure inconsistency (0.90 on-trace pin / 1.65x sigma
 width, neither derivable from the paper -- ``docs/design/
-rupture_location_uncertainty.md`` section 2). Policy: the tool implements
-the paper's *stated* method; this benchmark compares that stated method
-against the digitized figure on an explicitly documented-offset basis, and
+rupture_location_uncertainty.md`` section 2). This reference compares the
+historical additive method against the digitized figure on an explicitly
+documented-offset basis, and
 does NOT tune anything to fit the printed curves.
 """
 
@@ -139,9 +145,9 @@ def _p_dist_exceed(d0_cm: np.ndarray, r_km: float) -> np.ndarray:
 def lambda_total(d0_cm: float, r_km: float, sigma_km: float) -> float:
     """Annual rate of exceeding ``d0_cm`` at across-strike distance ``r_km``.
 
-    Additive kernel (D1, sigma > 0 path): lambda_principal + lambda_distributed,
+    Historical additive reference: lambda_principal + lambda_distributed,
     W_p(r) from the tool's real ``location_weight`` kernel, G(r) = 1 (no
-    complementary masking on the Gaussian path).
+    complementary masking). This helper is not the current hazard kernel.
     """
     wp = float(location_weight(np.array([r_km]), r_threshold_km=0.1,
                                 r_sigma_km=sigma_km,
@@ -168,7 +174,7 @@ def solve_d0(r_km: float, sigma_km: float,
 
 
 def stated_method_curve(r_grid_m: np.ndarray, sigma_km: float) -> np.ndarray:
-    """D0(r) (cm) on the tool's stated method (real kernel + real models)."""
+    """Historical additive D0(r), using the unchanged W_p and real models."""
     r_grid_km = r_grid_m / 1000.0
     return np.array([solve_d0(r, sigma_km) for r in r_grid_km])
 
@@ -245,6 +251,44 @@ def _rms_against_digitized(r_grid_m, curve_cm, r_dig, d_dig, min_d=2.0):
 # ---------------------------------------------------------------------------
 # Assertions
 # ---------------------------------------------------------------------------
+@pytest.mark.parametrize("sigma", list(SIGMA_KM.values()))
+def test_current_kernel_complements_petersen_reference(sigma):
+    from openquake.fdha.calc.contexts import FDHAContext
+    from openquake.fdha.calc.hazard import _compute_rupture_contribution
+    from openquake.fdha.calc.model_adapter import LegacyModelAdapter
+
+    r = np.array([0.0, sigma, 2 * sigma, 3 * sigma])
+    n = len(r)
+    ctx = FDHAContext(
+        sids=np.arange(n), mag=np.full(n, MAG), rake=np.zeros(n),
+        dip=np.full(n, 90.0), ztor=np.zeros(n),
+        occurrence_rate=np.full(n, ALPHA), vs30=np.full(n, 760.0),
+        r=r, rx=r, x_L=np.full(n, X_L), L=np.full(n, 40.0))
+    d_cm = np.array([0.1, 1.0, 10.0])
+    adapters = {
+        'primary_sr': LegacyModelAdapter(_PSR_MODEL),
+        'primary_fd': LegacyModelAdapter(_PFD_MODEL),
+        'secondary_sr': LegacyModelAdapter(
+            _SSR_MODEL, {'pixel_size': PIXEL_SIZE, 'version': 'near_field'}),
+        'secondary_fd': LegacyModelAdapter(_SFD_MODEL),
+    }
+    principal, distributed = _compute_rupture_contribution(
+        ctx, adapters, d_cm / 100.0, {}, {}, 0.1, False, None, None, sigma)
+    wp = np.array([1.0, np.exp(-0.5), np.exp(-2.0), 0.0])
+    raw_dist = ALPHA * P_SR * np.array([
+        _p_dist_occurrence(ri) * _p_dist_exceed(d_cm, ri) for ri in r])
+    expected_p = ALPHA * P_SR * wp[:, None] * _p_primary_exceed(d_cm)
+    np.testing.assert_allclose(principal, expected_p, rtol=1e-14)
+    np.testing.assert_allclose(
+        distributed, (1 - wp[:, None]) * raw_dist, rtol=1e-14)
+    old_total = np.array([[lambda_total(d, ri, sigma) for d in d_cm]
+                          for ri in r])
+    np.testing.assert_allclose(
+        old_total - principal - distributed, wp[:, None] * raw_dist,
+        rtol=1e-12, atol=1e-18)
+    np.testing.assert_array_equal(distributed[0], 0.0)
+
+
 def test_pinned_equal_peaks(stated_curves):
     """The four class curves peak at the same value at r=0 (W_p pinned to 1
     regardless of sigma), and that peak matches the closed-form analytic

@@ -1,6 +1,13 @@
 # Petersen et al. (2011) benchmark - Fig. 9c rupture-location weight
 
-Validates the tool's rupture-location weight kernel
+**2026-09-23:** the current oq-pfdha kernel uses `G = 1 - W_p` for both
+sigma paths. `test_current_kernel_complements_petersen_reference` verifies
+this with real model adapters and the actual hazard kernel. The additive
+Fig. 9c curves, peak/RMS numbers and rescaling advice below are retained as
+historical references; they do not describe the current total hazard.
+Existing generated figures have not been overwritten.
+
+The historical comparison validates the rupture-location weight shape
 (`openquake.fdha.calc.location_weight.location_weight`, σ > 0 path) against
 Petersen et al. (2011, BSSA 101(2), 805–825), Fig. 9c (paper p. 820): the
 across-strike displacement-hazard profile for the four mapping-accuracy
@@ -43,8 +50,8 @@ bisection solver and the RMS bookkeeping.
 `fig9c_digitized.npz` (copied from `docs/design/figures/fig9c_digitized.npz`
 so this benchmark is self-contained; that source tree is untracked) holds
 the four printed curves digitized at 300 dpi from the paper's p. 820 panel
-(script of origin: `digitize_fig9c.py`, session scratchpad, not ported here -
-it is a one-off image-processing tool, not part of the runtime benchmark).
+(with a one-off image-processing script, `digitize_fig9c.py`, that is not
+part of the runtime benchmark and is not included here).
 Each array is `(2, N)`: row 0 = across-strike distance r (m, signed), row 1 =
 displacement D₀ (cm). A verification overlay
 (`digitize_check.png`, not shipped) confirmed the extracted dots sit on the
@@ -53,7 +60,7 @@ printed curves before freezing the npz.
 ## The documented text-vs-figure inconsistency
 
 Inverting the digitized curves through the paper's own published equations
-(scripts `invert_wp.py`, `roundtrip.py`, session scratchpad) shows that the
+(one-off analysis scripts, not included here) shows that the
 **printed** Fig. 9c curves encode an implied rupture-location weight
 
 ```

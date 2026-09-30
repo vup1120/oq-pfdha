@@ -64,7 +64,8 @@ on-trace rows changed. ``curve_explicit/`` is unaffected.
 2026-07-13 state): the combination rule became **per W_p path** - sigma = 0
 returned to the historical **complementary** boxcar split (inside
 `r_threshold_km` only principal, outside only distributed), while sigma > 0
-sums the Gaussian-weighted principal with the full distributed term. These
+historically summed the Gaussian-weighted principal with the full
+distributed term; since 2026-09-23 it uses the complementary weight too. These
 MODE A fixtures run at sigma = 0, so the 2026-07-15 additive re-freeze was
 reverted and the earlier complementary outputs are canonical again
 (byte-verified: the per-path kernel reproduces them exactly).
