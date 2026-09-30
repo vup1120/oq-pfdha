@@ -7,8 +7,9 @@
   Tectonic normal faulting only.
 
   Node menu (style = normal only; models for other styles excluded):
-    P_sr  : Pizza et al. 2023 (normal, Italian data - the only
-            regionally appropriate regression here) w = 0.4, plus the
+    P_sr  : Pizza et al. 2023 (normal subset of an updated WORLDWIDE
+            database - the most recent style-specific regression here,
+            not an Italian one) w = 0.4, plus the
             three Pezzopane & Dawson (1996) normal-faulting data sets
             carried by Youngs2003PrimarySR, w = 0.2 each:
               version = ExtensionalCordillera  (105 earthquakes)

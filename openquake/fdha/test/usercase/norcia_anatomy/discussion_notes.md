@@ -48,12 +48,12 @@ away) while contributing little principal displacement.
 **The P_sr node uses the normal-faulting data sets.** Youngs et al.
 (2003) Equation 4 is one logistic curve fitted to four different data
 sets; the `version` parameter selects which. The node now carries the
-three Pezzopane & Dawson (1996) normal-faulting sets plus the Italian
-Pizza et al. (2023) model:
+three Pezzopane & Dawson (1996) normal-faulting sets plus the normal
+subset of Pizza et al. (2023):
 
 | branch | weight | data set |
 |--------|--------|----------|
-| Pizza et al. (2023), normal | 0.4 | Italian normal faults - the only regionally appropriate regression |
+| Pizza et al. (2023), normal | 0.4 | normal subset of an updated worldwide database - the most recent style-specific regression |
 | Youngs2003, ExtensionalCordillera | 0.2 | 105 earthquakes |
 | Youngs2003, NorthernBasinAndRange | 0.2 | 47 earthquakes |
 | Youngs2003, GreatBasin | 0.2 | 32 earthquakes |

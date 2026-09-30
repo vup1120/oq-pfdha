@@ -65,6 +65,13 @@ plt.rcParams.update({
     "pdf.fonttype": 42,
 })
 
+# Typographic scale. Axis labels, tick labels, panel titles and legends
+# are governed by the rcParams above; these two cover the cases those
+# do not reach - text placed inside the axes, and the dense node labels
+# of the logic-tree schematic. Nothing else should set fontsize.
+FS_ANNOT = 7.0     # in-axes annotations, colourbar labels
+FS_NODE = 6.8      # logic-tree node text (dense, 5 columns)
+
 # Okabe-Ito hues: one family hue per model, lightness steps within a
 # family for its published variants
 C_Y03 = "#0072B2"      # blue      - Youngs et al. (2003), 85th
@@ -95,7 +102,7 @@ D_OBS_V = 0.20
 PF_SITE, MS_SITE, SL_SITE = 0, 1, 2
 # what was seen at each antithetic site in 2016
 OBSERVED = {
-    MS_SITE: (0.20, "Observed 2016 San Benedetto\ntunnel offset, 0.20 m vertical"),
+    MS_SITE: (0.20, "Observed 2016\nSan Benedetto tunnel\noffset, 0.20 m vertical"),
     SL_SITE: (1.00, "Observed 2016 road\noffset, ~1 m"),
 }
 D_OBS_NET = float(np.hypot(0.20, 0.13))
@@ -878,31 +885,29 @@ def fig_principal_fractiles(d0=None, branches=None):
         for name, xy in fault_traces():
             tx, ty = ((13.262, 42.905) if name == "MVFS"
                       else (13.06, 42.925))
-            ax.text(tx, ty, name, color="0.15", fontsize=6.5,
+            ax.text(tx, ty, name, color="0.15", fontsize=FS_ANNOT,
                     fontweight="bold", zorder=6, path_effects=thalo)
         for i, (x, y) in SITE_XY.items():
             ax.scatter([x], [y], marker="^", s=30, zorder=5,
                        facecolor=SITE_COLORS[i], edgecolor="0.15",
                        linewidth=0.5)
             dy = 0.008 if SITES[i] == "SL" else -0.020
-            ax.text(x + 0.005, y + dy, SITES[i], fontsize=6.5,
+            ax.text(x + 0.005, y + dy, SITES[i], fontsize=FS_ANNOT,
                     fontweight="bold", color="0.15", zorder=6,
                     path_effects=thalo)
-        lbl = ("mean hazard" if q == "mean"
-               else f"epistemic {int(q * 100)}th percentile")
+        lbl = ("Mean hazard map" if q == "mean"
+               else f"{int(q * 100)}th percentile hazard map")
         ax.set_title(f"({'ab'[n]}) {lbl}", loc="left")
-        ax.set_xlabel("longitude (deg)")
+        ax.set_xlabel("Longitude (deg)")
         ax.set_xlim(13.05, 13.35)
         ax.set_ylim(42.65, 42.95)
         # sparse ticks: the default set collides across the panel seam
         ax.set_xticks([13.1, 13.2, 13.3])
-    axes[0].set_ylabel("latitude (deg)")
+    axes[0].set_ylabel("Latitude (deg)")
     plt.setp(axes[1].get_yticklabels(), visible=False)
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     cb = fig.colorbar(sm, cax=fig.add_subplot(gs[0, 2]))
-    cb.set_label("principal $D$ at $10^{5}$ a (m)", fontsize=7,
-                 labelpad=3)
-    cb.ax.tick_params(labelsize=7)
+    cb.set_label("Principal $D$ at $10^{5}$ a (m)", labelpad=3)
 
     # (c) branch-by-branch principal hazard curve at PF
     if branches is not None:
@@ -928,14 +933,14 @@ def fig_principal_fractiles(d0=None, branches=None):
         axc.plot([], [], "-", color="0.72", lw=0.9,
                  label=f"{len(branches)} branches")
         axc.axhline(1e-5, color="0.3", lw=0.8, ls=":", zorder=1)
-        axc.text(1.15e-2, 1.18e-5, "$10^{5}$ a", fontsize=6.5,
+        axc.text(1.15e-2, 1.18e-5, "$10^{5}$ a", fontsize=FS_ANNOT,
                  color="0.3")
         axc.set_xscale("log"); axc.set_yscale("log")
         axc.set_xlim(1e-2, 30); axc.set_ylim(1e-7, 1e-3)
-        axc.set_xlabel("principal displacement (m)")
-        axc.set_ylabel("annual rate of exceedance (a$^{-1}$)")
-        axc.set_title("(c) epistemic spread at PF", loc="left")
-        axc.legend(fontsize=6.2, frameon=False, loc="lower left")
+        axc.set_xlabel("Principal displacement (m)")
+        axc.set_ylabel("Annual frequency of exceedance (1/yr)")
+        axc.set_title("(c) Hazard curves at PF", loc="left")
+        axc.legend(frameon=False, loc="lower left")
         axc.grid(True, which="both", color="0.92", lw=0.4)
         d_at = lambda c: float(np.exp(np.interp(
             np.log(1e-5), np.log(np.maximum(c, 1e-300))[::-1],
@@ -953,7 +958,7 @@ def fig_principal_fractiles(d0=None, branches=None):
 # ------------------------------------------------------------ figure 6
 #: display names for the node ids that parse_branch_id returns
 NODE_LABEL = {
-    "PIZZA23": "Pizza et al. (2023)\nItalian normal",
+    "PIZZA23": "Pizza et al. (2023)\nglobal normal",
     "Y03EC": "Youngs et al. (2003)\nExtensional Cordillera",
     "Y03NBR": "Youngs et al. (2003)\nN. Basin & Range",
     "Y03GB": "Youngs et al. (2003)\nGreat Basin",
@@ -1025,30 +1030,28 @@ def fig_logic_tree(branches):
         span = (n - 1) * (BH + BG)
         return [span / 2 - i * (BH + BG) for i in range(n)]
 
-    fig, ax = plt.subplots(figsize=(8.4, 4.4))
-    XW, GAP = 1.72, 0.86
+    fig, ax = plt.subplots(figsize=(9.6, 4.4))
+    XW, GAP = 1.98, 0.92
     x = 0.0
     xpos = {}
     for k in keys:
         xpos[k] = x
-        x += XW + (GAP if k != "SSR" else 0.52)
+        x += XW + (GAP if k != "SSR" else 0.56)
 
     ytop = max(stack(len(order["SFD"]))) + 0.62
     for li, (k, title, wtab) in enumerate(LEVELS):
         xs = xpos[k]
         ax.text(xs + XW / 2, ytop + 0.10, title, ha="center", va="bottom",
-                fontsize=7.6, fontweight="bold", color="0.2",
-                linespacing=1.3)
+                fontweight="bold", color="0.2", linespacing=1.3,
+                fontsize=plt.rcParams["axes.titlesize"])
         slots = stack(len(order[k]))
         for n, y in zip(order[k], slots):
-            hue = NODE_HUE.get(n, "0.4")
             ax.text(xs + XW / 2, y + 0.115, NODE_LABEL.get(n, n),
-                    ha="center", va="center", fontsize=6.4,
+                    ha="center", va="center", fontsize=FS_NODE,
                     linespacing=1.3, zorder=3, color="0.12")
             ax.text(xs + XW / 2, y - 0.235, f"w = {wtab[n]:g}",
-                    ha="center", va="center", fontsize=6.4,
-                    fontweight="bold", zorder=3,
-                    color=hue if hue.startswith("#") else "0.3")
+                    ha="center", va="center", fontsize=FS_NODE,
+                    fontweight="bold", zorder=3, color="0.12")
         # connector to the next level
         if li == len(LEVELS) - 1:
             continue

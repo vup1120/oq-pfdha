@@ -1,16 +1,10 @@
-% Reworked Section 7: verification compressed to one subsection; the new
-% content is the epistemic application (model library x mapping accuracy)
-% on the same IAEA Norcia case. Figures produced by
-% openquake/fdha/test/usercase/norcia_anatomy/make_figures.py.
-
+\
 \section{Application: epistemic anatomy of the IAEA Norcia case}
 \label{sec:application}
 
 The end-to-end workflow is demonstrated on the Norcia normal-faulting
 case of the IAEA PFDHA exercise \citep[Section~7]{IAEA2025TECDOC2092}.
-Section~\ref{sec:application:anchor} reproduces the published benchmark
-and serves as the credibility anchor; it is deliberately brief, since
-reproducing a published exercise is a prerequisite, not a finding. The
+Section~\ref{sec:application:anchor}. The
 substance of this section is what the framework adds on top of the
 benchmark: the same two-fault source model is re-evaluated under the
 \emph{complete} published model library applicable to \emph{tectonic}
@@ -18,8 +12,6 @@ normal faulting,
 under the rupture-location weight implied by the mapping accuracy that
 the IAEA exercise assigns to the fault traces
 (Sections~\ref{sec:application:tunnel}--\ref{sec:application:anatomy}).
-Every input file is listed in Appendix~\ref{app:inputs} and distributed
-with the code.
 
 \subsection{Case set-up and verification anchor}
 \label{sec:application:anchor}
@@ -36,7 +28,7 @@ sited on the Mount Vettore fault system: the principal site PF on the
 southern MVF trace itself ($l/L = 0.05$); and two distributed sites on
 antithetic structures that were reactivated in 2016 -- MS on the Mount
 Serra fault, at the San Benedetto tunnel position ($r = 7.6$~km from
-the MVF hanging wall, $r = 3.0$~km from the NF footwall), and SL on the
+the MVF hanging wall, $r = 2.9$~km from the NF footwall), and SL on the
 San Lorenzo fault at its closest approach to the MVF trace
 ($r = 2.4$~km, $l/L = 0.4$). With the two-chain logic tree
 of the exercise (a Youngs et al. 2003 chain and a hybrid chain
@@ -50,9 +42,6 @@ benchmark in the repository. All IAEA sites carry the mapping-accuracy class ``A
 location uncertainty $\sigma = 26.89$~m, which is applied as the
 rupture-location weight $W_p = \exp(-r^{2}/2\sigma^{2})$ on every
 branch of every calculation below.
-
-% Figure: reuse the existing norcia_case3_curve_vs_iaea.pdf +
-% norcia_case3_map.pdf as a single two-panel anchor figure.
 
 \subsection{What would a PFDHA have told the tunnel designer?}
 \label{sec:application:tunnel}
@@ -164,9 +153,9 @@ to one another within a few tens of metres of the trace -- a transition
 that no site-specific curve can show. We evaluate it directly on a
 2-km profile perpendicular to the MVF trace through PF, sampled every
 20~m, with the Youngs et al.\ (2003) chain fixed. The principal contribution exists only inside the $\pm 54$~m
-band and peaks at 3.65~m at $10^{5}$~a; the corridor carrying
+band and peaks at 3.60~m at $10^{5}$~a; the corridor carrying
 $D \geq 1$~m is ${\sim}110$~m wide, essentially the full
-$\pm 2\sigma$ width (this profile's 20~m sampling only brackets it; the
+$\pm 2\sigma$ width (this profile's 20~m sampling only brackets it;
 a 10~m sampling of the same profile would resolve it). Outside the band the total hazard
 \emph{is} the distributed contribution, which falls off
 asymmetrically: 0.49~m at $-100$~m on the hanging wall against 0.09~m
@@ -191,8 +180,9 @@ displacement variants -- which is why the branch count is
 $4 \times 3 \times (2+3) \times 1$ rather than a plain product over
 five levels.
 
-Per-branch curves at the three sites give the following. At PF the $10^{5}$~a design displacement spans 2.04--3.58~m (weighted
-5--95\%, mean 2.53~m). At the two antithetic sites the weighted means
+Per-branch curves at the three sites give the following. At PF the
+$10^{5}$~a design displacement spans 2.04--3.58~m (weighted 5--95\%,
+mean 2.53~m). At the two antithetic sites the weighted means
 are 0.398~m at MS and 0.571~m at SL, with 95th percentiles of 0.66~m
 and 0.92~m; the 5th percentile is zero at both, because a
 majority-weight subset of branches places the $10^{5}$~a level below
@@ -247,7 +237,7 @@ place barely one cell across the corridor.
 We therefore restrict the map to the principal component, evaluated on
 the exact on-trace sites that the engine inserts alongside the filtered
 grid. This is not a presentational convenience but a consequence of
-Section~\ref{sec:application:library}: the distributed term depends on
+Section~\ref{sec:application:tunnel}: the distributed term depends on
 whether a pre-existing structure lies beneath the site, which is a
 per-site geological judgement -- case~1 at MS and SL, which sit on such
 structures -- and applying it uniformly across a grid would
@@ -326,19 +316,22 @@ met by Figure~\ref{fig:anatomy_maps}.
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.95\linewidth]{fig_ms_tunnel.pdf}
-  \caption{(a)~The two Norcia sources and the three IAEA sites; MS
-  (filled triangle) is the position where the San Benedetto tunnel was
-  offset in 2016. (b)~Distributed-displacement hazard at MS: one curve
-  per in-scope distributed chain -- the two Youngs et al. (2003)
-  regressions (85th and 95th percentile fits) and the three
-  Visini et al. (2025) magnitude-scaling variants -- each the weighted
-  mean over the primary nodes that gate it. All solid curves are on the
-  common $500 \times 500$~m cell, the fixed calibration cell of Youngs
-  et al. (2003), matched by pinning the Visini et al. (2025)
-  \texttt{pixel\_size}. The dashed curve is the identical Visini chain
-  re-evaluated at the 100~m IAEA site dimension and differs from the
-  solid curves \emph{only} in that convention. Vertical dashed line:
-  the observed 2016 offset (0.20~m vertical).}
+  \caption{Mean distributed-displacement hazard at the two
+  antithetic-fault sites, (a)~MS and (b)~SL, against what was measured
+  at each in 2016 (vertical dashed lines: the 0.20~m vertical offset of
+  the San Benedetto tunnel, and a road offset of order 1~m at San
+  Lorenzo). Each curve is the weighted mean over the primary nodes that
+  gate it. Blue: the two \citet{youngs_methodology_2003} regressions,
+  fitted to the 85th and 95th percentile of the data scatter. Red and
+  orange: \citet{Visini2025} evaluated with and without a pre-existing
+  fault assumed beneath the site, the first branch of that paper's site
+  decision tree. Solid curves use the $500 \times 500$~m cell, the
+  fixed calibration cell of \citet{youngs_methodology_2003}, matched by
+  pinning the \citet{Visini2025} \texttt{pixel\_size}; dashed curves are
+  the identical chain at the 100~m IAEA site dimension and differ
+  \emph{only} in that convention. The cell separates the curves when no
+  pre-existing fault is assumed and not otherwise, because only the
+  simple-rupture pathway carries the cell-dependent along-strike term.}
   \label{fig:ms_tunnel}
 \end{figure}
 
@@ -351,7 +344,7 @@ met by Figure~\ref{fig:anatomy_maps}.
   the mean hazard (black) and the 16th--84th epistemic band (shaded).
   Triangles: the three IAEA sites. Only the principal component is
   mapped: the distributed term depends on the per-site
-  characterisation of Section~\ref{sec:application:library} and cannot
+  characterisation of Section~\ref{sec:application:tunnel} and cannot
   be applied uniformly over a grid, whereas the principal term carries
   no such dependence. It is non-zero only within the $\pm 2\sigma$
   rupture-location band, that is, on the fault. The fractiles are taken
