@@ -38,6 +38,9 @@ def load_reference(figure_csv: str, column: str):
 
     with (HERE / "reference" / figure_csv).open() as f:
         rows = list(csv.DictReader(f))
+    # Digitized references leave a field empty where the published curve
+    # is outside the plotted axes; those grid points carry no reference.
+    rows = [r for r in rows if r[column].strip()]
     disp_m = np.array([float(r["disp_cm"]) for r in rows]) / 100.0
     ref = np.array([float(r[column]) for r in rows])
     return disp_m, ref

@@ -43,6 +43,16 @@ class Entry:
     assert_dmax_m: Optional[float] = None
 
 
+# The exercise's V24 (Visini et al., 2025) chains are deliberately absent.
+# The teams' V24 curves were computed with an earlier, under-review revision
+# of that model, so comparing them against an implementation of the published
+# model compares two different models rather than validating one: the offsets
+# (a factor 13 at the Le Teil first distributed exercise, 130-180 at the
+# second and third, with the hanging-wall response reversed in sign) are a
+# vintage mismatch, not an implementation error. The Visini implementation is
+# instead validated at model level against the authors' released FDHLab code
+# and their Fig. 13 worked example (benchmark/visini_et_al_2025), which is a
+# comparison of like with like. See diagnose_V24_p2d.py for the decomposition.
 MANIFEST = [
     # ------------------------------------------------ Kumamoto principal (Fig 4a)
     Entry("kumamoto", "principal_P11", "fig4a_kumamoto_principal.csv", "P11",
@@ -109,10 +119,6 @@ MANIFEST = [
           assert_max_relerr=0.40, assert_dmax_m=1.0),  # same caveat as the
     # Kumamoto T13 distributed entry; beyond 1 m the published tail is
     # controlled by the team's (undocumented) aleatory truncation.
-    Entry("le_teil", "distributed_V24", "fig6b_leteil_distributed.csv", "V24",
-          assert_max_relerr=None),  # paper used the earlier (2024, under-
-    # review) Visini model; our Visini 2025 implementation reproduces the
-    # final TECDOC-2092 V24 curves instead (~10x lower at these sites).
     # ------------------------------------------------ Norcia principal (Fig 4d)
     Entry("norcia", "principal_Y03", "fig4d_norcia_principal.csv", "Y03",
           assert_max_relerr=0.20),
@@ -123,6 +129,44 @@ MANIFEST = [
     # ------------------------------------------------ Norcia distributed (Fig 6c)
     Entry("norcia", "distributed_Y03", "fig6c_norcia_distributed.csv", "Y03",
           assert_max_relerr=0.25, assert_dmax_m=1.0),
-    Entry("norcia", "distributed_V24", "fig6c_norcia_distributed.csv", "V24",
-          assert_max_relerr=None),  # same model-vintage caveat as Le Teil V24
+
+    # =================================================================
+    # 2nd and 3rd distributed exercises of each case study (TECDOC-2092
+    # Table 8). These have no coordinator-supplied vectors; their
+    # reference curves are digitized from the published figures by
+    # reference/digitize_tecdoc_figures.py (axes calibrated from the
+    # major gridlines, residual < 0.01 decade). The digitisation error
+    # is dominated by the plotted line width, so these entries carry
+    # tolerances one step looser than their Fig 4/6 counterparts.
+    # =================================================================
+    # ------------------------------------ Kumamoto 2nd distributed (Fig 15c)
+    Entry("kumamoto", "distributed_P11_sens4", "fig15c_kumamoto_distributed_r10.csv",
+          "P11", assert_max_relerr=0.15),
+    # The T13 shape difference documented for the Fig 6a entry grows with
+    # distance: at this r = 10 km site the head still matches to 9%, but the
+    # ratio rises monotonically to 1.70 at 1 m as our distributed-displacement
+    # tail rolls off more slowly than the team's. Same undocumented aleatory
+    # integration; asserted loosely to catch regressions, not agreement.
+    Entry("kumamoto", "distributed_T13_sens4", "fig15c_kumamoto_distributed_r10.csv",
+          "T13", assert_max_relerr=0.75, assert_dmax_m=1.0),
+    # ------------------------------------ Kumamoto 3rd distributed (Fig 15d)
+    Entry("kumamoto", "distributed_T13_sens1", "fig15d_kumamoto_distributed_suizenji.csv",
+          "T13", assert_max_relerr=0.20),
+    # No P11 counterpart: the published Fig 15(d) shows a P11 curve for this
+    # Mw 5.8 Suizenji scenario, but Petersen et al. (2011) is calibrated for
+    # M 6-8 and the framework's applicability guard refuses the evaluation
+    # rather than extrapolating (kumamoto/job_distributed_P11_sens1.ini
+    # exists and is expected to raise). See README, "Known deviations".
+    # ------------------------------------ Le Teil 2nd distributed (Fig 19c)
+    Entry("le_teil", "distributed_T13_dipflip", "fig19c_leteil_distributed_dipNW.csv",
+          "T13", assert_max_relerr=0.40, assert_dmax_m=1.0),
+    # ------------------------------------ Le Teil 3rd distributed (Fig 19d)
+    Entry("le_teil", "distributed_T13_sens4", "fig19d_leteil_distributed_3faults.csv",
+          "T13", assert_max_relerr=0.40, assert_dmax_m=1.0),
+    # ------------------------------------ Norcia 2nd distributed (Fig 22b)
+    Entry("norcia", "distributed_Y03_sens2", "fig22b_norcia_distributed_sl.csv",
+          "Y03", assert_max_relerr=0.25, assert_dmax_m=1.0),
+    # ------------------------------------ Norcia 3rd distributed (Fig 22c)
+    Entry("norcia", "distributed_Y03_sens3", "fig22c_norcia_distributed_2sources.csv",
+          "Y03", assert_max_relerr=0.25, assert_dmax_m=1.0),
 ]

@@ -43,6 +43,9 @@ QUANTITATIVE = [e for e in MANIFEST if e.assert_max_relerr is not None]
 def _load_reference(entry: Entry):
     with (HERE / "reference" / entry.figure_csv).open() as f:
         rows = list(csv.DictReader(f))
+    # Digitized references leave a field empty where the published curve
+    # is outside the plotted axes; those grid points carry no reference.
+    rows = [r for r in rows if r[entry.column].strip()]
     disp_m = np.array([float(r["disp_cm"]) for r in rows]) / 100.0
     ref = np.array([float(r[entry.column]) for r in rows])
     return disp_m, ref
@@ -64,8 +67,15 @@ def test_iaea_exercise_curve(entry: Entry, tmp_path):
     assert np.any(rates > 0), "model chain produced an all-zero hazard curve"
 
     ref_d, ref = _load_reference(entry)
-    np.testing.assert_allclose(d0, ref_d, rtol=1e-9)
     computed = rates * entry.post_factor
+    if ref_d.shape != d0.shape or not np.allclose(ref_d, d0, rtol=1e-9):
+        # The reference is on a different displacement grid: the M11 curve
+        # was published on its own grid, and a digitized reference covers
+        # only the grid points inside the plotted axes. Interpolate the
+        # computed curve in log-log, exactly as run_all.py does.
+        pos = computed > 0
+        computed = np.exp(np.interp(np.log(ref_d), np.log(d0[pos]),
+                                    np.log(computed[pos])))
 
     ok = (ref > 0) & (computed > 0)
     if entry.assert_dmax_m is not None:

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nrml xmlns="http://openquake.org/xmlns/nrml/0.4">
+  <logicTree logicTreeID="lt_fdha_le_teil_principal_M24">
+    <logicTreeBranchingLevel branchingLevelID="bl_1_primary_surf_rup">
+      <logicTreeBranchSet branchSetID="bs_1" uncertaintyType="fdhaPrimarySRModel">
+        <logicTreeBranch branchID="B1_PSR">
+          <uncertaintyModel>
+            [Mammarella2024PrimarySR]
+            MSR = 1
+            HDD_str = AGG_R
+            dip_mu = 45.0
+            dip_sigma = 10.0
+            t_d = 2.0
+            seismothickness = 4.0
+            Zs_sigma = 2.0
+            t_z = 2.0
+            style = reverse
+          </uncertaintyModel>
+          <uncertaintyWeight>1.0</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+    <logicTreeBranchingLevel branchingLevelID="bl_2_primary_surf_displ">
+      <logicTreeBranchSet branchSetID="bs_2" uncertaintyType="fdhaPrimaryFDModel" applyToBranches="B1_PSR">
+        <logicTreeBranch branchID="B2_PFD">
+          <uncertaintyModel>
+            [MossRoss2011PrimaryFD]
+            norm_disp_type = AD
+          </uncertaintyModel>
+          <uncertaintyWeight>1.0</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+    <logicTreeBranchingLevel branchingLevelID="bl_3_secondary_surf_rup">
+      <logicTreeBranchSet branchSetID="bs_3" uncertaintyType="fdhaSecondarySRModel" applyToBranches="B2_PFD">
+        <logicTreeBranch branchID="B3_SSR">
+          <uncertaintyModel>
+            [FixedSecondarySR]
+            value = 0.0
+          </uncertaintyModel>
+          <uncertaintyWeight>1.0</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+    <logicTreeBranchingLevel branchingLevelID="bl_4_secondary_surf_displ">
+      <logicTreeBranchSet branchSetID="bs_4" uncertaintyType="fdhaSecondaryFDModel" applyToBranches="B3_SSR">
+        <logicTreeBranch branchID="B4_SFD">
+          <uncertaintyModel>
+            [Youngs2003SecondaryFD]
+            style = all
+          </uncertaintyModel>
+          <uncertaintyWeight>1.0</uncertaintyWeight>
+        </logicTreeBranch>
+      </logicTreeBranchSet>
+    </logicTreeBranchingLevel>
+  </logicTree>
+</nrml>

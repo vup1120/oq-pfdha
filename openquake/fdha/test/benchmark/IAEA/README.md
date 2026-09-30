@@ -31,9 +31,14 @@ Outputs: `computed/<case>_<job>.csv`, `comparison_summary.json`,
 
 ## Layout
 
-- `reference/` - the teams' published hazard curves, transcribed verbatim
-  from the exercise coordinators' MATLAB plotting scripts
-  (`make_reference_csvs.py` regenerates the CSVs and documents the source).
+- `reference/` - the teams' published hazard curves. The principal and
+  1st-distributed exercises are transcribed verbatim from the exercise
+  coordinators' MATLAB plotting scripts (`make_reference_csvs.py`); the
+  2nd and 3rd distributed exercises were published as figures only and
+  are recovered by `digitize_tecdoc_figures.py` from TECDOC-2092
+  Figs 15(c,d), 19(c,d) and 22(b,c) (axes calibrated from the major
+  gridlines; worst residual 0.009 decade). Run it with `--verify` to
+  print the residuals and write `digitisation_overlays.png`.
 - `kumamoto/`, `le_teil/`, `norcia/` - one job INI + FDHA logic tree per
   hazard-analyst model chain, plus the source models built from the
   author-provided input workbooks and shapefiles.
