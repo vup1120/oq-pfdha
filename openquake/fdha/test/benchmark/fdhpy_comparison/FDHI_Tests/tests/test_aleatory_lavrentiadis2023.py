@@ -180,3 +180,36 @@ if __name__ == "__main__":
 
 
 
+
+
+class TestLavrentiadis2023SumOfPrincipalParameters:
+    """Sum-of-principal internals: the power-normal mean and standard
+    deviation of D_P**0.3 (full rupture), P(Gap) (Eq. 25) and
+    P(D_P = 0 | not in a gap) (Eq. 32), against fdhpy."""
+
+    @pytest.mark.parametrize("magnitude", [6.0, 7.0, 8.0])
+    @pytest.mark.parametrize("xl", [0.05, 0.15, 0.3, 0.5])
+    @pytest.mark.parametrize("style", ["strike-slip", "normal", "reverse"])
+    def test_principal_parameters(self, magnitude, xl, style):
+        fdhpy_model = LavrentiadisAbrahamson2023(
+            magnitude=magnitude,
+            xl=xl,
+            displ_array=np.array([0.1]),
+            metric="sum-of-principal",
+            version="full rupture",
+            style=style,
+            include_prob_zero=True,
+        )
+        params = fdhpy_model.stat_params_info["params"]
+        (disp_agg_prime, disp_prnc_prime, disp_agg_seg,
+         sig_agg, sig_prnc, phi_agg, phi_prnc, tau_agg, phi_add,
+         P_gap, P_zero_slip) = [
+            float(np.asarray(v).ravel()[0]) for v in
+            Lavrentiadis2023PrimaryFD_aggregate().LavrentiadisAbrahamson2023SlipProfile(
+                x_array=np.array([xl]), mag=magnitude, srl=1, sof=style.title())]
+        got = [disp_prnc_prime ** 0.3, sig_prnc, P_gap, P_zero_slip]
+        ref = [params["mu"], params["sigma"], fdhpy_model.p_gap,
+               fdhpy_model.p_zero_slip]
+        np.testing.assert_allclose(
+            got, ref, rtol=1e-6, atol=1e-10,
+            err_msg=f"LA23 principal parameters: {style}, M={magnitude}, x/L={xl}")

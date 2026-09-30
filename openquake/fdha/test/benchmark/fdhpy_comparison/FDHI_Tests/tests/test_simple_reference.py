@@ -32,6 +32,7 @@ try:
         Moss2024PrimaryFD,
         Kuehn2024PrimaryFD,
         Lavrentiadis2023PrimaryFD_aggregate,
+        Lavrentiadis2023PrimaryFD_principal,
         Chiou2025PrimaryFD,
     )
 except ImportError as e:
@@ -67,6 +68,7 @@ def pfdha_models():
         "Moss2024PrimaryFD": Moss2024PrimaryFD,
         "Kuehn2024PrimaryFD": Kuehn2024PrimaryFD,
         "Lavrentiadis2023PrimaryFD_aggregate": Lavrentiadis2023PrimaryFD_aggregate,
+        "Lavrentiadis2023PrimaryFD_principal": Lavrentiadis2023PrimaryFD_principal,
         "Chiou2025PrimaryFD": Chiou2025PrimaryFD,
     }
 
@@ -243,7 +245,8 @@ class TestLavrentiadis2023:
     @pytest.mark.parametrize("magnitude", [6.5, 7.0, 7.5])
     @pytest.mark.parametrize("xl", [0.3, 0.5, 0.6])
     @pytest.mark.parametrize("include_prob_zero", [True, False])
-    def test_prob_exceed_aggregate(self, magnitude, xl, include_prob_zero, fdhpy_models, pfdha_models):
+    @pytest.mark.parametrize("style", ["strike-slip", "normal", "reverse"])
+    def test_prob_exceed_aggregate(self, magnitude, xl, include_prob_zero, style, fdhpy_models, pfdha_models):
         """Test exceedance probability for aggregate metric."""
         # fdhpy - requires style parameter
         fdhpy_model = fdhpy_models["LavrentiadisAbrahamson2023"](
@@ -252,7 +255,7 @@ class TestLavrentiadis2023:
             displ_array=DISPLACEMENTS,
             metric="aggregate",
             version="full rupture",
-            style="strike-slip",  # Required parameter
+            style=style,  # Required parameter
             include_prob_zero=include_prob_zero,
         )
         fdhpy_result = fdhpy_model.prob_exceed
@@ -263,7 +266,7 @@ class TestLavrentiadis2023:
             d=DISPLACEMENTS,
             X_L_ratio=np.array([xl]),
             mag=magnitude,
-            style="strike-slip",
+            style=style,
             output_type="disp_agg_prime",
             include_zero_slip=include_prob_zero,
         ).flatten()
@@ -272,8 +275,93 @@ class TestLavrentiadis2023:
         np.testing.assert_allclose(
             fdhpy_result, pfdha_result,
             rtol=1e-6, atol=1e-10,
-            err_msg=f"LA23 aggregate: M={magnitude}, x/L={xl}, zero={include_prob_zero}"
+            err_msg=f"LA23 aggregate: {style}, M={magnitude}, x/L={xl}, zero={include_prob_zero}"
         )
+
+    @pytest.mark.parametrize("magnitude", [6.5, 7.0, 7.5])
+    @pytest.mark.parametrize("xl", [0.3, 0.5, 0.6])
+    @pytest.mark.parametrize("include_prob_zero", [True, False])
+    @pytest.mark.parametrize("style", ["strike-slip", "normal", "reverse"])
+    def test_prob_exceed_sum_of_principal(self, magnitude, xl, include_prob_zero, style, fdhpy_models, pfdha_models):
+        """Sum-of-principal class (disp_prnc_prime) against the fdhpy
+        'sum-of-principal' metric, full-rupture version; with the zero terms
+        both models scale by (1 - P_gap)(1 - P_zero_slip) (paper Eq. 31)."""
+        fdhpy_model = fdhpy_models["LavrentiadisAbrahamson2023"](
+            magnitude=magnitude,
+            xl=xl,
+            displ_array=DISPLACEMENTS,
+            metric="sum-of-principal",
+            version="full rupture",
+            style=style,
+            include_prob_zero=include_prob_zero,
+        )
+        pfdha_result = pfdha_models["Lavrentiadis2023PrimaryFD_principal"]().get_prob(
+            d=DISPLACEMENTS,
+            X_L_ratio=np.array([xl]),
+            mag=magnitude,
+            style=style,
+            include_zero_slip=include_prob_zero,
+        ).flatten()
+        np.testing.assert_allclose(
+            fdhpy_model.prob_exceed, pfdha_result,
+            rtol=1e-6, atol=1e-10,
+            err_msg=f"LA23 sum-of-principal: {style}, M={magnitude}, x/L={xl}, zero={include_prob_zero}"
+        )
+
+    @pytest.mark.parametrize("magnitude", [6.5, 7.0, 7.5])
+    @pytest.mark.parametrize("xl", [0.3, 0.5, 0.6])
+    @pytest.mark.parametrize("style", ["strike-slip", "normal", "reverse"])
+    def test_prob_exceed_aggregate_individual_segment(self, magnitude, xl, style, fdhpy_models, pfdha_models):
+        """Aggregate class, single-segment variant (disp_agg_seg) against the
+        fdhpy 'individual segment' version, without zero terms."""
+        fdhpy_model = fdhpy_models["LavrentiadisAbrahamson2023"](
+            magnitude=magnitude,
+            xl=xl,
+            displ_array=DISPLACEMENTS,
+            metric="aggregate",
+            version="individual segment",
+            style=style,
+            include_prob_zero=False,
+        )
+        pfdha_result = pfdha_models["Lavrentiadis2023PrimaryFD_aggregate"]().get_prob(
+            d=DISPLACEMENTS,
+            X_L_ratio=np.array([xl]),
+            mag=magnitude,
+            style=style,
+            output_type="disp_agg_seg",
+            include_zero_slip=False,
+        ).flatten()
+        np.testing.assert_allclose(
+            fdhpy_model.prob_exceed, pfdha_result,
+            rtol=1e-6, atol=1e-10,
+            err_msg=f"LA23 aggregate segment: {style}, M={magnitude}, x/L={xl}"
+        )
+
+    @pytest.mark.xfail(strict=True, reason=(
+        "pfdha scales the single-segment aggregate by (1 - P_zero_slip) when "
+        "include_zero_slip=True; P(D_P = 0) is the zero-PRINCIPAL "
+        "probability (paper Eqs 31-32) and a single segment has no gap, so "
+        "fdhpy (and the paper) apply no zero term to this metric"))
+    def test_prob_exceed_aggregate_individual_segment_with_zero_terms(self, fdhpy_models, pfdha_models):
+        fdhpy_model = fdhpy_models["LavrentiadisAbrahamson2023"](
+            magnitude=6.5,
+            xl=0.3,
+            displ_array=DISPLACEMENTS,
+            metric="aggregate",
+            version="individual segment",
+            style="normal",
+            include_prob_zero=True,
+        )
+        pfdha_result = pfdha_models["Lavrentiadis2023PrimaryFD_aggregate"]().get_prob(
+            d=DISPLACEMENTS,
+            X_L_ratio=np.array([0.3]),
+            mag=6.5,
+            style="normal",
+            output_type="disp_agg_seg",
+            include_zero_slip=True,
+        ).flatten()
+        np.testing.assert_allclose(
+            fdhpy_model.prob_exceed, pfdha_result, rtol=1e-6, atol=1e-10)
 
 
 # ============================================================================
