@@ -33,3 +33,9 @@ examples/outputs/
 .vscode/
 *.swp
 .DS_Store
+
+# Demo and usercase run outputs (out_profile/, out_gating/, ...)
+**/out_*/
+
+# Editor workspace files
+*.code-workspace
