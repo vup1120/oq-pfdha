@@ -7,9 +7,9 @@ C4 model-contract logic-tree guards:
 - FDLT-014 (error): mixed DISPLACEMENT_DEFINITION within one FD branch set
   (no cross-definition conversion, Sarmiento et al. 2025 Table 1);
 - FDLT-105 (warning): mixed DISPLACEMENT_COMPONENT within one FD branch set;
-- FDLT-015 (error): wrong-class output_type -- the class choice IS the
-  definition (Lavrentiadis2023PrimaryFD_aggregate is aggregate-only; the _principal
-  variant class pins output_type and accepts no explicit value).
+- FDLT-015 (error): output_type not served by the class -- the class choice
+  IS the definition (Lavrentiadis2023PrimaryFD_aggregate serves disp_agg_prime /
+  disp_agg_seg, the _principal class disp_prnc_prime / disp_prnc_seg).
 """
 import pytest
 
@@ -255,12 +255,11 @@ def test_prnc_output_type_on_aggregate_class_is_an_error():
     assert "Lavrentiadis2023PrimaryFD_principal" in errors[0].message
 
 
-@pytest.mark.parametrize("output_type", [
-    "disp_prnc_prime", "disp_agg_prime"])
-def test_explicit_output_type_on_principal_class_is_an_error(output_type):
-    """The _principal class pins output_type; any explicit value (even the
-    redundant disp_prnc_prime) is rejected to keep configurations
-    canonical."""
+@pytest.mark.parametrize("output_type", ["disp_agg_prime", "disp_agg_seg"])
+def test_aggregate_output_type_on_principal_class_is_an_error(output_type):
+    """The _principal class serves only the sum-of-principal versions; an
+    aggregate metric fails at validation time, pointing to the aggregate
+    class."""
     spec = _spec(_fd_set(
         "fdhaPrimaryFDModel",
         f"[Lavrentiadis2023PrimaryFD_principal]\noutput_type = {output_type}",
@@ -268,7 +267,27 @@ def test_explicit_output_type_on_principal_class_is_an_error(output_type):
     report = validate_spec(spec)
     errors = [i for i in report.issues if i.code == "FDLT-015"]
     assert len(errors) == 1
-    assert "fixed by the class choice" in errors[0].message
+    assert "Lavrentiadis2023PrimaryFD_aggregate" in errors[0].message
+
+
+@pytest.mark.parametrize("class_name", [
+    "Lavrentiadis2023PrimaryFD_aggregate",
+    "Lavrentiadis2023PrimaryFD_principal"])
+def test_unknown_output_type_is_an_error(class_name):
+    spec = _spec(_fd_set(
+        "fdhaPrimaryFDModel", f"[{class_name}]\noutput_type = bogus"))
+    errors = [i for i in validate_spec(spec).issues if i.code == "FDLT-015"]
+    assert len(errors) == 1
+    assert "Invalid output_type 'bogus'" in errors[0].message
+
+
+@pytest.mark.parametrize("output_type", ["disp_prnc_prime", "disp_prnc_seg"])
+def test_principal_output_types_on_principal_class_pass_fdlt015(output_type):
+    spec = _spec(_fd_set(
+        "fdhaPrimaryFDModel",
+        f"[Lavrentiadis2023PrimaryFD_principal]\noutput_type = {output_type}",
+    ))
+    assert "FDLT-015" not in _codes(validate_spec(spec))
 
 
 def test_aggregate_output_types_on_aggregate_class_pass_fdlt015():

@@ -111,6 +111,35 @@ class LegacyModelAdapter:
             )
         return style
 
+    def _warn_segment_variant_on_multisection(self, ctx, output_type):
+        """Warn once per run when an individual-segment model variant meets a
+        multi-section rupture.
+
+        Segment variants (the model's ``SEGMENT_OUTPUT_TYPES``, e.g.
+        Lavrentiadis 2023 ``disp_agg_seg`` / ``disp_prnc_seg``) are functions
+        of the position along ONE segment, X_seg/L_seg (LA23 Eq. 14). For a
+        multi-section rupture the adapter passes x/L along the whole
+        rupture's reference line, which is not X_seg/L_seg.
+        """
+        if getattr(self, '_segment_multisection_warned', False):
+            return
+        if output_type is None:
+            output_type = getattr(self.model, 'output_type', None)
+        segment_types = getattr(self.model, 'SEGMENT_OUTPUT_TYPES', ())
+        if (output_type not in segment_types
+                or getattr(ctx, "ref_metrics", None) is None):
+            return
+        self._segment_multisection_warned = True
+        logger.warning(
+            "%s with output_type = %s is an individual-segment model "
+            "(a function of X_seg/L_seg), but rupture(s) of this run have "
+            "several sections; x/L is measured along the whole rupture's "
+            "%s reference line, not along one segment. Use the full-rupture "
+            "version for multi-section ruptures, or model the sections as "
+            "separate sources.",
+            self.model.__class__.__name__, output_type,
+            getattr(self.model, 'MULTIFAULT_REFERENCE_LINE', 'lcp'))
+
     def _get_method_params(self, method_name: str) -> set:
         """
         Get valid parameter names for a method (cached).
@@ -275,31 +304,19 @@ class LegacyModelAdapter:
         style = self._resolve_style(ctx, 'primary_surf_displ')
         model_name = self.model.__class__.__name__
 
-        # Wrong-class output_type misconfiguration (C4 contract): raise here
-        # with a configuration-level message before the model call (same
-        # pre-call pattern as the Youngs2003 style check above). The class
-        # choice IS the displacement definition - Lavrentiadis2023PrimaryFD_aggregate
-        # serves only the aggregate variants; the sum-of-principal
-        # disp_prnc_prime metric lives in Lavrentiadis2023PrimaryFD_principal
-        # (which in turn accepts no explicit output_type at all). Logic-tree
-        # jobs are already rejected at validation time (FDLT-015).
+        # output_type not served by the class (C4 contract): raise here with
+        # the class's own configuration-level message before the model call
+        # (same pre-call pattern as the Youngs2003 style check above). The
+        # class choice IS the displacement definition; output_type only
+        # selects a version of it (e.g. Lavrentiadis2023PrimaryFD_aggregate:
+        # disp_agg_prime / disp_agg_seg; Lavrentiadis2023PrimaryFD_principal:
+        # disp_prnc_prime / disp_prnc_seg). Logic-tree jobs are already
+        # rejected at validation time (FDLT-015).
         _output_type = self.model_params.get('output_type')
-        if model_name == 'Lavrentiadis2023PrimaryFD_aggregate' \
-                and str(_output_type) == 'disp_prnc_prime':
-            raise ValueError(
-                "Lavrentiadis2023PrimaryFD_aggregate is the AGGREGATE-definition model; "
-                "output_type = disp_prnc_prime (sum-of-principal) is served "
-                "by the Lavrentiadis2023PrimaryFD_principal model class. "
-                "Select that class instead of passing output_type."
-            )
-        if model_name == 'Lavrentiadis2023PrimaryFD_principal' \
-                and _output_type is not None:
-            raise ValueError(
-                "Lavrentiadis2023PrimaryFD_principal evaluates the "
-                "disp_prnc_prime (sum-of-principal) metric; output_type is "
-                f"fixed by the class choice (got '{_output_type}'). Remove "
-                "the output_type parameter."
-            )
+        _check = getattr(self.model, 'check_output_type', None)
+        if _output_type is not None and _check is not None:
+            _check(str(_output_type))
+        self._warn_segment_variant_on_multisection(ctx, _output_type)
 
         # Build kwargs with vectorized arrays; x_L follows the model's
         # declared multi-fault reference line (e.g. Chiou2025 -> ECS).

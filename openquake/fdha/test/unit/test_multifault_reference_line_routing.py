@@ -16,6 +16,8 @@ The context maker computes one metric set per method in the union of the
 configured models' declarations; adapters select their model's set via
 ``ctx.metrics_for()``.
 """
+import logging
+
 import numpy as np
 import pytest
 
@@ -164,3 +166,44 @@ def test_adapter_selects_model_declared_metrics():
     petersen_adapter = LegacyModelAdapter(Petersen2011SecondarySR(), {})
     r, _x, _L = petersen_adapter._ctx_metrics(ctx)
     np.testing.assert_array_equal(r, [0.9, 1.9, 2.9])       # lcp
+
+
+# --------------------------------------------------------------------------- #
+# individual-segment model variants on multi-section ruptures
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize("pin_on", ["model", "job"])
+def test_segment_variant_on_multisection_rupture_warns_once(pin_on, caplog):
+    """LA23 segment variants are functions of X_seg/L_seg (Eq. 14); on a
+    multi-section rupture the adapter's x/L runs along the whole rupture,
+    so the run logs one warning (not one per rupture)."""
+    from openquake.fdha.calc.model_adapter import LegacyModelAdapter
+    from openquake.fdha.primary_surf_displ import (
+        Lavrentiadis2023PrimaryFD_principal)
+    caplog.set_level(logging.WARNING, logger="openquake.fdha.calc.model_adapter")
+    if pin_on == "model":
+        adapter = LegacyModelAdapter(
+            Lavrentiadis2023PrimaryFD_principal(output_type="disp_prnc_seg"), {})
+    else:
+        adapter = LegacyModelAdapter(
+            Lavrentiadis2023PrimaryFD_principal(), {"output_type": "disp_prnc_seg"})
+    for _ in range(3):
+        out = adapter.compute_primary_fd(
+            _ctx(ref_metrics=_metrics()), np.array([0.1, 1.0]), {})
+    assert out.shape == (3, 2)
+    hits = [r for r in caplog.records if "individual-segment model" in r.message]
+    assert len(hits) == 1
+
+
+@pytest.mark.parametrize("output_type,ref_metrics", [
+    ("disp_prnc_seg", None),            # single-section rupture
+    ("disp_prnc_prime", _metrics()),    # full-rupture version
+])
+def test_no_segment_warning_otherwise(output_type, ref_metrics, caplog):
+    from openquake.fdha.calc.model_adapter import LegacyModelAdapter
+    from openquake.fdha.primary_surf_displ import (
+        Lavrentiadis2023PrimaryFD_principal)
+    caplog.set_level(logging.WARNING, logger="openquake.fdha.calc.model_adapter")
+    adapter = LegacyModelAdapter(
+        Lavrentiadis2023PrimaryFD_principal(output_type=output_type), {})
+    adapter.compute_primary_fd(_ctx(ref_metrics=ref_metrics), np.array([0.1]), {})
+    assert "individual-segment model" not in caplog.text

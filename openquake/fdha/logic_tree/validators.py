@@ -247,55 +247,33 @@ def validate_spec(spec: LogicTreeSpec, source_ids: Optional[set[str]] = None) ->
                     if dd:
                         disp_def_entries.append((str(dd), str(src)))
 
-                # FDLT-015: wrong-class output_type. The class choice IS the
-                # displacement definition (static contract), so the branch
-                # parameters may never re-route a class to another published
-                # definition: Lavrentiadis2023PrimaryFD_aggregate serves ONLY the
-                # aggregate variants (disp_agg_prime / disp_agg_seg), the
-                # sum-of-principal disp_prnc_prime metric lives in
-                # Lavrentiadis2023PrimaryFD_principal -- which in turn pins
-                # output_type and accepts no explicit value at all.
-                # Fail-early-and-loud (cf. commit d541dbc3); the model
-                # classes raise the same errors at evaluation time.
+                # FDLT-015: output_type not served by the class. The class
+                # choice IS the displacement definition (static contract), so
+                # the branch parameters may only select a version of that
+                # definition: Lavrentiadis2023PrimaryFD_aggregate serves the
+                # aggregate variants (disp_agg_prime / disp_agg_seg),
+                # Lavrentiadis2023PrimaryFD_principal the sum-of-principal ones
+                # (disp_prnc_prime / disp_prnc_seg). Each class declares its
+                # accepted values (check_output_type); fail early and loud
+                # (cf. commit d541dbc3) with the error the class itself would
+                # raise at evaluation time.
                 _ot = (br_params or {}).get("output_type")
-                if class_name == "Lavrentiadis2023PrimaryFD_aggregate" \
-                        and str(_ot) == "disp_prnc_prime":
-                    issues.append(
-                        ValidatorIssue(
-                            code="FDLT-015",
-                            level="error",
-                            message=(
-                                f"Branch {br.branch_id} in "
-                                f"{bs.branch_set_id} configures "
-                                "output_type = disp_prnc_prime on "
-                                "Lavrentiadis2023PrimaryFD_aggregate, which serves "
-                                "only the AGGREGATE variants. The sum-of-"
-                                "principal metric is a different "
-                                "displacement definition: select the "
-                                "Lavrentiadis2023PrimaryFD_principal model "
-                                "class instead (and drop the output_type "
-                                "line)."
-                            ),
+                _cls = _resolve_model_class(class_name)
+                _check = getattr(_cls, "check_output_type", None)
+                if _ot is not None and _check is not None:
+                    try:
+                        _check(str(_ot))
+                    except ValueError as exc:
+                        issues.append(
+                            ValidatorIssue(
+                                code="FDLT-015",
+                                level="error",
+                                message=(
+                                    f"Branch {br.branch_id} in "
+                                    f"{bs.branch_set_id}: {exc}"
+                                ),
+                            )
                         )
-                    )
-                elif class_name == "Lavrentiadis2023PrimaryFD_principal" \
-                        and _ot is not None:
-                    issues.append(
-                        ValidatorIssue(
-                            code="FDLT-015",
-                            level="error",
-                            message=(
-                                f"Branch {br.branch_id} in "
-                                f"{bs.branch_set_id} passes output_type = "
-                                f"'{_ot}' to "
-                                "Lavrentiadis2023PrimaryFD_principal; "
-                                "output_type is fixed by the class choice "
-                                "(disp_prnc_prime). Remove the output_type "
-                                "line, or select Lavrentiadis2023PrimaryFD_aggregate "
-                                "for the aggregate variants."
-                            ),
-                        )
-                    )
 
                 # Collect the C4 model contract declared by the class itself
                 # (static class attributes) for FDLT-014/FDLT-105.
