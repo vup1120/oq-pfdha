@@ -216,19 +216,19 @@
               "name": "style",
               "type": "string",
               "units": "-",
-              "default": "`\"normal\"`",
+              "default": "derived from the rupture rake",
               "allowed": "`\"normal\"`, `\"strike-slip\"`, `\"reverse\"` (case-insensitive)",
               "required": false,
-              "description": "Style of faulting."
+              "description": "Style of faulting. Any other value (including `\"all\"`) is an error."
             },
             {
               "name": "output_type",
               "type": "string",
               "units": "-",
-              "default": "`\"disp_agg_prime\"`",
-              "allowed": "`\"disp_agg_prime\"`, `\"disp_agg_seg\"` (`Lavrentiadis2023PrimaryFD_aggregate` only)",
+              "default": "`\"disp_agg_prime\"` / `\"disp_prnc_prime\"`",
+              "allowed": "`_aggregate`: `\"disp_agg_prime\"`, `\"disp_agg_seg\"`. `_principal`: `\"disp_prnc_prime\"`, `\"disp_prnc_seg\"`",
               "required": false,
-              "description": "Aggregate metric to evaluate. `disp_prnc_prime` is **rejected** on this class (FDLT-015): select `Lavrentiadis2023PrimaryFD_principal` instead. On `Lavrentiadis2023PrimaryFD_principal` the metric is pinned by the class and passing any explicit `output_type` is an error."
+              "description": "Version of the class's displacement definition: full rupture (`*_prime`) or individual segment (`*_seg`). A value of the other class is rejected (FDLT-015)."
             },
             {
               "name": "include_zero_slip",
@@ -237,7 +237,7 @@
               "default": "`false`",
               "allowed": "`true`, `false`",
               "required": false,
-              "description": "If `true`, the probability accounts for zero slip and gap probabilities. If `false`, uses only the displacement distribution. Accepted by both classes."
+              "description": "If `true`, the exceedance probability is scaled by the probability of a non-zero displacement (see the `output_type` table). fdhpy defaults to `true`."
             }
           ],
           "prefill": ""
@@ -245,8 +245,36 @@
         {
           "class_name": "Lavrentiadis2023PrimaryFD_principal",
           "module": "openquake.fdha.primary_surf_displ.lavrentiadis2023",
-          "doc_page": null,
-          "doc_params": [],
+          "doc_page": "primary/Lavrentiadis2023.md",
+          "doc_params": [
+            {
+              "name": "style",
+              "type": "string",
+              "units": "-",
+              "default": "derived from the rupture rake",
+              "allowed": "`\"normal\"`, `\"strike-slip\"`, `\"reverse\"` (case-insensitive)",
+              "required": false,
+              "description": "Style of faulting. Any other value (including `\"all\"`) is an error."
+            },
+            {
+              "name": "output_type",
+              "type": "string",
+              "units": "-",
+              "default": "`\"disp_agg_prime\"` / `\"disp_prnc_prime\"`",
+              "allowed": "`_aggregate`: `\"disp_agg_prime\"`, `\"disp_agg_seg\"`. `_principal`: `\"disp_prnc_prime\"`, `\"disp_prnc_seg\"`",
+              "required": false,
+              "description": "Version of the class's displacement definition: full rupture (`*_prime`) or individual segment (`*_seg`). A value of the other class is rejected (FDLT-015)."
+            },
+            {
+              "name": "include_zero_slip",
+              "type": "boolean",
+              "units": "-",
+              "default": "`false`",
+              "allowed": "`true`, `false`",
+              "required": false,
+              "description": "If `true`, the exceedance probability is scaled by the probability of a non-zero displacement (see the `output_type` table). fdhpy defaults to `true`."
+            }
+          ],
           "prefill": ""
         },
         {

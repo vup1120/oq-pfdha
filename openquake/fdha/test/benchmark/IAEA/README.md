@@ -148,7 +148,7 @@ by pointing `source_model_logic_tree_file` at `smlt_basecase.xml`;
 | C24 | `WC1993PrimarySR` + `Chiou2025PrimaryFD (model7)` | same chain as `benchmark/valentini_et_al_2025` |
 | K24 | `FixedPrimarySR (1.0)` + `Kuehn2024PrimaryFD`, full-posterior **mean** (the default ensemble reduction) | paper: K24 team assumed P_sr = 1 |
 | T13 | `Takao2013PrimarySR` + `Takao2013PrimaryFD (AD, n_sigma = 5)`; distributed: `Takao2014SecondarySR (cell 100 m)` + `Takao2013SecondaryFD (AD, n_sigma = 5)` | published principal curves include the P2p site-rupture factor (~0.45–0.48), not yet a library model → applied as a documented `post_factor` in `manifest.py` |
-| L23 | `FixedPrimarySR (case-specific)` + `Lavrentiadis2023PrimaryFD_aggregate (disp_prnc_prime, include_zero_slip)` | the team computed a case-specific P_sr by floating the rupture over the dip surface; adopted values 0.85 / 0.65 / 1.0 (Kumamoto / Le Teil / Norcia) back-calculated from their published curves and consistent with the rupture-width / fault-width ratio |
+| L23 | `FixedPrimarySR (case-specific)` + `Lavrentiadis2023PrimaryFD_principal (include_zero_slip = True)` | the team computed a case-specific P_sr by floating the rupture over the dip surface; adopted values 0.85 / 0.65 / 1.0 (Kumamoto / Le Teil / Norcia) back-calculated from their published curves and consistent with the rupture-width / fault-width ratio; 1.0 for the Kumamoto floating option, whose ruptures span the full fault width |
 | M11 | `Moss2013PrimarySR (stiff, vs30 760)` + `MossRoss2011PrimaryFD (AD)` | **qualitative only** - see below |
 | Y03 | `Youngs2003PrimarySR/FD (normal, AD)`; distributed: `Youngs2003SecondarySR (v3)` + `Youngs2003SecondaryFD (85th)` | |
 | V24 | gate `FixedPrimarySR (1.0)` + `Visini2025SecondarySR (100 m)` + `Visini2025SecondaryFD (WC1994)` | **qualitative only** - see below |
@@ -167,7 +167,7 @@ team curves over the asserted range:
 | Kumamoto L23 (≤1 m) | 5.6% | Norcia K24 | 19.7% |
 | Kumamoto distributed P11 | **0.4%** | Norcia L23 | 13.3% |
 | Kumamoto distributed T13 | 32.5% (limit 40%, see below) | Le Teil distributed T13 (≤1 m) | 36.7% (limit 40%, see below) |
-| Kumamoto floating K24/T13/L23 | 17.4 / 5.9 / 22.3% | Norcia distributed Y03 (≤1 m) | 19.1% |
+| Kumamoto floating K24/T13/L23 | 17.4 / 5.9 / 8.6% | Norcia distributed Y03 (≤1 m) | 19.1% |
 
 Where an entry is asserted only up to 1 m displacement, the excluded tail
 sits at AFOE < 1e-8–1e-12, where the paper itself notes the curves are

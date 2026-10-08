@@ -60,6 +60,7 @@ DOC_MAP = {
     "Chiou2025PrimaryFD": "primary/Chiou2025.md",
     "Kuehn2024PrimaryFD": "primary/Kuehn2024.md",
     "Lavrentiadis2023PrimaryFD_aggregate": "primary/Lavrentiadis2023.md",
+    "Lavrentiadis2023PrimaryFD_principal": "primary/Lavrentiadis2023.md",
     "Moss2022PrimaryFD": "primary/Moss2022.md",
     "Moss2024PrimaryFD": "primary/Moss2024.md",
     "Takao2013PrimaryFD": "primary/Takao2013.md",
