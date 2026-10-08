@@ -290,20 +290,18 @@ class ParameterMapper:
         metric = fdhpy_params.get("metric", "aggregate")
         version = fdhpy_params.get("version", "full rupture")
         
-        # Map metric/version to output_type
-        if metric == "aggregate" and version == "full rupture":
-            output_type = "disp_agg_prime"
-        elif metric == "aggregate" and version == "individual segment":
-            output_type = "disp_agg_seg"
-        elif metric == "sum-of-principal" and version == "full rupture":
-            output_type = "disp_prnc_prime"
-        else:
-            output_type = "disp_agg_prime"
-        
+        output_types = {
+            ("aggregate", "full rupture"): "disp_agg_prime",
+            ("aggregate", "individual segment"): "disp_agg_seg",
+            ("sum-of-principal", "full rupture"): "disp_prnc_prime",
+            ("sum-of-principal", "individual segment"): "disp_prnc_seg",
+        }
+        output_type = output_types[(metric, version)]
+
         return {
             "mag": fdhpy_params["magnitude"],
             "X_L_ratio": np.array([fdhpy_params["xl"]]),
-            "style": "strike-slip",
+            "style": fdhpy_params.get("style", "strike-slip"),
             "output_type": output_type,
             "include_zero_slip": fdhpy_params.get("include_prob_zero", True),
         }
@@ -487,6 +485,7 @@ class ModelRunner:
         metric: str = "aggregate",
         version: str = "full rupture",
         include_prob_zero: bool = True,
+        style: str = "strike-slip",
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Run both implementations of Lavrentiadis 2023.
@@ -498,23 +497,23 @@ class ModelRunner:
             displ_array=displacements,
             metric=metric,
             version=version,
+            style=style,
             include_prob_zero=include_prob_zero,
         )
         fdhpy_result = fdhpy_model.prob_exceed
-        
+
         # Run pfdha. The class choice IS the displacement definition (C4
-        # model contract): the sum-of-principal disp_prnc_prime metric lives
-        # in Lavrentiadis2023PrimaryFD_principal (which hard-pins
-        # output_type), the aggregate variants in Lavrentiadis2023PrimaryFD_aggregate.
+        # model contract): the sum-of-principal metrics (disp_prnc_prime /
+        # disp_prnc_seg) live in Lavrentiadis2023PrimaryFD_principal, the
+        # aggregate variants in Lavrentiadis2023PrimaryFD_aggregate.
         pfdha_params = self.mapper.lavrentiadis2023_fdhpy_to_pfdha({
-            "magnitude": magnitude, "xl": xl,
+            "magnitude": magnitude, "xl": xl, "style": style,
             "metric": metric, "version": version,
             "include_prob_zero": include_prob_zero
         })
-        if pfdha_params.get("output_type") == "disp_prnc_prime":
+        if metric == "sum-of-principal":
             from openquake.fdha.primary_surf_displ import (
                 Lavrentiadis2023PrimaryFD_principal)
-            pfdha_params.pop("output_type")
             pfdha_model = Lavrentiadis2023PrimaryFD_principal()
         else:
             pfdha_model = self.pfdha_models["Lavrentiadis2023PrimaryFD_aggregate"]()

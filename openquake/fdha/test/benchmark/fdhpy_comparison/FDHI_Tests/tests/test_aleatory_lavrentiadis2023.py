@@ -4,7 +4,8 @@ Aleatory uncertainty tests for Lavrentiadis & Abrahamson (2023).
 STATUS: TESTABLE - pfdha exposes LavrentiadisAbrahamson2023SlipProfile() returning sigma components.
 
 fdhpy exposes:
-- sigma_mu_agg property (std dev of predicted median aggregate displacement)
+- sigma_mu_agg property (std dev of predicted median aggregate displacement),
+  compared with Lavrentiadis2023PrimaryFD_aggregate.get_sigma_mu_agg
 
 pfdha Lavrentiadis2023PrimaryFD_aggregate:
 - LavrentiadisAbrahamson2023SlipProfile() returns:
@@ -33,42 +34,24 @@ except ImportError as e:
 class TestLavrentiadis2023Aleatory:
     """Aleatory uncertainty tests for Lavrentiadis & Abrahamson (2023)."""
 
-    @pytest.mark.parametrize("magnitude", [6.5, 7.0, 7.5])
+    @pytest.mark.parametrize("magnitude", [5.0, 6.5, 7.0, 7.1, 7.5, 8.5])
     @pytest.mark.parametrize("style", ["strike-slip", "normal", "reverse"])
     def test_sigma_mu_agg(self, magnitude, style):
-        """
-        Compare sigma_mu_agg (standard deviation of predicted median aggregate displacement).
-        
-        fdhpy: sigma_mu_agg property
-        pfdha: This is the epistemic uncertainty on the median, not directly exposed.
-        
-        Note: fdhpy's sigma_mu_agg is specifically defined in Eq. (varies by M and style).
-        pfdha's sig_agg from SlipProfile is the total aleatory (different quantity).
-        """
-        # fdhpy - sigma_mu_agg (epistemic uncertainty on median)
+        """Epistemic standard deviation of the median D_agg**0.3 (Eq. 29):
+        pfdha get_sigma_mu_agg against fdhpy's sigma_mu_agg property."""
         fdhpy_model = LavrentiadisAbrahamson2023(
             magnitude=magnitude,
-            xl=0.5,  # Fixed for this test
+            xl=0.5,
             displ_array=np.array([0.1]),
             metric="aggregate",
             version="full rupture",
             style=style,
         )
-        
-        fdhpy_sigma_mu = fdhpy_model.sigma_mu_agg
-        
-        # Manual calculation based on fdhpy's formula
-        if magnitude >= 7.1:
-            expected_sigma = 0.035 + 0.025 * (magnitude - 7.1)
-        else:
-            c_map = {"normal": 0.064, "strike-slip": 0.036, "reverse": 0.036}
-            c = c_map.get(style.lower(), 0.036)
-            expected_sigma = 0.035 + c * (7.1 - magnitude)
-        
         np.testing.assert_allclose(
-            float(fdhpy_sigma_mu), expected_sigma,
-            rtol=1e-6, atol=1e-10,
-            err_msg=f"LA23 sigma_mu_agg formula check: {style}, M={magnitude}"
+            Lavrentiadis2023PrimaryFD_aggregate().get_sigma_mu_agg(magnitude, style=style),
+            float(fdhpy_model.sigma_mu_agg),
+            rtol=1e-12, atol=0,
+            err_msg=f"LA23 sigma_mu_agg: {style}, M={magnitude}"
         )
 
     @pytest.mark.parametrize("magnitude", [6.5, 7.0, 7.5])

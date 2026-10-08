@@ -161,20 +161,23 @@ Distributional choices diverge widely, but two structural families dominate:
 - **τ/φ:** Not separated.
 - **Epistemic branches:** completeness (complete / all), σ source (recommended / regression), gamma source (EQS / GIRS).
 
-### `Lavrentiadis2023PrimaryFD_aggregate` - [lavrentiadis2023.py](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py)
-- **Distribution:** Normal on the **power-transformed displacement** `D^0.3`, via `norm.sf` ([lines 94–96](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L94-L96)). The transformation is applied as `D = μ_prime^(1/0.3)` ([line 345](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L345)), so probability statements live in the "prime" (Box–Cox-like) space.
-- **σ - full τ/φ decomposition, both magnitude-dependent** ([lines 329–340](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L329-L340)):
-  - between-event `τ_agg = clip(0.115 + 0.060·(M−6), [0.115, 0.205])`;
-  - within-event `φ_agg = clip(0.120 + 0.150·(M−6), [0.120, 0.270])`;
-  - principal φ adds a component-correlation term with `ρ = −0.15`;
-  - additional segmentation variance `φ_add = c₁₈ + c₁₉·M + c₂₀·(M−6.7)²`;
-  - total `σ_total = √(τ² + φ² + φ_add²)`.
-- **Discrete zero-displacement components - unique in the library:**
-  - `P_gap` (segment-gap probability, [lines 293–310](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L293-L310));
-  - `P_zero_slip` (logistic, [line 317](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L317));
-  - combined as `ccdf_prnc · (1 − P_zero_slip) · (1 − P_gap)` ([line 99](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L99)).
-- **Epistemic branches:** style-dependent coefficient sets; three displacement
-  metrics (`disp_agg_prime`, `disp_prnc_prime`, `disp_agg_seg`).
+### `Lavrentiadis2023PrimaryFD_aggregate` / `_principal` - [lavrentiadis2023.py](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py)
+- **Distribution:** Normal on the **power-transformed displacement** `D^0.3`, via `norm.sf` ([line 478](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L478)), left-truncated at zero (Eq. 17). Displacements are back-transformed as `D = y^(1/0.3)` ([line 273](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L273)), so probability statements live in the "prime" (Box–Cox-like) space.
+- **σ - full τ/φ decomposition, both magnitude-dependent** ([lines 195–222](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L195-L222)):
+  - between-event `τ_agg = clip(0.115 + 0.060·(M−6), [0.115, 0.205])` (Eq. 16);
+  - within-event `φ_agg = clip(0.120 + 0.150·(M−6), [0.120, 0.270])` (Eq. 15);
+  - principal φ adds the `b₂` variability with the correlation `ρ = −0.15` (Eq. 34);
+  - additional segmentation variance `φ_add = c₁₈ + c₁₉·M + c₂₀·(M−6.7)²` for the full-rupture versions (Eq. 23);
+  - total `σ = √(τ² + φ² + φ_add²)` (Eq. 24); the individual-segment versions omit `φ_add`.
+- **Discrete zero-displacement components - unique in the library** (with `include_zero_slip = true`):
+  - `P_gap` (segment-gap probability, Eq. 25, [lines 172–182](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L172-L182));
+  - `P_zero_slip` (logistic, Eq. 32, [lines 187–188](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L187-L188));
+  - combined per version ([lines 411–432](../../openquake/fdha/primary_surf_displ/lavrentiadis2023.py#L411-L432)): `1 − P_gap` for the aggregate full rupture,
+    `(1 − P_zero_slip) · (1 − P_gap)` for the principal full rupture (Eq. 31), `1 − P_zero_slip` for the principal
+    single segment, none for the aggregate single segment (a single segment has no gap).
+- **Epistemic:** `σ_μagg` of the median `D_agg^0.3` (Eq. 29) is exposed as `get_sigma_mu_agg` for scaled-backbone
+  branches; style-dependent coefficient sets; four displacement versions (`disp_agg_prime`, `disp_agg_seg`,
+  `disp_prnc_prime`, `disp_prnc_seg`).
 
 ### `Kuehn2024PrimaryFD` - [kuehn2024/kuehn2024.py](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py)
 - **Distribution:** **Box–Cox-transformed Normal** - `norm.cdf` on `(D^λ − 1)/λ` (or `ln D` if λ = 0), [lines 95–104, 161–169](../../openquake/fdha/primary_surf_displ/kuehn2024/kuehn2024.py#L95-L104).

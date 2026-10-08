@@ -337,12 +337,41 @@ class TestLavrentiadis2023:
             err_msg=f"LA23 aggregate segment: {style}, M={magnitude}, x/L={xl}"
         )
 
-    @pytest.mark.xfail(strict=True, reason=(
-        "pfdha scales the single-segment aggregate by (1 - P_zero_slip) when "
-        "include_zero_slip=True; P(D_P = 0) is the zero-PRINCIPAL "
-        "probability (paper Eqs 31-32) and a single segment has no gap, so "
-        "fdhpy (and the paper) apply no zero term to this metric"))
+    @pytest.mark.parametrize("magnitude", [6.5, 7.0, 7.5])
+    @pytest.mark.parametrize("xl", [0.3, 0.5, 0.6])
+    @pytest.mark.parametrize("style", ["strike-slip", "normal", "reverse"])
+    def test_prob_exceed_sum_of_principal_individual_segment(self, magnitude, xl, style, fdhpy_models, pfdha_models):
+        """Sum-of-principal class, single-segment variant (disp_prnc_seg)
+        against the fdhpy 'individual segment' version, without zero terms
+        (with them pfdha applies 1 - P(D_P = 0), decision B2)."""
+        fdhpy_model = fdhpy_models["LavrentiadisAbrahamson2023"](
+            magnitude=magnitude,
+            xl=xl,
+            displ_array=DISPLACEMENTS,
+            metric="sum-of-principal",
+            version="individual segment",
+            style=style,
+            include_prob_zero=False,
+        )
+        pfdha_result = pfdha_models["Lavrentiadis2023PrimaryFD_principal"]().get_prob(
+            d=DISPLACEMENTS,
+            X_L_ratio=np.array([xl]),
+            mag=magnitude,
+            style=style,
+            output_type="disp_prnc_seg",
+            include_zero_slip=False,
+        ).flatten()
+        np.testing.assert_allclose(
+            fdhpy_model.prob_exceed, pfdha_result,
+            rtol=1e-6, atol=1e-10,
+            err_msg=f"LA23 sum-of-principal segment: {style}, M={magnitude}, x/L={xl}"
+        )
+
     def test_prob_exceed_aggregate_individual_segment_with_zero_terms(self, fdhpy_models, pfdha_models):
+        """A single segment has no gap (p. 21) and P(D_P = 0) is the
+        zero-PRINCIPAL probability (Eqs. 31-32), so neither fdhpy nor pfdha
+        applies a zero term to the single-segment aggregate; the flag is
+        ignored with a warning."""
         fdhpy_model = fdhpy_models["LavrentiadisAbrahamson2023"](
             magnitude=6.5,
             xl=0.3,

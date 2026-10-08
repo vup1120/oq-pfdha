@@ -38,6 +38,14 @@ dependencies = [
   "tqdm>=4.64",
 ]
 
+[project.optional-dependencies]
+test = [
+  "pytest",
+  # reference implementation for the fdhpy comparison benchmark; the LA23
+  # golden fixtures were frozen from this exact release
+  "fdhpy==1.0.3",
+]
+
 [project.urls]
 Homepage = "https://github.com/vup1120/oq-pfdha"
 Repository = "https://github.com/vup1120/oq-pfdha"

@@ -6,7 +6,7 @@
         <logicTreeBranch branchID="B1_PSR">
           <uncertaintyModel>
             [FixedPrimarySR]
-            value = 0.85
+            value = 1.0
           </uncertaintyModel>
           <uncertaintyWeight>1.0</uncertaintyWeight>
         </logicTreeBranch>

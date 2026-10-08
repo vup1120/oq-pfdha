@@ -45,7 +45,7 @@ asserted range:
 | Kumamoto L23 (≤1 m) | 5.6% | Norcia Y03 | 16.8% |
 | Kumamoto distributed P11 | **0.4%** | Norcia K24 | 19.7% |
 | Kumamoto distributed T13 | 32.5% (40% limit)¹ | Norcia L23 | 13.3% |
-| Kumamoto floating K24/T13/L23 | 17.4 / 5.9 / 22.3% | Norcia distributed Y03 (≤1 m) | 19.1% |
+| Kumamoto floating K24/T13/L23 | 17.4 / 5.9 / 8.6% | Norcia distributed Y03 (≤1 m) | 19.1% |
 
 ¹ The T13 distributed heads match at 0.1% / 9%; the mid-range shape
 difference is attributable to the team (the library model reproduces the

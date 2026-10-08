@@ -237,7 +237,7 @@ picks the along-strike shape, all still principal/lateral.
 | `Chiou2025PrimaryFD` | sum-of-principal | net | - |
 | `Kuehn2024PrimaryFD` | **aggregate** | net | - |
 | `Lavrentiadis2023PrimaryFD_aggregate` | **aggregate** (`output_type` `disp_agg_prime` default / `disp_agg_seg`) | net | - |
-| `Lavrentiadis2023PrimaryFD_principal` | sum-of-principal (`disp_prnc_prime`, pinned by the class) | net | - |
+| `Lavrentiadis2023PrimaryFD_principal` | sum-of-principal (`output_type` `disp_prnc_prime` default / `disp_prnc_seg`) | net | - |
 | `Youngs2003SecondaryFD` | distributed | vertical | r ≤ 15 km |
 | `Takao2013SecondaryFD` | distributed | net | r ≤ 20 km |
 | `Petersen2011SecondaryFD` | distributed | lateral | r ≤ 2 km |
@@ -271,13 +271,13 @@ The contract is enforced by the validator and the calculator:
   but draw an advisory warning: components measure the same event
   differently, so mixing them is a modelling choice worth double-checking,
   not an error.
-- **FDLT-015 (error)** - wrong-class `output_type`. The class choice is
-  the definition, so `output_type = disp_prnc_prime` on
-  `Lavrentiadis2023PrimaryFD_aggregate` is rejected (select
-  `Lavrentiadis2023PrimaryFD_principal` instead), and any explicit
-  `output_type` on `Lavrentiadis2023PrimaryFD_principal` is rejected (the
-  class pins it). The model classes raise the same errors when called
-  directly.
+- **FDLT-015 (error)** - `output_type` not served by the class. The class
+  choice is the definition and `output_type` only selects its version, so
+  `Lavrentiadis2023PrimaryFD_aggregate` accepts `disp_agg_prime` /
+  `disp_agg_seg` and `Lavrentiadis2023PrimaryFD_principal` accepts
+  `disp_prnc_prime` / `disp_prnc_seg`; a value of the other class (or an
+  unknown value) is rejected, naming the class to use. The model classes
+  raise the same errors when called directly.
 - **Applicability warning (runtime)** - when sites are evaluated outside a
   distributed model's declared range (in the model's own distance metric),
   one `WARNING` per model per run reports the offending-site count. The
@@ -288,6 +288,8 @@ The contract is enforced by the validator and the calculator:
     (`output_type` `disp_agg_prime`, the default, or `disp_agg_seg`); as
     an aggregate model it runs single-bucket and forbids secondary slots
     (FDLT-013). `Lavrentiadis2023PrimaryFD_principal` serves the
-    `disp_prnc_prime` sum-of-principal metric with `output_type` pinned by
-    the class; it is not aggregate, so secondary models remain legitimate
-    alongside it.
+    sum-of-principal metric (`output_type` `disp_prnc_prime`, the default,
+    or `disp_prnc_seg`); it is not aggregate, so secondary models remain
+    legitimate alongside it. The `*_seg` versions are individual-segment
+    models: on a multi-section rupture the run logs a warning, because x/L
+    is then measured along the whole rupture.

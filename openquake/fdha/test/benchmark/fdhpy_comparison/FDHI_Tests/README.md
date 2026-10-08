@@ -2,7 +2,7 @@
 
 Comparison tests between `pfdha` (this implementation) and `fdhpy` (reference
 implementation). See [../RESULTS.md](../RESULTS.md) for the latest results and
-[../REFERENCE.md](../REFERENCE.md) for the reference citation and pinned commit.
+[../REFERENCE.md](../REFERENCE.md) for the reference citation and pinned version.
 
 ## Structure
 
@@ -10,6 +10,8 @@ implementation). See [../RESULTS.md](../RESULTS.md) for the latest results and
 FDHI_Tests/
 ├── pytest.ini                     # pytest configuration
 ├── README.md                      # This file
+├── fixtures/
+│   └── la23/                      # LA23 golden fixtures frozen from fdhpy 1.0.3
 └── tests/
     ├── test_simple_reference.py   # Exceedance-probability comparisons (111 cases)
     ├── test_aleatory_petersen2011.py
@@ -23,7 +25,7 @@ FDHI_Tests/
 ## Run
 
 ```bash
-pip install -e /path/to/fdhpy   # reference, commit pinned in ../REFERENCE.md
+pip install -e '.[test]'       # from the repo root: pins fdhpy==1.0.3
 python -m pytest tests -q       # from this directory
 ```
 

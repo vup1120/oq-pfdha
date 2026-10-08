@@ -117,8 +117,8 @@ def test_lavrentiadis_two_classes_static_contracts():
     """LA23 publishes two displacement definitions, and the class choice IS
     the definition (Petersen2011PrimaryFD_* variant idiom): the parent class
     serves the aggregate variants, the _principal subclass the
-    sum-of-principal disp_prnc_prime metric. Contracts are static - no
-    parameter can re-route them."""
+    sum-of-principal ones (disp_prnc_prime / disp_prnc_seg). Contracts are
+    static - output_type selects a version, never another definition."""
     parent = primary_surf_displ.Lavrentiadis2023PrimaryFD_aggregate
     principal = primary_surf_displ.Lavrentiadis2023PrimaryFD_principal
     assert effective_displacement_definition(parent) == "aggregate"
@@ -139,15 +139,38 @@ def test_lavrentiadis_parent_rejects_prnc_output_type():
 
 
 @pytest.mark.lavrentiadis2023
-@pytest.mark.parametrize("output_type", [
-    "disp_prnc_prime", "disp_agg_prime", "disp_agg_seg", "bogus"])
-def test_lavrentiadis_principal_rejects_any_explicit_output_type(output_type):
-    """output_type is fixed by the class choice - even the redundant
-    disp_prnc_prime is rejected to keep configurations canonical."""
+@pytest.mark.parametrize("output_type,match", [
+    ("disp_agg_prime", "Lavrentiadis2023PrimaryFD_aggregate"),
+    ("disp_agg_seg", "Lavrentiadis2023PrimaryFD_aggregate"),
+    ("bogus", "Invalid output_type")])
+def test_lavrentiadis_principal_rejects_aggregate_output_types(output_type, match):
+    """The _principal class serves only the sum-of-principal versions; the
+    aggregate metrics are a different definition and the error names the
+    class to use instead."""
     model = primary_surf_displ.Lavrentiadis2023PrimaryFD_principal()
-    with pytest.raises(ValueError, match="fixed by the class choice"):
+    with pytest.raises(ValueError, match=match):
         model.get_prob(d=np.array([0.1]), X_L_ratio=np.array([0.5]),
                        mag=7.0, style="normal", output_type=output_type)
+    with pytest.raises(ValueError, match=match):
+        primary_surf_displ.Lavrentiadis2023PrimaryFD_principal(
+            output_type=output_type)
+
+
+@pytest.mark.lavrentiadis2023
+@pytest.mark.parametrize("output_type", ["disp_prnc_prime", "disp_prnc_seg"])
+def test_lavrentiadis_principal_accepts_its_versions(output_type):
+    """output_type selects the version (full rupture or individual segment)
+    of the sum-of-principal metric, as a call argument or a pin; the
+    definition stays static."""
+    principal = primary_surf_displ.Lavrentiadis2023PrimaryFD_principal
+    d, x_l = np.array([0.1, 1.0]), np.array([0.3])
+    by_call = principal().get_prob(d=d, X_L_ratio=x_l, mag=7.0,
+                                   style="normal", output_type=output_type)
+    pinned = principal(output_type=output_type).get_prob(
+        d=d, X_L_ratio=x_l, mag=7.0, style="normal")
+    np.testing.assert_array_equal(by_call, pinned)
+    assert effective_displacement_definition(
+        principal(output_type=output_type)) == "sum-of-principal"
 
 
 @pytest.mark.lavrentiadis2023
