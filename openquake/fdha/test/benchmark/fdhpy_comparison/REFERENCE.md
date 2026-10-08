@@ -6,7 +6,7 @@ Sarmiento, A., Lavrentiadis, G., Bozorgnia, Y., Chen, R., Chiou, B., Dawson, T.,
 
 ## Source of the numerical values
 
-Live outputs from the installed editable `fdhpy` package during pytest comparisons; the local reference checkout used in this workspace resolves to commit `0ca38e269f99937477d9a43f331e4a432cf41b7c`.
+Live outputs from the installed `fdhpy` package during pytest comparisons, pinned to `fdhpy==1.0.3` in the `test` extras of `pyproject.toml` (`pip install -e .[test]`). Earlier runs used the editable checkout at commit `0ca38e269f99937477d9a43f331e4a432cf41b7c` (1.0.2) with a local NumPy-2 shim; 1.0.3 ships that fix. The Lavrentiadis and Abrahamson (2023) outputs are also frozen from 1.0.3 as golden fixtures in [FDHI_Tests/fixtures/la23](FDHI_Tests/fixtures/la23/README.md), so those comparisons do not need `fdhpy` at test time.
 
 ## What this case validates
 
@@ -14,7 +14,7 @@ This benchmark compares pfdha primary fault-displacement probability and aleator
 
 ## Tolerance and its justification
 
-`tests/test_simple_reference.py` uses `rtol=1e-4`, `atol=1e-8` for Youngs2003 exceedance probabilities and `rtol=1e-6`, `atol=1e-10` for most other exceedance comparisons. The aleatory tests inspected use `rtol=1e-6`, `atol=1e-10`. The README describes Youngs2003 as relaxed for integration differences and all others as stricter equivalence checks; the numerical precision of the installed `fdhpy` reference is not pinned to a commit.
+`tests/test_simple_reference.py` uses `rtol=1e-4`, `atol=1e-8` for Youngs2003 exceedance probabilities and `rtol=1e-6`, `atol=1e-10` for most other exceedance comparisons. The aleatory tests inspected use `rtol=1e-6`, `atol=1e-10`. The README describes Youngs2003 as relaxed for integration differences and all others as stricter equivalence checks; the installed `fdhpy` reference is pinned to version 1.0.3.
 
 ## How to reproduce
 

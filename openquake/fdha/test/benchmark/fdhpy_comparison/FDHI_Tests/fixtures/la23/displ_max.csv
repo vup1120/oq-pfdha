@@ -1,0 +1,106 @@
+# generator: make_fixtures.py
+# fdhpy: 1.0.3 (LavrentiadisAbrahamson2023)
+# numpy: 2.2.6; scipy: 1.17.1; pandas: 2.2.3; python: 3.13.9
+# generated: 2026-10-08
+# content: fdhpy displ_max, aggregate, full rupture (F10); the sum-of-principal variant is deliberately not frozen
+# column style: faulting style
+# column magnitude: moment magnitude
+# column percentile: aleatory quantile; -1 = mean
+# column displ_m: maximum displacement in metres
+style,magnitude,percentile,displ_m
+normal,5,0.16,0.1000595097
+normal,5,0.5,0.2149872504
+normal,5,0.84,0.4003124159
+normal,5,-1,0.2506931999
+normal,5.5,0.16,0.1825120054
+normal,5.5,0.5,0.3496453923
+normal,5.5,0.84,0.6022601462
+normal,5.5,-1,0.3929667441
+normal,6,0.16,0.3285779586
+normal,6,0.5,0.5713332464
+normal,6,0.84,0.9180918355
+normal,6,-1,0.624009236
+normal,6.5,0.16,1.360811403
+normal,6.5,0.5,2.237803332
+normal,6.5,0.84,3.449500884
+normal,6.5,-1,2.407272663
+normal,7,0.16,4.675777758
+normal,7,0.5,7.255021282
+normal,7,0.84,10.6950487
+normal,7,-1,7.690725223
+normal,7.5,0.16,6.439929585
+normal,7.5,0.5,10.03088839
+normal,7.5,0.84,14.83159109
+normal,7.5,-1,10.64323745
+normal,8,0.16,9.733845944
+normal,8,0.5,14.44055476
+normal,8,0.84,20.54666482
+normal,8,-1,15.14874151
+normal,8.5,0.16,15.19705051
+normal,8.5,0.5,21.51323798
+normal,8.5,0.84,29.47057587
+normal,8.5,-1,22.34359889
+strike-slip,5,0.16,0.0704704511
+strike-slip,5,0.5,0.1631956522
+strike-slip,5,0.84,0.3189870921
+strike-slip,5,-1,0.1952017591
+strike-slip,5.5,0.16,0.1369093283
+strike-slip,5.5,0.5,0.2764985354
+strike-slip,5.5,0.84,0.4939225648
+strike-slip,5.5,-1,0.3159589764
+strike-slip,6,0.16,0.2624484572
+strike-slip,6,0.5,0.4727722713
+strike-slip,6,0.84,0.779522812
+strike-slip,6,-1,0.5216213014
+strike-slip,6.5,0.16,0.8956452219
+strike-slip,6.5,0.5,1.565832634
+strike-slip,6.5,0.84,2.526225983
+strike-slip,6.5,-1,1.71282198
+strike-slip,7,0.16,4.83118046
+strike-slip,7,0.5,7.466074935
+strike-slip,7,0.84,10.97167515
+strike-slip,7,-1,7.906792345
+strike-slip,7.5,0.16,6.611884716
+strike-slip,7.5,0.5,10.26511507
+strike-slip,7.5,0.84,15.13930077
+strike-slip,7.5,-1,10.88312917
+strike-slip,8,0.16,9.63548991
+strike-slip,8,0.5,14.31087185
+strike-slip,8,0.84,20.38061801
+strike-slip,8,-1,15.01651315
+strike-slip,8.5,0.16,14.21732171
+strike-slip,8.5,0.5,20.26077006
+strike-slip,8.5,0.84,27.90648299
+strike-slip,8.5,-1,21.07147822
+reverse,5,0.16,0.409786442
+reverse,5,0.5,0.6895187751
+reverse,5,0.84,1.081367627
+reverse,5,-1,0.7462932163
+reverse,5.5,0.16,0.6151859132
+reverse,5.5,0.5,0.9790027126
+reverse,5.5,0.84,1.471793148
+reverse,5.5,-1,1.044293761
+reverse,6,0.16,0.9427022506
+reverse,6,0.5,1.423429888
+reverse,6,0.84,2.053942076
+reverse,6,-1,1.499236605
+reverse,6.5,0.16,2.273570986
+reverse,6.5,0.5,3.497890338
+reverse,6.5,0.84,5.122323929
+reverse,6.5,-1,3.700408215
+reverse,7,0.16,4.794758885
+reverse,7,0.5,7.416663574
+reverse,7,0.84,10.90696637
+reverse,7,-1,7.856214939
+reverse,7.5,0.16,6.585307164
+reverse,7.5,0.5,10.22894764
+reverse,7.5,0.84,15.09182237
+reverse,7.5,-1,10.84609209
+reverse,8,0.16,9.780521632
+reverse,8,0.5,14.502061
+reverse,8,0.84,20.62538109
+reverse,8,-1,15.21145021
+reverse,8.5,0.16,14.85229871
+reverse,8.5,0.5,21.07317598
+reverse,8.5,0.84,28.92169955
+reverse,8.5,-1,21.89671194

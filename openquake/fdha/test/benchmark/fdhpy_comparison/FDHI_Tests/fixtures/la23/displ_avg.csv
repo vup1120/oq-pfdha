@@ -1,0 +1,33 @@
+# generator: make_fixtures.py
+# fdhpy: 1.0.3 (LavrentiadisAbrahamson2023)
+# numpy: 2.2.6; scipy: 1.17.1; pandas: 2.2.3; python: 3.13.9
+# generated: 2026-10-08
+# content: fdhpy displ_avg, sum-of-principal, full rupture, median (F9)
+# column style: faulting style
+# column magnitude: moment magnitude
+# column displ_m: average displacement in metres
+style,magnitude,displ_m
+normal,5,0.02327962311
+normal,5.5,0.045164097
+normal,6,0.09760689213
+normal,6.5,0.3489736506
+normal,7,1.312862733
+normal,7.5,2.282221412
+normal,8,4.009808553
+normal,8.5,7.074695318
+strike-slip,5,0.0181522719
+strike-slip,5.5,0.03933769501
+strike-slip,6,0.09007102495
+strike-slip,6.5,0.2047371073
+strike-slip,7,1.485783252
+strike-slip,7.5,2.535188651
+strike-slip,8,4.36883497
+strike-slip,8.5,7.552622048
+reverse,5,0.1370156134
+reverse,5.5,0.2487048933
+reverse,6,0.4503312111
+reverse,6.5,0.8094599023
+reverse,7,1.442062091
+reverse,7.5,2.547024416
+reverse,8,4.465979947
+reverse,8.5,7.787654852
